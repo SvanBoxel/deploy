@@ -2,7 +2,7 @@
  * This is the entry point for your Probot App.
  * @param {import('probot').Application} app - Probot's Application class.
  */
-module.exports = app => {
+module.exports = app => { 
   // Get an express router to expose new HTTP endpoints
   const getConfig = require('probot-config')
   const router = app.route('/my-app')
@@ -45,7 +45,7 @@ module.exports = app => {
         let errorComment = {
           'owner': context.payload.pull_request.head.repo.owner.login,
           'repo': context.payload.pull_request.head.repo.name,
-          'number': context.payload.pull_request.number,
+          'issue_number': context.payload.pull_request.number,
           'body': body
         }
         context.github.issues.createComment(errorComment)
@@ -54,9 +54,10 @@ module.exports = app => {
       let labelCleanup = {
         'owner': context.payload.pull_request.head.repo.owner.login,
         'repo': context.payload.pull_request.head.repo.name,
-        'number': context.payload.pull_request.number,
+        'issue_number': context.payload.pull_request.number,
         'name': labelName
       }
+
       context.github.issues.removeLabel(labelCleanup)
     }
   })
