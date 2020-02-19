@@ -38648,7 +38648,7 @@ module.exports = app => {
       try {
         await context.github.repos.createDeployment(deployment)
       } catch (apiError) {
-        console.log(apiError);
+        console.log('error:', apiError);
         let errorMessage = JSON.parse(apiError.message)
         let body = `:rotating_light: Failed to trigger deployment. :rotating_light:\n${errorMessage.message}`
         if (errorMessage.documentation_url) {
