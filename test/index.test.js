@@ -34,7 +34,7 @@ function initialize (configFile) {
     },
     repos: {
       createDeployment: jest.fn().mockReturnValue(Promise.resolve({})),
-      getContent: jest.fn().mockReturnValue({
+      getContents: jest.fn().mockReturnValue({
         data: {
           content: configData
         }
