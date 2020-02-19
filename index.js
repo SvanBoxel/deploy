@@ -2,7 +2,7 @@
  * This is the entry point for your Probot App.
  * @param {import('probot').Application} app - Probot's Application class.
  */
-module.exports = app => { 
+module.exports = app => {
   // Get an express router to expose new HTTP endpoints
   const router = app.route('/my-app')
   router.use(require('express').static('public'))
@@ -32,10 +32,10 @@ module.exports = app => {
         accept: 'application/vnd.github.ant-man-preview+json'
       }
 
-      context.github.repos.createDeployment(deployment).then(function (deploymentResult) {
-        return deploymentResult
-      }, function (apiError) {
-        console.log(apiError)
+      try {
+        await context.github.repos.createDeployment(deployment)
+      } catch (apiError) {
+        console.log(apiError);
         let errorMessage = JSON.parse(apiError.message)
         let body = `:rotating_light: Failed to trigger deployment. :rotating_light:\n${errorMessage.message}`
         if (errorMessage.documentation_url) {
@@ -49,7 +49,7 @@ module.exports = app => {
           'body': body
         }
         context.github.issues.createComment(errorComment)
-      })
+      }
 
       let labelCleanup = {
         'owner': context.payload.pull_request.head.repo.owner.login,

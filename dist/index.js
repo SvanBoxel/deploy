@@ -28399,14 +28399,15 @@ function rmkidsSync (p, options) {
 /***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
 
 // Require the adapter
-const adapt = __webpack_require__(561);
+const adapt = __webpack_require__(561)
 
 // Require your Probot app's entrypoint, usually this is just index.js
-const probot = __webpack_require__(403);
+const probot = __webpack_require__(403)
 
 // Adapt the Probot app for Actions
 // This also acts as the main entrypoint for the Action
-adapt(probot);
+adapt(probot)
+
 
 /***/ }),
 /* 310 */,
@@ -38614,7 +38615,7 @@ function localstorage() {
  * This is the entry point for your Probot App.
  * @param {import('probot').Application} app - Probot's Application class.
  */
-module.exports = app => { 
+module.exports = app => {
   // Get an express router to expose new HTTP endpoints
   const router = app.route('/my-app')
   router.use(__webpack_require__(939).static('public'))
@@ -38644,10 +38645,10 @@ module.exports = app => {
         accept: 'application/vnd.github.ant-man-preview+json'
       }
 
-      context.github.repos.createDeployment(deployment).then(function (deploymentResult) {
-        return deploymentResult
-      }, function (apiError) {
-        console.log(apiError)
+      try {
+        await context.github.repos.createDeployment(deployment)
+      } catch (apiError) {
+        console.log(apiError);
         let errorMessage = JSON.parse(apiError.message)
         let body = `:rotating_light: Failed to trigger deployment. :rotating_light:\n${errorMessage.message}`
         if (errorMessage.documentation_url) {
@@ -38661,7 +38662,7 @@ module.exports = app => {
           'body': body
         }
         context.github.issues.createComment(errorComment)
-      })
+      }
 
       let labelCleanup = {
         'owner': context.payload.pull_request.head.repo.owner.login,
