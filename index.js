@@ -4,7 +4,6 @@
  */
 module.exports = app => { 
   // Get an express router to expose new HTTP endpoints
-  const getConfig = require('probot-config')
   const router = app.route('/my-app')
   router.use(require('express').static('public'))
 
@@ -19,7 +18,7 @@ module.exports = app => {
   })
 
   app.on('pull_request.labeled', async context => {
-    const config = await getConfig(context, 'deploy.yml')
+    const config = await context.config('deploy.yml')
 
     let labelName = context.payload.label.name
     let encodedLabelName = encodeURI(labelName)
