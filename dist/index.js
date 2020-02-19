@@ -38615,6 +38615,7 @@ function localstorage() {
  * This is the entry point for your Probot App.
  * @param {import('probot').Application} app - Probot's Application class.
  */
+
 module.exports = app => {
   // Get an express router to expose new HTTP endpoints
   const router = app.route('/my-app')
@@ -38648,8 +38649,7 @@ module.exports = app => {
       try {
         await context.github.repos.createDeployment(deployment)
       } catch (apiError) {
-        console.log('error:', apiError);
-        let errorMessage = JSON.parse(apiError.message)
+        let errorMessage = JSON.parse(apiError.message || apiError)
         let body = `:rotating_light: Failed to trigger deployment. :rotating_light:\n${errorMessage.message}`
         if (errorMessage.documentation_url) {
           body = body + ` See [the documentation](${errorMessage.documentation_url}) for more details`
