@@ -72277,9 +72277,12 @@ function fetchWrapper(requestOptions) {
         try {
           let responseBody = JSON.parse(error.message);
           Object.assign(error, responseBody);
+          console.log(1, responseBody);
+          console.log(2, error.responseBody)
           let errors = responseBody.errors; // Assumption `errors` would always be in Array Fotmat
 
           error.message = error.message + ": " + errors.map(JSON.stringify).join(", ");
+          console.dir(3, error);
         } catch (e) {// ignore, see octokit/rest.js#684
         }
 
