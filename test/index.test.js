@@ -80,7 +80,7 @@ describe('Deploy Probot app', () => {
 
   test('creates a comment when deployment fails', async () => {
     // Returning an error
-    github.repos.createDeployment.mockImplementation(() => Promise.reject(new Error('{"message":"Conflict merging master into b4c150464b1236cc782cc590b391034f608056ec.","documentation_url":"https://developer.github.com/enterprise/2.14/v3/repos/deployments/#create-a-deployment"}')))
+    github.repos.createDeployment.mockImplementation(() => Promise.reject(new Error({"message":"Conflict merging master into b4c150464b1236cc782cc590b391034f608056ec.","documentation_url":"https://developer.github.com/enterprise/2.14/v3/repos/deployments/#create-a-deployment"})))
 
     // Simulates delivery of an issues.opened webhook
     await app.receive({
