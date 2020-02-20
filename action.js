@@ -1,9 +1,19 @@
-// Require the adapter
-const adapt = require('probot-actions-adapter')
+const handler = require('./index')
 
-// Require your Probot app's entrypoint, usually this is just index.js
-const probot = require('./index')
+const path = require('path');
 
-// Adapt the Probot app for Actions
-// This also acts as the main entrypoint for the Action
-adapt(probot)
+const core = require('@actions/core');
+
+const { createProbot } = require('probot');
+
+// Setup Probot app
+const githubToken = process.env.GITHUB_TOKEN;
+const probot = createProbot({ githubToken });
+probot.setup(handler);
+
+// Process the event
+const event = process.env.GITHUB_EVENT_NAME;
+const payloadPath = process.env.GITHUB_EVENT_PATH;
+const payload = require(path.resolve(payloadPath));
+core.debug(`Receiving event ${JSON.stringify(event)}`);
+probot.receive({ name: event, payload }).catch(err => core.setFailed(`Action failed with error: ${err.message}`))
