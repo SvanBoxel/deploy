@@ -234,19 +234,16 @@ module.exports = Set;
 
 /***/ }),
 /* 7 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
-
-
-module.exports = __webpack_require__(298);
-module.exports.utils = __webpack_require__(270);
-
-module.exports.transports = __webpack_require__(411);
-module.exports.parsers = __webpack_require__(30);
-
-// To infinity and beyond
-Error.stackTraceLimit = Infinity;
+module.exports = {
+  method: 'get',
+  baseUrl: 'https://api.github.com',
+  headers: {
+    accept: 'application/vnd.github.v3+json'
+  },
+  request: {}
+}
 
 
 /***/ }),
@@ -1917,121 +1914,7 @@ alphanumeric['pl-Pl'] = alphanumeric['pl-PL'];
 decimal['pl-Pl'] = decimal['pl-PL'];
 
 /***/ }),
-/* 24 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-var rng = __webpack_require__(545);
-var bytesToUuid = __webpack_require__(488);
-
-// **`v1()` - Generate time-based UUID**
-//
-// Inspired by https://github.com/LiosK/UUID.js
-// and http://docs.python.org/library/uuid.html
-
-var _nodeId;
-var _clockseq;
-
-// Previous uuid creation time
-var _lastMSecs = 0;
-var _lastNSecs = 0;
-
-// See https://github.com/uuidjs/uuid for API details
-function v1(options, buf, offset) {
-  var i = buf && offset || 0;
-  var b = buf || [];
-
-  options = options || {};
-  var node = options.node || _nodeId;
-  var clockseq = options.clockseq !== undefined ? options.clockseq : _clockseq;
-
-  // node and clockseq need to be initialized to random values if they're not
-  // specified.  We do this lazily to minimize issues related to insufficient
-  // system entropy.  See #189
-  if (node == null || clockseq == null) {
-    var seedBytes = rng();
-    if (node == null) {
-      // Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
-      node = _nodeId = [
-        seedBytes[0] | 0x01,
-        seedBytes[1], seedBytes[2], seedBytes[3], seedBytes[4], seedBytes[5]
-      ];
-    }
-    if (clockseq == null) {
-      // Per 4.2.2, randomize (14 bit) clockseq
-      clockseq = _clockseq = (seedBytes[6] << 8 | seedBytes[7]) & 0x3fff;
-    }
-  }
-
-  // UUID timestamps are 100 nano-second units since the Gregorian epoch,
-  // (1582-10-15 00:00).  JSNumbers aren't precise enough for this, so
-  // time is handled internally as 'msecs' (integer milliseconds) and 'nsecs'
-  // (100-nanoseconds offset from msecs) since unix epoch, 1970-01-01 00:00.
-  var msecs = options.msecs !== undefined ? options.msecs : new Date().getTime();
-
-  // Per 4.2.1.2, use count of uuid's generated during the current clock
-  // cycle to simulate higher resolution clock
-  var nsecs = options.nsecs !== undefined ? options.nsecs : _lastNSecs + 1;
-
-  // Time since last uuid creation (in msecs)
-  var dt = (msecs - _lastMSecs) + (nsecs - _lastNSecs)/10000;
-
-  // Per 4.2.1.2, Bump clockseq on clock regression
-  if (dt < 0 && options.clockseq === undefined) {
-    clockseq = clockseq + 1 & 0x3fff;
-  }
-
-  // Reset nsecs if clock regresses (new clockseq) or we've moved onto a new
-  // time interval
-  if ((dt < 0 || msecs > _lastMSecs) && options.nsecs === undefined) {
-    nsecs = 0;
-  }
-
-  // Per 4.2.1.2 Throw error if too many uuids are requested
-  if (nsecs >= 10000) {
-    throw new Error('uuid.v1(): Can\'t create more than 10M uuids/sec');
-  }
-
-  _lastMSecs = msecs;
-  _lastNSecs = nsecs;
-  _clockseq = clockseq;
-
-  // Per 4.1.4 - Convert from unix epoch to Gregorian epoch
-  msecs += 12219292800000;
-
-  // `time_low`
-  var tl = ((msecs & 0xfffffff) * 10000 + nsecs) % 0x100000000;
-  b[i++] = tl >>> 24 & 0xff;
-  b[i++] = tl >>> 16 & 0xff;
-  b[i++] = tl >>> 8 & 0xff;
-  b[i++] = tl & 0xff;
-
-  // `time_mid`
-  var tmh = (msecs / 0x100000000 * 10000) & 0xfffffff;
-  b[i++] = tmh >>> 8 & 0xff;
-  b[i++] = tmh & 0xff;
-
-  // `time_high_and_version`
-  b[i++] = tmh >>> 24 & 0xf | 0x10; // include version
-  b[i++] = tmh >>> 16 & 0xff;
-
-  // `clock_seq_hi_and_reserved` (Per 4.2.2 - include variant)
-  b[i++] = clockseq >>> 8 | 0x80;
-
-  // `clock_seq_low`
-  b[i++] = clockseq & 0xff;
-
-  // `node`
-  for (var n = 0; n < 6; ++n) {
-    b[i + n] = node[n];
-  }
-
-  return buf ? buf : bytesToUuid(b);
-}
-
-module.exports = v1;
-
-
-/***/ }),
+/* 24 */,
 /* 25 */,
 /* 26 */
 /***/ (function(module, exports, __webpack_require__) {
@@ -2287,55 +2170,7 @@ exports.enable(load());
 
 
 /***/ }),
-/* 27 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-var iterate    = __webpack_require__(520)
-  , initState  = __webpack_require__(801)
-  , terminator = __webpack_require__(100)
-  ;
-
-// Public API
-module.exports = parallel;
-
-/**
- * Runs iterator over provided array elements in parallel
- *
- * @param   {array|object} list - array or object (named list) to iterate over
- * @param   {function} iterator - iterator to run
- * @param   {function} callback - invoked when all elements processed
- * @returns {function} - jobs terminator
- */
-function parallel(list, iterator, callback)
-{
-  var state = initState(list);
-
-  while (state.index < (state['keyedList'] || list).length)
-  {
-    iterate(list, iterator, state, function(error, result)
-    {
-      if (error)
-      {
-        callback(error, result);
-        return;
-      }
-
-      // looks like it's the last one
-      if (Object.keys(state.jobs).length === 0)
-      {
-        callback(null, state.results);
-        return;
-      }
-    });
-
-    state.index++;
-  }
-
-  return terminator.bind(state, callback);
-}
-
-
-/***/ }),
+/* 27 */,
 /* 28 */,
 /* 29 */,
 /* 30 */
@@ -2546,16 +2381,27 @@ module.exports = hashSet;
 
 /***/ }),
 /* 32 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
-module.exports = hasFirstPage
+"use strict";
 
-const getPageLinks = __webpack_require__(931)
-
-function hasFirstPage (link) {
-  return getPageLinks(link).first
-}
-
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var jsonwebtoken_1 = __importDefault(__webpack_require__(951));
+exports.createApp = function (options) {
+    return function () {
+        var payload = {
+            exp: Math.floor(Date.now() / 1000) + 60,
+            iat: Math.floor(Date.now() / 1000),
+            iss: options.id // GitHub App ID
+        };
+        // Sign with RSA SHA256
+        return jsonwebtoken_1.default.sign(payload, options.cert, { algorithm: 'RS256' });
+    };
+};
+//# sourceMappingURL=github-app.js.map
 
 /***/ }),
 /* 33 */
@@ -4602,7 +4448,7 @@ var _isAlpha = _interopRequireWildcard(__webpack_require__(956));
 
 var _isAlphanumeric = _interopRequireWildcard(__webpack_require__(963));
 
-var _isNumeric = _interopRequireDefault(__webpack_require__(728));
+var _isNumeric = _interopRequireDefault(__webpack_require__(734));
 
 var _isPort = _interopRequireDefault(__webpack_require__(286));
 
@@ -4672,13 +4518,13 @@ var _isISSN = _interopRequireDefault(__webpack_require__(859));
 
 var _isMobilePhone = _interopRequireWildcard(__webpack_require__(995));
 
-var _isCurrency = _interopRequireDefault(__webpack_require__(362));
+var _isCurrency = _interopRequireDefault(__webpack_require__(713));
 
 var _isISO = _interopRequireDefault(__webpack_require__(830));
 
-var _isRFC = _interopRequireDefault(__webpack_require__(893));
+var _isRFC = _interopRequireDefault(__webpack_require__(107));
 
-var _isISO31661Alpha = _interopRequireDefault(__webpack_require__(915));
+var _isISO31661Alpha = _interopRequireDefault(__webpack_require__(455));
 
 var _isISO31661Alpha2 = _interopRequireDefault(__webpack_require__(143));
 
@@ -4686,7 +4532,7 @@ var _isBase = _interopRequireDefault(__webpack_require__(979));
 
 var _isDataURI = _interopRequireDefault(__webpack_require__(218));
 
-var _isMagnetURI = _interopRequireDefault(__webpack_require__(757));
+var _isMagnetURI = _interopRequireDefault(__webpack_require__(893));
 
 var _isMimeType = _interopRequireDefault(__webpack_require__(814));
 
@@ -4696,19 +4542,19 @@ var _isPostalCode = _interopRequireWildcard(__webpack_require__(400));
 
 var _ltrim = _interopRequireDefault(__webpack_require__(641));
 
-var _rtrim = _interopRequireDefault(__webpack_require__(796));
+var _rtrim = _interopRequireDefault(__webpack_require__(364));
 
 var _trim = _interopRequireDefault(__webpack_require__(45));
 
-var _escape = _interopRequireDefault(__webpack_require__(260));
+var _escape = _interopRequireDefault(__webpack_require__(749));
 
-var _unescape = _interopRequireDefault(__webpack_require__(470));
+var _unescape = _interopRequireDefault(__webpack_require__(260));
 
 var _stripLow = _interopRequireDefault(__webpack_require__(39));
 
-var _whitelist = _interopRequireDefault(__webpack_require__(66));
+var _whitelist = _interopRequireDefault(__webpack_require__(406));
 
-var _blacklist = _interopRequireDefault(__webpack_require__(582));
+var _blacklist = _interopRequireDefault(__webpack_require__(297));
 
 var _isWhitelisted = _interopRequireDefault(__webpack_require__(705));
 
@@ -4821,7 +4667,7 @@ exports.default = stripLow;
 
 var _assertString = _interopRequireDefault(__webpack_require__(567));
 
-var _blacklist = _interopRequireDefault(__webpack_require__(582));
+var _blacklist = _interopRequireDefault(__webpack_require__(297));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -6343,7 +6189,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = trim;
 
-var _rtrim = _interopRequireDefault(__webpack_require__(796));
+var _rtrim = _interopRequireDefault(__webpack_require__(364));
 
 var _ltrim = _interopRequireDefault(__webpack_require__(641));
 
@@ -6738,16 +6584,30 @@ module.exports = {"_from":"superagent@^3.8.3","_id":"superagent@3.8.3","_inBundl
 
 /***/ }),
 /* 51 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module) {
 
-module.exports = restRequest
+module.exports = removeHook
 
-const restEndpoint = __webpack_require__(408)
-const request = __webpack_require__(299)
+function removeHook (state, kind, name, method) {
+  if (kind) {
+    console.warn(
+      'hook.remove.%s(name, method) is deprecated, use hook.remove(name, method)',
+      kind
+    )
+  }
+  if (!state.registry[name]) {
+    return
+  }
 
-function restRequest (endpointOptions) {
-  const requestOptions = restEndpoint(endpointOptions)
-  return request(requestOptions)
+  var index = state.registry[name]
+    .map(function (registered) { return registered.orig })
+    .indexOf(method)
+
+  if (index === -1) {
+    return
+  }
+
+  state.registry[name].splice(index, 1)
 }
 
 
@@ -8434,30 +8294,7 @@ exports.FetchError = FetchError;
 
 /***/ }),
 /* 54 */,
-/* 55 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-var bunyan_sentry_stream_1 = __importDefault(__webpack_require__(506));
-var raven_1 = __importDefault(__webpack_require__(7));
-module.exports = function (app) {
-    // If sentry is configured, report all logged errors
-    if (process.env.SENTRY_DSN) {
-        app.log.debug(process.env.SENTRY_DSN, 'Errors will be reported to Sentry');
-        raven_1.default.disableConsoleAlerts();
-        raven_1.default.config(process.env.SENTRY_DSN, {
-            autoBreadcrumbs: true
-        }).install();
-        app.log.target.addStream(bunyan_sentry_stream_1.default(raven_1.default));
-    }
-};
-//# sourceMappingURL=sentry.js.map
-
-/***/ }),
+/* 55 */,
 /* 56 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -9367,30 +9204,7 @@ module.exports = arraySome;
 
 
 /***/ }),
-/* 66 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = whitelist;
-
-var _assertString = _interopRequireDefault(__webpack_require__(567));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function whitelist(str, chars) {
-  (0, _assertString.default)(str);
-  return str.replace(new RegExp("[^".concat(chars, "]+"), 'g'), '');
-}
-
-module.exports = exports.default;
-module.exports.default = exports.default;
-
-/***/ }),
+/* 66 */,
 /* 67 */
 /***/ (function(module) {
 
@@ -12348,20 +12162,7 @@ module.exports.MaxBufferError = MaxBufferError;
 
 
 /***/ }),
-/* 86 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-// Unique ID creation requires a high quality random # generator.  In node.js
-// this is pretty straight-forward - we use the crypto API.
-
-var crypto = __webpack_require__(373);
-
-module.exports = function nodeRNG() {
-  return crypto.randomBytes(16);
-};
-
-
-/***/ }),
+/* 86 */,
 /* 87 */
 /***/ (function(module) {
 
@@ -13012,16 +12813,23 @@ function newObject() {
 
 /***/ }),
 /* 94 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
-module.exports = hasPreviousPage
+"use strict";
 
-const getPageLinks = __webpack_require__(931)
-
-function hasPreviousPage (link) {
-  return getPageLinks(link).prev
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var cache_manager_1 = __importDefault(__webpack_require__(992));
+function createDefaultCache() {
+    return cache_manager_1.default.caching({
+        store: 'memory',
+        ttl: 60 * 60 // 1 hour
+    });
 }
-
+exports.createDefaultCache = createDefaultCache;
+//# sourceMappingURL=cache.js.map
 
 /***/ }),
 /* 95 */
@@ -13228,7 +13036,7 @@ var includes = __webpack_require__(117);
 var isBoolean = __webpack_require__(437);
 var isInteger = __webpack_require__(774);
 var isNumber = __webpack_require__(881);
-var isPlainObject = __webpack_require__(297);
+var isPlainObject = __webpack_require__(910);
 var isString = __webpack_require__(549);
 var once = __webpack_require__(381);
 
@@ -13686,34 +13494,85 @@ function createRedirectDirectoryListener () {
 /* 100 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-var abort = __webpack_require__(554)
-  , async = __webpack_require__(395)
-  ;
+"use strict";
 
-// API
-module.exports = terminator;
 
-/**
- * Terminates jobs in the attached state context
- *
- * @this  AsyncKitState#
- * @param {function} callback - final callback to invoke after termination
- */
-function terminator(callback)
-{
-  if (!Object.keys(this.jobs).length)
-  {
-    return;
+module.exports = restEndpoint
+
+const defaultsDeep = __webpack_require__(318)
+const intersection = __webpack_require__(900)
+const mapKeys = __webpack_require__(882)
+const omit = __webpack_require__(416)
+const urlTemplate = __webpack_require__(689)
+const getUserAgent = __webpack_require__(612)
+
+const addQueryParameters = __webpack_require__(731)
+const deprecate = __webpack_require__(730)
+const extractUrlVariableNames = __webpack_require__(626)
+const pkg = __webpack_require__(640)
+
+const DEFAULTS = module.exports.DEFAULTS = __webpack_require__(7)
+const NON_PARAMETERS = [
+  'request',
+  'baseUrl'
+]
+
+function restEndpoint (options) {
+  // lowercase header names (#760)
+  options.headers = mapKeys(options.headers, (value, key) => key.toLowerCase())
+
+  let userAgent = `octokit.js/${pkg.version} ${getUserAgent()}`
+  if (options.headers['user-agent']) {
+    userAgent = `${options.headers['user-agent']} ${userAgent}`
+  }
+  options.headers['user-agent'] = userAgent
+
+  options = defaultsDeep({}, options, DEFAULTS)
+
+  let method = options.method.toLowerCase()
+  let baseUrl = options.baseUrl
+  let url = options.url
+  let body = options.body
+  let headers = options.headers
+  let remainingOptions = omit(options, ['method', 'baseUrl', 'url', 'headers'])
+
+  // replace :varname with {varname} to make it RFC 6570 compatible
+  url = url.replace(/:([a-z]\w+)/g, '{+$1}')
+
+  // extract variable names from URL to calculate remaining variables later
+  const urlVariableNames = extractUrlVariableNames(url)
+
+  url = urlTemplate.parse(url).expand(remainingOptions)
+
+  if (!/^http/.test(url)) {
+    url = (baseUrl) + url
   }
 
-  // fast forward iteration index
-  this.index = this.size;
+  const requestOptions = remainingOptions.request
+  remainingOptions = omit(remainingOptions, intersection(Object.keys(options), urlVariableNames).concat(NON_PARAMETERS))
 
-  // abort jobs
-  abort(this);
+  if (method === 'get' || method === 'head') {
+    url = addQueryParameters(url, remainingOptions)
+  } else {
+    if ('input' in remainingOptions) {
+      deprecate('"input" option has been renamed to "data"')
+      remainingOptions.data = remainingOptions.input
+      delete remainingOptions.input
+    }
 
-  // send back results we have so far
-  async(callback)(null, this.results);
+    if ('data' in remainingOptions) {
+      body = remainingOptions.data
+    } else {
+      body = Object.keys(remainingOptions).length ? remainingOptions : undefined
+    }
+  }
+
+  return Object.assign(requestOptions, {
+    method,
+    url,
+    headers,
+    body
+  })
 }
 
 
@@ -13742,198 +13601,7 @@ module.exports = baseAssignIn;
 
 
 /***/ }),
-/* 103 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-"use strict";
-
-
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
-
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
-
-function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
-
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
-
-function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
-
-var Events, IORedisConnection, Scripts, parser;
-parser = __webpack_require__(188);
-Events = __webpack_require__(317);
-Scripts = __webpack_require__(489);
-
-IORedisConnection = function () {
-  class IORedisConnection {
-    constructor(options = {}) {
-      parser.load(options, this.defaults, this);
-
-      if (this.Redis == null) {
-        this.Redis = eval("require")("ioredis"); // Obfuscated or else Webpack/Angular will try to inline the optional ioredis module. To override this behavior: pass the ioredis module to Bottleneck as the 'Redis' option.
-      }
-
-      if (this.Events == null) {
-        this.Events = new Events(this);
-      }
-
-      this.terminated = false;
-
-      if (this.clusterNodes != null) {
-        this.client = new this.Redis.Cluster(this.clusterNodes, this.clientOptions);
-        this.subscriber = new this.Redis.Cluster(this.clusterNodes, this.clientOptions);
-      } else if (this.client != null && this.client.duplicate == null) {
-        this.subscriber = new this.Redis.Cluster(this.client.startupNodes, this.client.options);
-      } else {
-        if (this.client == null) {
-          this.client = new this.Redis(this.clientOptions);
-        }
-
-        this.subscriber = this.client.duplicate();
-      }
-
-      this.limiters = {};
-      this.ready = this.Promise.all([this._setup(this.client, false), this._setup(this.subscriber, true)]).then(() => {
-        this._loadScripts();
-
-        return {
-          client: this.client,
-          subscriber: this.subscriber
-        };
-      });
-    }
-
-    _setup(client, sub) {
-      client.setMaxListeners(0);
-      return new this.Promise((resolve, reject) => {
-        client.on("error", e => {
-          return this.Events.trigger("error", e);
-        });
-
-        if (sub) {
-          client.on("message", (channel, message) => {
-            var ref;
-            return (ref = this.limiters[channel]) != null ? ref._store.onMessage(channel, message) : void 0;
-          });
-        }
-
-        if (client.status === "ready") {
-          return resolve();
-        } else {
-          return client.once("ready", resolve);
-        }
-      });
-    }
-
-    _loadScripts() {
-      return Scripts.names.forEach(name => {
-        return this.client.defineCommand(name, {
-          lua: Scripts.payload(name)
-        });
-      });
-    }
-
-    __runCommand__(cmd) {
-      var _this = this;
-
-      return _asyncToGenerator(function* () {
-        var _, deleted;
-
-        yield _this.ready;
-
-        var _ref = yield _this.client.pipeline([cmd]).exec();
-
-        var _ref2 = _slicedToArray(_ref, 1);
-
-        var _ref2$ = _slicedToArray(_ref2[0], 2);
-
-        _ = _ref2$[0];
-        deleted = _ref2$[1];
-        return deleted;
-      })();
-    }
-
-    __addLimiter__(instance) {
-      return this.Promise.all([instance.channel(), instance.channel_client()].map(channel => {
-        return new this.Promise((resolve, reject) => {
-          return this.subscriber.subscribe(channel, () => {
-            this.limiters[channel] = instance;
-            return resolve();
-          });
-        });
-      }));
-    }
-
-    __removeLimiter__(instance) {
-      var _this2 = this;
-
-      return [instance.channel(), instance.channel_client()].forEach(
-      /*#__PURE__*/
-      function () {
-        var _ref3 = _asyncToGenerator(function* (channel) {
-          if (!_this2.terminated) {
-            yield _this2.subscriber.unsubscribe(channel);
-          }
-
-          return delete _this2.limiters[channel];
-        });
-
-        return function (_x) {
-          return _ref3.apply(this, arguments);
-        };
-      }());
-    }
-
-    __scriptArgs__(name, id, args, cb) {
-      var keys;
-      keys = Scripts.keys(name, id);
-      return [keys.length].concat(keys, args, cb);
-    }
-
-    __scriptFn__(name) {
-      return this.client[name].bind(this.client);
-    }
-
-    disconnect(flush = true) {
-      var i, k, len, ref;
-      ref = Object.keys(this.limiters);
-
-      for (i = 0, len = ref.length; i < len; i++) {
-        k = ref[i];
-        clearInterval(this.limiters[k]._store.heartbeat);
-      }
-
-      this.limiters = {};
-      this.terminated = true;
-
-      if (flush) {
-        return this.Promise.all([this.client.quit(), this.subscriber.quit()]);
-      } else {
-        this.client.disconnect();
-        this.subscriber.disconnect();
-        return this.Promise.resolve();
-      }
-    }
-
-  }
-
-  ;
-  IORedisConnection.prototype.datastore = "ioredis";
-  IORedisConnection.prototype.defaults = {
-    Redis: null,
-    clientOptions: {},
-    clusterNodes: null,
-    client: null,
-    Promise: Promise,
-    Events: null
-  };
-  return IORedisConnection;
-}.call(void 0);
-
-module.exports = IORedisConnection;
-
-/***/ }),
+/* 103 */,
 /* 104 */,
 /* 105 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
@@ -13942,7 +13610,7 @@ module.exports = IORedisConnection;
 // that are in the direct sync flow of nyc's outputCoverage are
 // ignored, since we can never get coverage for them.
 var assert = __webpack_require__(59)
-var signals = __webpack_require__(161)
+var signals = __webpack_require__(399)
 
 var EE = __webpack_require__(614)
 /* istanbul ignore if */
@@ -14122,40 +13790,42 @@ function serial(list, iterator, callback)
 
 /***/ }),
 /* 107 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
-module.exports = GitHubApi
+"use strict";
 
-const defaultsDeep = __webpack_require__(318)
-const Hook = __webpack_require__(361)
 
-const parseClientOptions = __webpack_require__(435)
-const request = __webpack_require__(51)
-const ENDPOINT_DEFAULTS = __webpack_require__(408).DEFAULTS
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = isRFC3339;
 
-const PLUGINS = [
-  __webpack_require__(749),
-  __webpack_require__(665),
-  __webpack_require__(986)
-]
+var _assertString = _interopRequireDefault(__webpack_require__(567));
 
-function GitHubApi (options) {
-  const defaults = defaultsDeep(parseClientOptions(options), ENDPOINT_DEFAULTS)
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-  const hook = new Hook()
-  const api = {
-    // NOTE: github.hook, github.plugin and github.request are experimental APIs
-    //       at this point and can change at any time
-    hook,
-    plugin: (pluginFunction) => pluginFunction(api),
-    request: (options) => api.hook('request', defaultsDeep(options, defaults), request)
-  }
+/* Based on https://tools.ietf.org/html/rfc3339#section-5.6 */
+var dateFullYear = /[0-9]{4}/;
+var dateMonth = /(0[1-9]|1[0-2])/;
+var dateMDay = /([12]\d|0[1-9]|3[01])/;
+var timeHour = /([01][0-9]|2[0-3])/;
+var timeMinute = /[0-5][0-9]/;
+var timeSecond = /([0-5][0-9]|60)/;
+var timeSecFrac = /(\.[0-9]+)?/;
+var timeNumOffset = new RegExp("[-+]".concat(timeHour.source, ":").concat(timeMinute.source));
+var timeOffset = new RegExp("([zZ]|".concat(timeNumOffset.source, ")"));
+var partialTime = new RegExp("".concat(timeHour.source, ":").concat(timeMinute.source, ":").concat(timeSecond.source).concat(timeSecFrac.source));
+var fullDate = new RegExp("".concat(dateFullYear.source, "-").concat(dateMonth.source, "-").concat(dateMDay.source));
+var fullTime = new RegExp("".concat(partialTime.source).concat(timeOffset.source));
+var rfc3339 = new RegExp("".concat(fullDate.source, "[ tT]").concat(fullTime.source));
 
-  PLUGINS.forEach(api.plugin)
-
-  return api
+function isRFC3339(str) {
+  (0, _assertString.default)(str);
+  return rfc3339.test(str);
 }
 
+module.exports = exports.default;
+module.exports.default = exports.default;
 
 /***/ }),
 /* 108 */
@@ -14188,20 +13858,7 @@ module.exports = stackDelete;
 module.exports = [["8740","䏰䰲䘃䖦䕸𧉧䵷䖳𧲱䳢𧳅㮕䜶䝄䱇䱀𤊿𣘗𧍒𦺋𧃒䱗𪍑䝏䗚䲅𧱬䴇䪤䚡𦬣爥𥩔𡩣𣸆𣽡晍囻"],["8767","綕夝𨮹㷴霴𧯯寛𡵞媤㘥𩺰嫑宷峼杮薓𩥅瑡璝㡵𡵓𣚞𦀡㻬"],["87a1","𥣞㫵竼龗𤅡𨤍𣇪𠪊𣉞䌊蒄龖鐯䤰蘓墖靊鈘秐稲晠権袝瑌篅枂稬剏遆㓦珄𥶹瓆鿇垳䤯呌䄱𣚎堘穲𧭥讏䚮𦺈䆁𥶙箮𢒼鿈𢓁𢓉𢓌鿉蔄𣖻䂴鿊䓡𪷿拁灮鿋"],["8840","㇀",4,"𠄌㇅𠃑𠃍㇆㇇𠃋𡿨㇈𠃊㇉㇊㇋㇌𠄎㇍㇎ĀÁǍÀĒÉĚÈŌÓǑÒ࿿Ê̄Ế࿿Ê̌ỀÊāáǎàɑēéěèīíǐìōóǒòūúǔùǖǘǚ"],["88a1","ǜü࿿ê̄ế࿿ê̌ềêɡ⏚⏛"],["8940","𪎩𡅅"],["8943","攊"],["8946","丽滝鵎釟"],["894c","𧜵撑会伨侨兖兴农凤务动医华发变团声处备夲头学实実岚庆总斉柾栄桥济炼电纤纬纺织经统缆缷艺苏药视设询车轧轮"],["89a1","琑糼緍楆竉刧"],["89ab","醌碸酞肼"],["89b0","贋胶𠧧"],["89b5","肟黇䳍鷉鸌䰾𩷶𧀎鸊𪄳㗁"],["89c1","溚舾甙"],["89c5","䤑马骏龙禇𨑬𡷊𠗐𢫦两亁亀亇亿仫伷㑌侽㹈倃傈㑽㒓㒥円夅凛凼刅争剹劐匧㗇厩㕑厰㕓参吣㕭㕲㚁咓咣咴咹哐哯唘唣唨㖘唿㖥㖿嗗㗅"],["8a40","𧶄唥"],["8a43","𠱂𠴕𥄫喐𢳆㧬𠍁蹆𤶸𩓥䁓𨂾睺𢰸㨴䟕𨅝𦧲𤷪擝𠵼𠾴𠳕𡃴撍蹾𠺖𠰋𠽤𢲩𨉖𤓓"],["8a64","𠵆𩩍𨃩䟴𤺧𢳂骲㩧𩗴㿭㔆𥋇𩟔𧣈𢵄鵮頕"],["8a76","䏙𦂥撴哣𢵌𢯊𡁷㧻𡁯"],["8aa1","𦛚𦜖𧦠擪𥁒𠱃蹨𢆡𨭌𠜱"],["8aac","䠋𠆩㿺塳𢶍"],["8ab2","𤗈𠓼𦂗𠽌𠶖啹䂻䎺"],["8abb","䪴𢩦𡂝膪飵𠶜捹㧾𢝵跀嚡摼㹃"],["8ac9","𪘁𠸉𢫏𢳉"],["8ace","𡃈𣧂㦒㨆𨊛㕸𥹉𢃇噒𠼱𢲲𩜠㒼氽𤸻"],["8adf","𧕴𢺋𢈈𪙛𨳍𠹺𠰴𦠜羓𡃏𢠃𢤹㗻𥇣𠺌𠾍𠺪㾓𠼰𠵇𡅏𠹌"],["8af6","𠺫𠮩𠵈𡃀𡄽㿹𢚖搲𠾭"],["8b40","𣏴𧘹𢯎𠵾𠵿𢱑𢱕㨘𠺘𡃇𠼮𪘲𦭐𨳒𨶙𨳊閪哌苄喹"],["8b55","𩻃鰦骶𧝞𢷮煀腭胬尜𦕲脴㞗卟𨂽醶𠻺𠸏𠹷𠻻㗝𤷫㘉𠳖嚯𢞵𡃉𠸐𠹸𡁸𡅈𨈇𡑕𠹹𤹐𢶤婔𡀝𡀞𡃵𡃶垜𠸑"],["8ba1","𧚔𨋍𠾵𠹻𥅾㜃𠾶𡆀𥋘𪊽𤧚𡠺𤅷𨉼墙剨㘚𥜽箲孨䠀䬬鼧䧧鰟鮍𥭴𣄽嗻㗲嚉丨夂𡯁屮靑𠂆乛亻㔾尣彑忄㣺扌攵歺氵氺灬爫丬犭𤣩罒礻糹罓𦉪㓁"],["8bde","𦍋耂肀𦘒𦥑卝衤见𧢲讠贝钅镸长门𨸏韦页风飞饣𩠐鱼鸟黄歯龜丷𠂇阝户钢"],["8c40","倻淾𩱳龦㷉袏𤅎灷峵䬠𥇍㕙𥴰愢𨨲辧釶熑朙玺𣊁𪄇㲋𡦀䬐磤琂冮𨜏䀉橣𪊺䈣蘏𠩯稪𩥇𨫪靕灍匤𢁾鏴盙𨧣龧矝亣俰傼丯众龨吴綋墒壐𡶶庒庙忂𢜒斋"],["8ca1","𣏹椙橃𣱣泿"],["8ca7","爀𤔅玌㻛𤨓嬕璹讃𥲤𥚕窓篬糃繬苸薗龩袐龪躹龫迏蕟駠鈡龬𨶹𡐿䁱䊢娚"],["8cc9","顨杫䉶圽"],["8cce","藖𤥻芿𧄍䲁𦵴嵻𦬕𦾾龭龮宖龯曧繛湗秊㶈䓃𣉖𢞖䎚䔶"],["8ce6","峕𣬚諹屸㴒𣕑嵸龲煗䕘𤃬𡸣䱷㥸㑊𠆤𦱁諌侴𠈹妿腬顖𩣺弻"],["8d40","𠮟"],["8d42","𢇁𨥭䄂䚻𩁹㼇龳𪆵䃸㟖䛷𦱆䅼𨚲𧏿䕭㣔𥒚䕡䔛䶉䱻䵶䗪㿈𤬏㙡䓞䒽䇭崾嵈嵖㷼㠏嶤嶹㠠㠸幂庽弥徃㤈㤔㤿㥍惗愽峥㦉憷憹懏㦸戬抐拥挘㧸嚱"],["8da1","㨃揢揻搇摚㩋擀崕嘡龟㪗斆㪽旿晓㫲暒㬢朖㭂枤栀㭘桊梄㭲㭱㭻椉楃牜楤榟榅㮼槖㯝橥橴橱檂㯬檙㯲檫檵櫔櫶殁毁毪汵沪㳋洂洆洦涁㳯涤涱渕渘温溆𨧀溻滢滚齿滨滩漤漴㵆𣽁澁澾㵪㵵熷岙㶊瀬㶑灐灔灯灿炉𠌥䏁㗱𠻘"],["8e40","𣻗垾𦻓焾𥟠㙎榢𨯩孴穉𥣡𩓙穥穽𥦬窻窰竂竃燑𦒍䇊竚竝竪䇯咲𥰁笋筕笩𥌎𥳾箢筯莜𥮴𦱿篐萡箒箸𥴠㶭𥱥蒒篺簆簵𥳁籄粃𤢂粦晽𤕸糉糇糦籴糳糵糎"],["8ea1","繧䔝𦹄絝𦻖璍綉綫焵綳緒𤁗𦀩緤㴓緵𡟹緥𨍭縝𦄡𦅚繮纒䌫鑬縧罀罁罇礶𦋐駡羗𦍑羣𡙡𠁨䕜𣝦䔃𨌺翺𦒉者耈耝耨耯𪂇𦳃耻耼聡𢜔䦉𦘦𣷣𦛨朥肧𨩈脇脚墰𢛶汿𦒘𤾸擧𡒊舘𡡞橓𤩥𤪕䑺舩𠬍𦩒𣵾俹𡓽蓢荢𦬊𤦧𣔰𡝳𣷸芪椛芳䇛"],["8f40","蕋苐茚𠸖𡞴㛁𣅽𣕚艻苢茘𣺋𦶣𦬅𦮗𣗎㶿茝嗬莅䔋𦶥莬菁菓㑾𦻔橗蕚㒖𦹂𢻯葘𥯤葱㷓䓤檧葊𣲵祘蒨𦮖𦹷𦹃蓞萏莑䒠蒓蓤𥲑䉀𥳀䕃蔴嫲𦺙䔧蕳䔖枿蘖"],["8fa1","𨘥𨘻藁𧂈蘂𡖂𧃍䕫䕪蘨㙈𡢢号𧎚虾蝱𪃸蟮𢰧螱蟚蠏噡虬桖䘏衅衆𧗠𣶹𧗤衞袜䙛袴袵揁装睷𧜏覇覊覦覩覧覼𨨥觧𧤤𧪽誜瞓釾誐𧩙竩𧬺𣾏䜓𧬸煼謌謟𥐰𥕥謿譌譍誩𤩺讐讛誯𡛟䘕衏貛𧵔𧶏貫㜥𧵓賖𧶘𧶽贒贃𡤐賛灜贑𤳉㻐起"],["9040","趩𨀂𡀔𤦊㭼𨆼𧄌竧躭躶軃鋔輙輭𨍥𨐒辥錃𪊟𠩐辳䤪𨧞𨔽𣶻廸𣉢迹𪀔𨚼𨔁𢌥㦀𦻗逷𨔼𧪾遡𨕬𨘋邨𨜓郄𨛦邮都酧㫰醩釄粬𨤳𡺉鈎沟鉁鉢𥖹銹𨫆𣲛𨬌𥗛"],["90a1","𠴱錬鍫𨫡𨯫炏嫃𨫢𨫥䥥鉄𨯬𨰹𨯿鍳鑛躼閅閦鐦閠濶䊹𢙺𨛘𡉼𣸮䧟氜陻隖䅬隣𦻕懚隶磵𨫠隽双䦡𦲸𠉴𦐐𩂯𩃥𤫑𡤕𣌊霱虂霶䨏䔽䖅𤫩灵孁霛靜𩇕靗孊𩇫靟鐥僐𣂷𣂼鞉鞟鞱鞾韀韒韠𥑬韮琜𩐳響韵𩐝𧥺䫑頴頳顋顦㬎𧅵㵑𠘰𤅜"],["9140","𥜆飊颷飈飇䫿𦴧𡛓喰飡飦飬鍸餹𤨩䭲𩡗𩤅駵騌騻騐驘𥜥㛄𩂱𩯕髠髢𩬅髴䰎鬔鬭𨘀倴鬴𦦨㣃𣁽魐魀𩴾婅𡡣鮎𤉋鰂鯿鰌𩹨鷔𩾷𪆒𪆫𪃡𪄣𪇟鵾鶃𪄴鸎梈"],["91a1","鷄𢅛𪆓𪈠𡤻𪈳鴹𪂹𪊴麐麕麞麢䴴麪麯𤍤黁㭠㧥㴝伲㞾𨰫鼂鼈䮖鐤𦶢鼗鼖鼹嚟嚊齅馸𩂋韲葿齢齩竜龎爖䮾𤥵𤦻煷𤧸𤍈𤩑玞𨯚𡣺禟𨥾𨸶鍩鏳𨩄鋬鎁鏋𨥬𤒹爗㻫睲穃烐𤑳𤏸煾𡟯炣𡢾𣖙㻇𡢅𥐯𡟸㜢𡛻𡠹㛡𡝴𡣑𥽋㜣𡛀坛𤨥𡏾𡊨"],["9240","𡏆𡒶蔃𣚦蔃葕𤦔𧅥𣸱𥕜𣻻𧁒䓴𣛮𩦝𦼦柹㜳㰕㷧塬𡤢栐䁗𣜿𤃡𤂋𤄏𦰡哋嚞𦚱嚒𠿟𠮨𠸍鏆𨬓鎜仸儫㠙𤐶亼𠑥𠍿佋侊𥙑婨𠆫𠏋㦙𠌊𠐔㐵伩𠋀𨺳𠉵諚𠈌亘"],["92a1","働儍侢伃𤨎𣺊佂倮偬傁俌俥偘僼兙兛兝兞湶𣖕𣸹𣺿浲𡢄𣺉冨凃𠗠䓝𠒣𠒒𠒑赺𨪜𠜎剙劤𠡳勡鍮䙺熌𤎌𠰠𤦬𡃤槑𠸝瑹㻞璙琔瑖玘䮎𤪼𤂍叐㖄爏𤃉喴𠍅响𠯆圝鉝雴鍦埝垍坿㘾壋媙𨩆𡛺𡝯𡜐娬妸銏婾嫏娒𥥆𡧳𡡡𤊕㛵洅瑃娡𥺃"],["9340","媁𨯗𠐓鏠璌𡌃焅䥲鐈𨧻鎽㞠尞岞幞幈𡦖𡥼𣫮廍孏𡤃𡤄㜁𡢠㛝𡛾㛓脪𨩇𡶺𣑲𨦨弌弎𡤧𡞫婫𡜻孄蘔𧗽衠恾𢡠𢘫忛㺸𢖯𢖾𩂈𦽳懀𠀾𠁆𢘛憙憘恵𢲛𢴇𤛔𩅍"],["93a1","摱𤙥𢭪㨩𢬢𣑐𩣪𢹸挷𪑛撶挱揑𤧣𢵧护𢲡搻敫楲㯴𣂎𣊭𤦉𣊫唍𣋠𡣙𩐿曎𣊉𣆳㫠䆐𥖄𨬢𥖏𡛼𥕛𥐥磮𣄃𡠪𣈴㑤𣈏𣆂𤋉暎𦴤晫䮓昰𧡰𡷫晣𣋒𣋡昞𥡲㣑𣠺𣞼㮙𣞢𣏾瓐㮖枏𤘪梶栞㯄檾㡣𣟕𤒇樳橒櫉欅𡤒攑梘橌㯗橺歗𣿀𣲚鎠鋲𨯪𨫋"],["9440","銉𨀞𨧜鑧涥漋𤧬浧𣽿㶏渄𤀼娽渊塇洤硂焻𤌚𤉶烱牐犇犔𤞏𤜥兹𤪤𠗫瑺𣻸𣙟𤩊𤤗𥿡㼆㺱𤫟𨰣𣼵悧㻳瓌琼鎇琷䒟𦷪䕑疃㽣𤳙𤴆㽘畕癳𪗆㬙瑨𨫌𤦫𤦎㫻"],["94a1","㷍𤩎㻿𤧅𤣳釺圲鍂𨫣𡡤僟𥈡𥇧睸𣈲眎眏睻𤚗𣞁㩞𤣰琸璛㺿𤪺𤫇䃈𤪖𦆮錇𥖁砞碍碈磒珐祙𧝁𥛣䄎禛蒖禥樭𣻺稺秴䅮𡛦䄲鈵秱𠵌𤦌𠊙𣶺𡝮㖗啫㕰㚪𠇔𠰍竢婙𢛵𥪯𥪜娍𠉛磰娪𥯆竾䇹籝籭䈑𥮳𥺼𥺦糍𤧹𡞰粎籼粮檲緜縇緓罎𦉡"],["9540","𦅜𧭈綗𥺂䉪𦭵𠤖柖𠁎𣗏埄𦐒𦏸𤥢翝笧𠠬𥫩𥵃笌𥸎駦虅驣樜𣐿㧢𤧷𦖭騟𦖠蒀𧄧𦳑䓪脷䐂胆脉腂𦞴飃𦩂艢艥𦩑葓𦶧蘐𧈛媆䅿𡡀嬫𡢡嫤𡣘蚠蜨𣶏蠭𧐢娂"],["95a1","衮佅袇袿裦襥襍𥚃襔𧞅𧞄𨯵𨯙𨮜𨧹㺭蒣䛵䛏㟲訽訜𩑈彍鈫𤊄旔焩烄𡡅鵭貟賩𧷜妚矃姰䍮㛔踪躧𤰉輰轊䋴汘澻𢌡䢛潹溋𡟚鯩㚵𤤯邻邗啱䤆醻鐄𨩋䁢𨫼鐧𨰝𨰻蓥訫閙閧閗閖𨴴瑅㻂𤣿𤩂𤏪㻧𣈥随𨻧𨹦𨹥㻌𤧭𤩸𣿮琒瑫㻼靁𩂰"],["9640","桇䨝𩂓𥟟靝鍨𨦉𨰦𨬯𦎾銺嬑譩䤼珹𤈛鞛靱餸𠼦巁𨯅𤪲頟𩓚鋶𩗗釥䓀𨭐𤩧𨭤飜𨩅㼀鈪䤥萔餻饍𧬆㷽馛䭯馪驜𨭥𥣈檏騡嫾騯𩣱䮐𩥈馼䮽䮗鍽塲𡌂堢𤦸"],["96a1","𡓨硄𢜟𣶸棅㵽鑘㤧慐𢞁𢥫愇鱏鱓鱻鰵鰐魿鯏𩸭鮟𪇵𪃾鴡䲮𤄄鸘䲰鴌𪆴𪃭𪃳𩤯鶥蒽𦸒𦿟𦮂藼䔳𦶤𦺄𦷰萠藮𦸀𣟗𦁤秢𣖜𣙀䤭𤧞㵢鏛銾鍈𠊿碹鉷鑍俤㑀遤𥕝砽硔碶硋𡝗𣇉𤥁㚚佲濚濙瀞瀞吔𤆵垻壳垊鴖埗焴㒯𤆬燫𦱀𤾗嬨𡞵𨩉"],["9740","愌嫎娋䊼𤒈㜬䭻𨧼鎻鎸𡣖𠼝葲𦳀𡐓𤋺𢰦𤏁妔𣶷𦝁綨𦅛𦂤𤦹𤦋𨧺鋥珢㻩璴𨭣𡢟㻡𤪳櫘珳珻㻖𤨾𤪔𡟙𤩦𠎧𡐤𤧥瑈𤤖炥𤥶銄珦鍟𠓾錱𨫎𨨖鎆𨯧𥗕䤵𨪂煫"],["97a1","𤥃𠳿嚤𠘚𠯫𠲸唂秄𡟺緾𡛂𤩐𡡒䔮鐁㜊𨫀𤦭妰𡢿𡢃𧒄媡㛢𣵛㚰鉟婹𨪁𡡢鍴㳍𠪴䪖㦊僴㵩㵌𡎜煵䋻𨈘渏𩃤䓫浗𧹏灧沯㳖𣿭𣸭渂漌㵯𠏵畑㚼㓈䚀㻚䡱姄鉮䤾轁𨰜𦯀堒埈㛖𡑒烾𤍢𤩱𢿣𡊰𢎽梹楧𡎘𣓥𧯴𣛟𨪃𣟖𣏺𤲟樚𣚭𦲷萾䓟䓎"],["9840","𦴦𦵑𦲂𦿞漗𧄉茽𡜺菭𦲀𧁓𡟛妉媂𡞳婡婱𡤅𤇼㜭姯𡜼㛇熎鎐暚𤊥婮娫𤊓樫𣻹𧜶𤑛𤋊焝𤉙𨧡侰𦴨峂𤓎𧹍𤎽樌𤉖𡌄炦焳𤏩㶥泟勇𤩏繥姫崯㷳彜𤩝𡟟綤萦"],["98a1","咅𣫺𣌀𠈔坾𠣕𠘙㿥𡾞𪊶瀃𩅛嵰玏糓𨩙𩐠俈翧狍猐𧫴猸猹𥛶獁獈㺩𧬘遬燵𤣲珡臶㻊県㻑沢国琙琞琟㻢㻰㻴㻺瓓㼎㽓畂畭畲疍㽼痈痜㿀癍㿗癴㿜発𤽜熈嘣覀塩䀝睃䀹条䁅㗛瞘䁪䁯属瞾矋売砘点砜䂨砹硇硑硦葈𥔵礳栃礲䄃"],["9940","䄉禑禙辻稆込䅧窑䆲窼艹䇄竏竛䇏両筢筬筻簒簛䉠䉺类粜䊌粸䊔糭输烀𠳏総緔緐緽羮羴犟䎗耠耥笹耮耱联㷌垴炠肷胩䏭脌猪脎脒畠脔䐁㬹腖腙腚"],["99a1","䐓堺腼膄䐥膓䐭膥埯臁臤艔䒏芦艶苊苘苿䒰荗险榊萅烵葤惣蒈䔄蒾蓡蓸蔐蔸蕒䔻蕯蕰藠䕷虲蚒蚲蛯际螋䘆䘗袮裿褤襇覑𧥧訩訸誔誴豑賔賲贜䞘塟跃䟭仮踺嗘坔蹱嗵躰䠷軎転軤軭軲辷迁迊迌逳駄䢭飠鈓䤞鈨鉘鉫銱銮銿"],["9a40","鋣鋫鋳鋴鋽鍃鎄鎭䥅䥑麿鐗匁鐝鐭鐾䥪鑔鑹锭関䦧间阳䧥枠䨤靀䨵鞲韂噔䫤惨颹䬙飱塄餎餙冴餜餷饂饝饢䭰駅䮝騼鬏窃魩鮁鯝鯱鯴䱭鰠㝯𡯂鵉鰺"],["9aa1","黾噐鶓鶽鷀鷼银辶鹻麬麱麽黆铜黢黱黸竈齄𠂔𠊷𠎠椚铃妬𠓗塀铁㞹𠗕𠘕𠙶𡚺块煳𠫂𠫍𠮿呪吆𠯋咞𠯻𠰻𠱓𠱥𠱼惧𠲍噺𠲵𠳝𠳭𠵯𠶲𠷈楕鰯螥𠸄𠸎𠻗𠾐𠼭𠹳尠𠾼帋𡁜𡁏𡁶朞𡁻𡂈𡂖㙇𡂿𡃓𡄯𡄻卤蒭𡋣𡍵𡌶讁𡕷𡘙𡟃𡟇乸炻𡠭𡥪"],["9b40","𡨭𡩅𡰪𡱰𡲬𡻈拃𡻕𡼕熘桕𢁅槩㛈𢉼𢏗𢏺𢜪𢡱𢥏苽𢥧𢦓𢫕覥𢫨辠𢬎鞸𢬿顇骽𢱌"],["9b62","𢲈𢲷𥯨𢴈𢴒𢶷𢶕𢹂𢽴𢿌𣀳𣁦𣌟𣏞徱晈暿𧩹𣕧𣗳爁𤦺矗𣘚𣜖纇𠍆墵朎"],["9ba1","椘𣪧𧙗𥿢𣸑𣺹𧗾𢂚䣐䪸𤄙𨪚𤋮𤌍𤀻𤌴𤎖𤩅𠗊凒𠘑妟𡺨㮾𣳿𤐄𤓖垈𤙴㦛𤜯𨗨𩧉㝢𢇃譞𨭎駖𤠒𤣻𤨕爉𤫀𠱸奥𤺥𤾆𠝹軚𥀬劏圿煱𥊙𥐙𣽊𤪧喼𥑆𥑮𦭒釔㑳𥔿𧘲𥕞䜘𥕢𥕦𥟇𤤿𥡝偦㓻𣏌惞𥤃䝼𨥈𥪮𥮉𥰆𡶐垡煑澶𦄂𧰒遖𦆲𤾚譢𦐂𦑊"],["9c40","嵛𦯷輶𦒄𡤜諪𤧶𦒈𣿯𦔒䯀𦖿𦚵𢜛鑥𥟡憕娧晉侻嚹𤔡𦛼乪𤤴陖涏𦲽㘘襷𦞙𦡮𦐑𦡞營𦣇筂𩃀𠨑𦤦鄄𦤹穅鷰𦧺騦𦨭㙟𦑩𠀡禃𦨴𦭛崬𣔙菏𦮝䛐𦲤画补𦶮墶"],["9ca1","㜜𢖍𧁋𧇍㱔𧊀𧊅銁𢅺𧊋錰𧋦𤧐氹钟𧑐𠻸蠧裵𢤦𨑳𡞱溸𤨪𡠠㦤㚹尐秣䔿暶𩲭𩢤襃𧟌𧡘囖䃟𡘊㦡𣜯𨃨𡏅熭荦𧧝𩆨婧䲷𧂯𨦫𧧽𧨊𧬋𧵦𤅺筃祾𨀉澵𪋟樃𨌘厢𦸇鎿栶靝𨅯𨀣𦦵𡏭𣈯𨁈嶅𨰰𨂃圕頣𨥉嶫𤦈斾槕叒𤪥𣾁㰑朶𨂐𨃴𨄮𡾡𨅏"],["9d40","𨆉𨆯𨈚𨌆𨌯𨎊㗊𨑨𨚪䣺揦𨥖砈鉕𨦸䏲𨧧䏟𨧨𨭆𨯔姸𨰉輋𨿅𩃬筑𩄐𩄼㷷𩅞𤫊运犏嚋𩓧𩗩𩖰𩖸𩜲𩣑𩥉𩥪𩧃𩨨𩬎𩵚𩶛纟𩻸𩼣䲤镇𪊓熢𪋿䶑递𪗋䶜𠲜达嗁"],["9da1","辺𢒰边𤪓䔉繿潖檱仪㓤𨬬𧢝㜺躀𡟵𨀤𨭬𨮙𧨾𦚯㷫𧙕𣲷𥘵𥥖亚𥺁𦉘嚿𠹭踎孭𣺈𤲞揞拐𡟶𡡻攰嘭𥱊吚𥌑㷆𩶘䱽嘢嘞罉𥻘奵𣵀蝰东𠿪𠵉𣚺脗鵞贘瘻鱅癎瞹鍅吲腈苷嘥脲萘肽嗪祢噃吖𠺝㗎嘅嗱曱𨋢㘭甴嗰喺咗啲𠱁𠲖廐𥅈𠹶𢱢"],["9e40","𠺢麫絚嗞𡁵抝靭咔賍燶酶揼掹揾啩𢭃鱲𢺳冚㓟𠶧冧呍唞唓癦踭𦢊疱肶蠄螆裇膶萜𡃁䓬猄𤜆宐茋𦢓噻𢛴𧴯𤆣𧵳𦻐𧊶酰𡇙鈈𣳼𪚩𠺬𠻹牦𡲢䝎𤿂𧿹𠿫䃺"],["9ea1","鱝攟𢶠䣳𤟠𩵼𠿬𠸊恢𧖣𠿭"],["9ead","𦁈𡆇熣纎鵐业丄㕷嬍沲卧㚬㧜卽㚥𤘘墚𤭮舭呋垪𥪕𠥹"],["9ec5","㩒𢑥獴𩺬䴉鯭𣳾𩼰䱛𤾩𩖞𩿞葜𣶶𧊲𦞳𣜠挮紥𣻷𣸬㨪逈勌㹴㙺䗩𠒎癀嫰𠺶硺𧼮墧䂿噼鮋嵴癔𪐴麅䳡痹㟻愙𣃚𤏲"],["9ef5","噝𡊩垧𤥣𩸆刴𧂮㖭汊鵼"],["9f40","籖鬹埞𡝬屓擓𩓐𦌵𧅤蚭𠴨𦴢𤫢𠵱"],["9f4f","凾𡼏嶎霃𡷑麁遌笟鬂峑箣扨挵髿篏鬪籾鬮籂粆鰕篼鬉鼗鰛𤤾齚啳寃俽麘俲剠㸆勑坧偖妷帒韈鶫轜呩鞴饀鞺匬愰"],["9fa1","椬叚鰊鴂䰻陁榀傦畆𡝭駚剳"],["9fae","酙隁酜"],["9fb2","酑𨺗捿𦴣櫊嘑醎畺抅𠏼獏籰𥰡𣳽"],["9fc1","𤤙盖鮝个𠳔莾衂"],["9fc9","届槀僭坺刟巵从氱𠇲伹咜哚劚趂㗾弌㗳"],["9fdb","歒酼龥鮗頮颴骺麨麄煺笔"],["9fe7","毺蠘罸"],["9feb","嘠𪙊蹷齓"],["9ff0","跔蹏鸜踁抂𨍽踨蹵竓𤩷稾磘泪詧瘇"],["a040","𨩚鼦泎蟖痃𪊲硓咢贌狢獱謭猂瓱賫𤪻蘯徺袠䒷"],["a055","𡠻𦸅"],["a058","詾𢔛"],["a05b","惽癧髗鵄鍮鮏蟵"],["a063","蠏賷猬霡鮰㗖犲䰇籑饊𦅙慙䰄麖慽"],["a073","坟慯抦戹拎㩜懢厪𣏵捤栂㗒"],["a0a1","嵗𨯂迚𨸹"],["a0a6","僙𡵆礆匲阸𠼻䁥"],["a0ae","矾"],["a0b0","糂𥼚糚稭聦聣絍甅瓲覔舚朌聢𧒆聛瓰脃眤覉𦟌畓𦻑螩蟎臈螌詉貭譃眫瓸蓚㘵榲趦"],["a0d4","覩瑨涹蟁𤀑瓧㷛煶悤憜㳑煢恷"],["a0e2","罱𨬭牐惩䭾删㰘𣳇𥻗𧙖𥔱𡥄𡋾𩤃𦷜𧂭峁𦆭𨨏𣙷𠃮𦡆𤼎䕢嬟𦍌齐麦𦉫"],["a3c0","␀",31,"␡"],["c6a1","①",9,"⑴",9,"ⅰ",9,"丶丿亅亠冂冖冫勹匸卩厶夊宀巛⼳广廴彐彡攴无疒癶辵隶¨ˆヽヾゝゞ〃仝々〆〇ー［］✽ぁ",23],["c740","す",58,"ァアィイ"],["c7a1","ゥ",81,"А",5,"ЁЖ",4],["c840","Л",26,"ёж",25,"⇧↸↹㇏𠃌乚𠂊刂䒑"],["c8a1","龰冈龱𧘇"],["c8cd","￢￤＇＂㈱№℡゛゜⺀⺄⺆⺇⺈⺊⺌⺍⺕⺜⺝⺥⺧⺪⺬⺮⺶⺼⺾⻆⻊⻌⻍⻏⻖⻗⻞⻣"],["c8f5","ʃɐɛɔɵœøŋʊɪ"],["f9fe","￭"],["fa40","𠕇鋛𠗟𣿅蕌䊵珯况㙉𤥂𨧤鍄𡧛苮𣳈砼杄拟𤤳𨦪𠊠𦮳𡌅侫𢓭倈𦴩𧪄𣘀𤪱𢔓倩𠍾徤𠎀𠍇滛𠐟偽儁㑺儎顬㝃萖𤦤𠒇兠𣎴兪𠯿𢃼𠋥𢔰𠖎𣈳𡦃宂蝽𠖳𣲙冲冸"],["faa1","鴴凉减凑㳜凓𤪦决凢卂凭菍椾𣜭彻刋刦刼劵剗劔効勅簕蕂勠蘍𦬓包𨫞啉滙𣾀𠥔𣿬匳卄𠯢泋𡜦栛珕恊㺪㣌𡛨燝䒢卭却𨚫卾卿𡖖𡘓矦厓𨪛厠厫厮玧𥝲㽙玜叁叅汉义埾叙㪫𠮏叠𣿫𢶣叶𠱷吓灹唫晗浛呭𦭓𠵴啝咏咤䞦𡜍𠻝㶴𠵍"],["fb40","𨦼𢚘啇䳭启琗喆喩嘅𡣗𤀺䕒𤐵暳𡂴嘷曍𣊊暤暭噍噏磱囱鞇叾圀囯园𨭦㘣𡉏坆𤆥汮炋坂㚱𦱾埦𡐖堃𡑔𤍣堦𤯵塜墪㕡壠壜𡈼壻寿坃𪅐𤉸鏓㖡够梦㛃湙"],["fba1","𡘾娤啓𡚒蔅姉𠵎𦲁𦴪𡟜姙𡟻𡞲𦶦浱𡠨𡛕姹𦹅媫婣㛦𤦩婷㜈媖瑥嫓𦾡𢕔㶅𡤑㜲𡚸広勐孶斈孼𧨎䀄䡝𠈄寕慠𡨴𥧌𠖥寳宝䴐尅𡭄尓珎尔𡲥𦬨屉䣝岅峩峯嶋𡷹𡸷崐崘嵆𡺤岺巗苼㠭𤤁𢁉𢅳芇㠶㯂帮檊幵幺𤒼𠳓厦亷廐厨𡝱帉廴𨒂"],["fc40","廹廻㢠廼栾鐛弍𠇁弢㫞䢮𡌺强𦢈𢏐彘𢑱彣鞽𦹮彲鍀𨨶徧嶶㵟𥉐𡽪𧃸𢙨釖𠊞𨨩怱暅𡡷㥣㷇㘹垐𢞴祱㹀悞悤悳𤦂𤦏𧩓璤僡媠慤萤慂慈𦻒憁凴𠙖憇宪𣾷"],["fca1","𢡟懓𨮝𩥝懐㤲𢦀𢣁怣慜攞掋𠄘担𡝰拕𢸍捬𤧟㨗搸揸𡎎𡟼撐澊𢸶頔𤂌𥜝擡擥鑻㩦携㩗敍漖𤨨𤨣斅敭敟𣁾斵𤥀䬷旑䃘𡠩无旣忟𣐀昘𣇷𣇸晄𣆤𣆥晋𠹵晧𥇦晳晴𡸽𣈱𨗴𣇈𥌓矅𢣷馤朂𤎜𤨡㬫槺𣟂杞杧杢𤇍𩃭柗䓩栢湐鈼栁𣏦𦶠桝"],["fd40","𣑯槡樋𨫟楳棃𣗍椁椀㴲㨁𣘼㮀枬楡𨩊䋼椶榘㮡𠏉荣傐槹𣙙𢄪橅𣜃檝㯳枱櫈𩆜㰍欝𠤣惞欵歴𢟍溵𣫛𠎵𡥘㝀吡𣭚毡𣻼毜氷𢒋𤣱𦭑汚舦汹𣶼䓅𣶽𤆤𤤌𤤀"],["fda1","𣳉㛥㳫𠴲鮃𣇹𢒑羏样𦴥𦶡𦷫涖浜湼漄𤥿𤂅𦹲蔳𦽴凇沜渝萮𨬡港𣸯瑓𣾂秌湏媑𣁋濸㜍澝𣸰滺𡒗𤀽䕕鏰潄潜㵎潴𩅰㴻澟𤅄濓𤂑𤅕𤀹𣿰𣾴𤄿凟𤅖𤅗𤅀𦇝灋灾炧炁烌烕烖烟䄄㷨熴熖𤉷焫煅媈煊煮岜𤍥煏鍢𤋁焬𤑚𤨧𤨢熺𨯨炽爎"],["fe40","鑂爕夑鑃爤鍁𥘅爮牀𤥴梽牕牗㹕𣁄栍漽犂猪猫𤠣𨠫䣭𨠄猨献珏玪𠰺𦨮珉瑉𤇢𡛧𤨤昣㛅𤦷𤦍𤧻珷琕椃𤨦琹𠗃㻗瑜𢢭瑠𨺲瑇珤瑶莹瑬㜰瑴鏱樬璂䥓𤪌"],["fea1","𤅟𤩹𨮏孆𨰃𡢞瓈𡦈甎瓩甞𨻙𡩋寗𨺬鎅畍畊畧畮𤾂㼄𤴓疎瑝疞疴瘂瘬癑癏癯癶𦏵皐臯㟸𦤑𦤎皡皥皷盌𦾟葢𥂝𥅽𡸜眞眦着撯𥈠睘𣊬瞯𨥤𨥨𡛁矴砉𡍶𤨒棊碯磇磓隥礮𥗠磗礴碱𧘌辸袄𨬫𦂃𢘜禆褀椂禀𥡗禝𧬹礼禩渪𧄦㺨秆𩄍秔"]];
 
 /***/ }),
-/* 110 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-module.exports = {
-  decode: __webpack_require__(854),
-  verify: __webpack_require__(369),
-  sign: __webpack_require__(96),
-  JsonWebTokenError: __webpack_require__(662),
-  NotBeforeError: __webpack_require__(629),
-  TokenExpiredError: __webpack_require__(637),
-};
-
-
-/***/ }),
+/* 110 */,
 /* 111 */
 /***/ (function(module) {
 
@@ -15034,7 +14691,377 @@ module.exports = new Type('tag:yaml.org,2002:js/undefined', {
 /* 119 */
 /***/ (function(module) {
 
-module.exports = {"activity":{"checkNotificationThreadSubscription":{"alias":"activity.getThreadSubscription","deprecated":"`activity.checkNotificationThreadSubscription()` is deprecated, use `activity.getThreadSubscription()`"},"checkStarringRepo":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/user/starred/:owner/:repo"},"deleteNotificationThreadSubscription":{"alias":"activity.deleteThreadSubscription","deprecated":"`activity.deleteNotificationThreadSubscription()` is deprecated, use `activity.deleteThreadSubscription()`"},"deleteRepoSubscription":{"method":"DELETE","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/subscription"},"deleteThreadSubscription":{"method":"DELETE","params":{"id":{"alias":"thread_id","deprecated":true},"thread_id":{"required":true,"type":"integer"}},"url":"/notifications/threads/:thread_id/subscription"},"getEvents":{"alias":"activity.listPublicEvents","deprecated":"`activity.getEvents()` is deprecated, use `activity.listPublicEvents()`"},"getEventsForOrg":{"alias":"activity.listPublicEventsForOrg","deprecated":"`activity.getEventsForOrg()` is deprecated, use `activity.listPublicEventsForOrg()`"},"getEventsForRepo":{"alias":"activity.listRepoEvents","deprecated":"`activity.getEventsForRepo()` is deprecated, use `activity.listRepoEvents()`"},"getEventsForRepoIssues":{"alias":"issues.listEventsForRepo","deprecated":"`activity.getEventsForRepoIssues()` is deprecated, use `issues.listEventsForRepo`","params":{}},"getEventsForRepoNetwork":{"alias":"activity.listPublicEventsForRepoNetwork","deprecated":"`activity.getEventsForRepoNetwork()` is deprecated, use `activity.listPublicEventsForRepoNetwork()`"},"getEventsForUser":{"alias":"activity.listEventsForUser","deprecated":"`activity.getEventsForUser()` is deprecated, use `activity.listEventsForUser()`"},"getEventsForUserOrg":{"alias":"activity.listEventsForOrg","deprecated":"`activity.getEventsForUserOrg()` is deprecated, use `activity.listEventsForOrg()`"},"getEventsForUserPublic":{"alias":"activity.listPublicEventsForUser","deprecated":"`activity.getEventsForUserPublic()` is deprecated, use `activity.listPublicEventsForUser()`"},"getEventsReceived":{"alias":"activity.listReceivedEventsForUser","deprecated":"`activity.getEventsReceived()` is deprecated, use `activity.listReceivedEventsForUser()`"},"getEventsReceivedPublic":{"alias":"activity.listReceivedPublicEventsForUser","deprecated":"`activity.getEventsReceivedPublic()` is deprecated, use `activity.listReceivedPublicEventsForUser()`"},"getFeeds":{"alias":"activity.listFeeds","deprecated":"`activity.getFeeds()` is deprecated, use `activity.listFeeds()`"},"getNotificationThread":{"alias":"activity.getThread","deprecated":"`activity.getNotificationThread()` is deprecated, use `activity.getThread()`"},"getNotifications":{"alias":"activity.listNotifications","deprecated":"`activity.getNotifications()` is deprecated, use `activity.listNotifications()`"},"getNotificationsForUser":{"alias":"activity.listNotificationsForRepo","deprecated":"`activity.getNotificationsForUser()` is deprecated, use `activity.listNotificationsForRepo()`"},"getRepoSubscription":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/subscription"},"getStargazersForRepo":{"alias":"activity.listStargazersForRepo","deprecated":"`activity.getStargazersForRepo()` is deprecated, use `activity.listStargazersForRepo()`"},"getStarredRepos":{"alias":"activity.listReposStarredByAuthenticatedUser","deprecated":"`activity.getStarredRepos()` is deprecated, use `activity.listReposStarredByAuthenticatedUser()`"},"getStarredReposForUser":{"alias":"activity.listReposStarredByUser","deprecated":"`activity.getStarredReposForUser()` is deprecated, use `activity.listReposStarredByUser()`"},"getThread":{"method":"GET","params":{"id":{"alias":"thread_id","deprecated":true},"thread_id":{"required":true,"type":"integer"}},"url":"/notifications/threads/:thread_id"},"getThreadSubscription":{"method":"GET","params":{"id":{"alias":"thread_id","deprecated":true},"thread_id":{"required":true,"type":"integer"}},"url":"/notifications/threads/:thread_id/subscription"},"getWatchedRepos":{"alias":"activity.listWatchedReposForAuthenticatedUser","deprecated":"`activity.getWatchedRepos()` is deprecated, use `activity.listWatchedReposForAuthenticatedUser()`"},"getWatchedReposForUser":{"alias":"activity.listReposWatchedByUser","deprecated":"`activity.getWatchedReposForUser()` is deprecated, use `activity.listReposWatchedByUser()`"},"getWatchersForRepo":{"alias":"activity.listWatchersForRepo","deprecated":"`activity.getWatchersForRepo()` is deprecated, use `activity.listWatchersForRepo()`"},"listEventsForOrg":{"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/events/orgs/:org"},"listEventsForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/events"},"listFeeds":{"method":"GET","params":{},"url":"/feeds"},"listNotifications":{"method":"GET","params":{"all":{"type":"boolean"},"before":{"type":"string"},"page":{"type":"integer"},"participating":{"type":"boolean"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/notifications"},"listNotificationsForRepo":{"method":"GET","params":{"all":{"type":"boolean"},"before":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"participating":{"type":"boolean"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"since":{"type":"string"}},"url":"/repos/:owner/:repo/notifications"},"listPublicEvents":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/events"},"listPublicEventsForOrg":{"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/events"},"listPublicEventsForRepoNetwork":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/networks/:owner/:repo/events"},"listPublicEventsForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/events/public"},"listReceivedEventsForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/received_events"},"listReceivedPublicEventsForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/received_events/public"},"listRepoEvents":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/events"},"listReposStarredByAuthenticatedUser":{"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/user/starred"},"listReposStarredByUser":{"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"sort":{"enum":["created","updated"],"type":"string"},"username":{"required":true,"type":"string"}},"url":"/users/:username/starred"},"listReposWatchedByUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/subscriptions"},"listStargazersForRepo":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/stargazers"},"listWatchedReposForAuthenticatedUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/subscriptions"},"listWatchersForRepo":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/subscribers"},"markAsRead":{"method":"PUT","params":{"last_read_at":{"type":"string"}},"url":"/notifications"},"markNotificationThreadAsRead":{"alias":"activity.markThreadAsRead","deprecated":"`activity.markNotificationThreadAsRead()` is deprecated, use `activity.markThreadAsRead()`"},"markNotificationsAsRead":{"alias":"activity.markAsRead","deprecated":"`activity.markNotificationsAsRead()` is deprecated, use `activity.markAsRead()`"},"markNotificationsAsReadForRepo":{"method":"PUT","params":{"last_read_at":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/notifications"},"markThreadAsRead":{"method":"PATCH","params":{"id":{"alias":"thread_id","deprecated":true},"thread_id":{"required":true,"type":"integer"}},"url":"/notifications/threads/:thread_id"},"setNotificationThreadSubscription":{"alias":"activity.setThreadSubscription","deprecated":"`activity.setNotificationThreadSubscription()` is deprecated, use `activity.setThreadSubscription()`"},"setRepoSubscription":{"method":"PUT","params":{"ignored":{"type":"boolean"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"subscribed":{"type":"boolean"}},"url":"/repos/:owner/:repo/subscription"},"setThreadSubscription":{"method":"PUT","params":{"id":{"alias":"thread_id","deprecated":true},"ignored":{"type":"boolean"},"thread_id":{"required":true,"type":"integer"}},"url":"/notifications/threads/:thread_id/subscription"},"starRepo":{"method":"PUT","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/user/starred/:owner/:repo"},"unstarRepo":{"method":"DELETE","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/user/starred/:owner/:repo"},"unwatchRepo":{"alias":"activity.deleteRepoSubscription","deprecated":"`activity.unwatchRepo()` is deprecated, use `activity.deleteRepoSubscription()`"}},"apps":{"addRepoToInstallation":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"PUT","params":{"installation_id":{"required":true,"type":"integer"},"repository_id":{"required":true,"type":"integer"}},"url":"/user/installations/:installation_id/repositories/:repository_id"},"checkAccountIsAssociatedWithAny":{"method":"GET","params":{"account_id":{"required":true,"type":"integer"},"id":{"alias":"account_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/marketplace_listing/accounts/:account_id"},"checkAccountIsAssociatedWithAnyStubbed":{"method":"GET","params":{"account_id":{"required":true,"type":"integer"},"id":{"alias":"account_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/marketplace_listing/stubbed/accounts/:account_id"},"checkMarketplaceListingAccount":{"alias":"apps.checkAccountIsAssociatedWithAny","deprecated":"`apps.checkMarketplaceListingAccount()` is deprecated, use `apps.checkAccountIsAssociatedWithAny()`"},"checkMarketplaceListingStubbedAccount":{"alias":"apps.checkAccountIsAssociatedWithAnyStubbed","deprecated":"`apps.checkMarketplaceListingStubbedAccount()` is deprecated, use `apps.checkAccountIsAssociatedWithAnyStubbed()`"},"createFromManifest":{"headers":{"accept":"application/vnd.github.fury-preview+json,application/vnd.github.machine-man-preview+json"},"method":"POST","params":{"code":{"required":true,"type":"string"}},"url":"/app-manifests/:code/conversions"},"createInstallationToken":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"POST","params":{"installation_id":{"required":true,"type":"integer"}},"url":"/app/installations/:installation_id/access_tokens"},"findOrgInstallation":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"org":{"required":true,"type":"string"}},"url":"/orgs/:org/installation"},"findRepoInstallation":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/installation"},"findUserInstallation":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"username":{"required":true,"type":"string"}},"url":"/users/:username/installation"},"get":{"alias":"apps.getAuthenticated","deprecated":"`apps.get()` is deprecated, use `apps.getAuthenticated()`"},"getAuthenticated":{"method":"GET","params":{},"url":"/app"},"getBySlug":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"app_slug":{"required":true,"type":"string"}},"url":"/apps/:app_slug"},"getForSlug":{"alias":"apps.getBySlug","deprecated":"`apps.getForSlug()` is deprecated, use `apps.getBySlug()`"},"getInstallation":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"installation_id":{"required":true,"type":"integer"}},"url":"/app/installations/:installation_id"},"getInstallationRepositories":{"alias":"apps.listRepos","deprecated":"`apps.getInstallationRepositories()` is deprecated, use `apps.listRepos()`"},"getInstallations":{"alias":"apps.listInstallations","deprecated":"`apps.getInstallations()` is deprecated, use `apps.listInstallations()`"},"getMarketplaceListingPlanAccounts":{"alias":"apps.listAccountsUserOrOrgOnPlan","deprecated":"`apps.getMarketplaceListingPlanAccounts()` is deprecated, use `apps.listAccountsUserOrOrgOnPlan()`"},"getMarketplaceListingPlans":{"alias":"apps.listPlans","deprecated":"`apps.getMarketplaceListingPlans()` is deprecated, use `apps.listPlans()`"},"getMarketplaceListingStubbedPlanAccounts":{"alias":"apps.listAccountsUserOrOrgOnPlanStubbed","deprecated":"`apps.getMarketplaceListingStubbedPlanAccounts()` is deprecated, use `apps.listAccountsUserOrOrgOnPlanStubbed()`"},"getMarketplaceListingStubbedPlans":{"alias":"apps.listPlansStubbed","deprecated":"`apps.getMarketplaceListingStubbedPlans()` is deprecated, use `apps.listPlansStubbed()`"},"listAccountsUserOrOrgOnPlan":{"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"id":{"alias":"plan_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"plan_id":{"required":true,"type":"integer"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/marketplace_listing/plans/:plan_id/accounts"},"listAccountsUserOrOrgOnPlanStubbed":{"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"id":{"alias":"plan_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"plan_id":{"required":true,"type":"integer"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/marketplace_listing/stubbed/plans/:plan_id/accounts"},"listInstallationReposForAuthenticatedUser":{"method":"GET","params":{"installation_id":{"required":true,"type":"integer"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/installations/:installation_id/repositories"},"listInstallations":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/app/installations"},"listInstallationsForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/installations"},"listMarketplacePurchasesForAuthenticatedUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/marketplace_purchases"},"listMarketplacePurchasesForAuthenticatedUserStubbed":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/marketplace_purchases/stubbed"},"listPlans":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/marketplace_listing/plans"},"listPlansStubbed":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/marketplace_listing/stubbed/plans"},"listRepos":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/installation/repositories"},"removeRepoFromInstallation":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"DELETE","params":{"installation_id":{"required":true,"type":"integer"},"repository_id":{"required":true,"type":"integer"}},"url":"/user/installations/:installation_id/repositories/:repository_id"}},"authorization":{"check":{"alias":"authorization.checkAuthorization","deprecated":"`authorization.check()` is deprecated, use `authorization.checkAuthorization()`"},"checkAuthorization":{"method":"GET","params":{"access_token":{"required":true,"type":"string"},"client_id":{"required":true,"type":"string"}},"url":"/applications/:client_id/tokens/:access_token"},"create":{"alias":"authorization.createAuthorization","deprecated":"`authorization.create()` is deprecated, use `authorization.createAuthorization()`"},"createAuthorization":{"method":"POST","params":{"client_id":{"type":"string"},"client_secret":{"type":"string"},"fingerprint":{"type":"string"},"note":{"required":true,"type":"string"},"note_url":{"type":"string"},"scopes":{"type":"string[]"}},"url":"/authorizations"},"delete":{"alias":"authorization.deleteAuthorization","deprecated":"`authorization.delete()` is deprecated, use `authorization.deleteAuthorization()`"},"deleteAuthorization":{"method":"DELETE","params":{"authorization_id":{"required":true,"type":"integer"},"id":{"alias":"authorization_id","deprecated":true}},"url":"/authorizations/:authorization_id"},"deleteGrant":{"method":"DELETE","params":{"grant_id":{"required":true,"type":"integer"},"id":{"alias":"grant_id","deprecated":true}},"url":"/applications/grants/:grant_id"},"get":{"alias":"authorization.getAuthorization","deprecated":"`authorization.get()` is deprecated, use `authorization.getAuthorization()`"},"getAll":{"alias":"authorization.listAuthorizations","deprecated":"`authorization.getAll()` is deprecated, use `authorization.listAuthorizations()`"},"getAuthorization":{"method":"GET","params":{"authorization_id":{"required":true,"type":"integer"},"id":{"alias":"authorization_id","deprecated":true}},"url":"/authorizations/:authorization_id"},"getGrant":{"method":"GET","params":{"grant_id":{"required":true,"type":"integer"},"id":{"alias":"grant_id","deprecated":true}},"url":"/applications/grants/:grant_id"},"getGrants":{"alias":"authorization.listGrants","deprecated":"`authorization.getGrants()` is deprecated, use `authorization.listGrants()`"},"getOrCreateAuthorizationForApp":{"method":"PUT","params":{"client_id":{"required":true,"type":"string"},"client_secret":{"required":true,"type":"string"},"fingerprint":{"type":"string"},"note":{"type":"string"},"note_url":{"type":"string"},"scopes":{"type":"string[]"}},"url":"/authorizations/clients/:client_id"},"getOrCreateAuthorizationForAppAndFingerprint":{"alias":"authorization.getOrCreateAuthorizationForAppFingerprint","deprecated":"`authorization.getOrCreateAuthorizationForAppAndFingerprint()` is deprecated, use `authorization.getOrCreateAuthorizationForAppFingerprint()`"},"getOrCreateAuthorizationForAppFingerprint":{"method":"PUT","params":{"client_id":{"required":true,"type":"string"},"client_secret":{"required":true,"type":"string"},"fingerprint":{"required":true,"type":"string"},"note":{"type":"string"},"note_url":{"type":"string"},"scopes":{"type":"string[]"}},"url":"/authorizations/clients/:client_id/:fingerprint"},"listAuthorizations":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/authorizations"},"listGrants":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/applications/grants"},"reset":{"alias":"authorization.resetAuthorization","deprecated":"`authorization.reset()` is deprecated, use `authorization.resetAuthorization()`"},"resetAuthorization":{"method":"POST","params":{"access_token":{"required":true,"type":"string"},"client_id":{"required":true,"type":"string"}},"url":"/applications/:client_id/tokens/:access_token"},"revoke":{"alias":"authorization.revokeAuthorizationForApplication","deprecated":"`authorization.revoke()` is deprecated, use `authorization.revokeAuthorizationForApplication()`"},"revokeAuthorizationForApplication":{"method":"DELETE","params":{"access_token":{"required":true,"type":"string"},"client_id":{"required":true,"type":"string"}},"url":"/applications/:client_id/tokens/:access_token"},"revokeGrant":{"alias":"authorization.revokeGrantForApplication","deprecated":"`authorization.revokeGrant()` is deprecated, use `authorization.revokeGrantForApplication()`"},"revokeGrantForApplication":{"method":"DELETE","params":{"access_token":{"required":true,"type":"string"},"client_id":{"required":true,"type":"string"}},"url":"/applications/:client_id/grants/:access_token"},"update":{"alias":"authorization.updateAuthorization","deprecated":"`authorization.update()` is deprecated, use `authorization.updateAuthorization()`"},"updateAuthorization":{"method":"PATCH","params":{"add_scopes":{"type":"string[]"},"authorization_id":{"required":true,"type":"integer"},"fingerprint":{"type":"string"},"id":{"alias":"authorization_id","deprecated":true},"note":{"type":"string"},"note_url":{"type":"string"},"remove_scopes":{"type":"string[]"},"scopes":{"type":"string[]"}},"url":"/authorizations/:authorization_id"}},"checks":{"create":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"POST","params":{"actions":{"type":"object[]"},"actions[].description":{"required":true,"type":"string"},"actions[].identifier":{"required":true,"type":"string"},"actions[].label":{"required":true,"type":"string"},"completed_at":{"type":"string"},"conclusion":{"enum":["success","failure","neutral","cancelled","timed_out","action_required"],"type":"string"},"details_url":{"type":"string"},"external_id":{"type":"string"},"head_sha":{"required":true,"type":"string"},"name":{"required":true,"type":"string"},"output":{"type":"object"},"output.annotations":{"type":"object[]"},"output.annotations[].annotation_level":{"enum":["notice","warning","failure"],"required":true,"type":"string"},"output.annotations[].end_column":{"type":"integer"},"output.annotations[].end_line":{"required":true,"type":"integer"},"output.annotations[].filename":{"alias":"output.annotations[].path","deprecated":true},"output.annotations[].message":{"required":true,"type":"string"},"output.annotations[].path":{"required":true,"type":"string"},"output.annotations[].raw_details":{"type":"string"},"output.annotations[].start_column":{"type":"integer"},"output.annotations[].start_line":{"required":true,"type":"integer"},"output.annotations[].title":{"type":"string"},"output.annotations[].warning_level":{"alias":"output.annotations[].annotation_level","deprecated":true},"output.images":{"type":"object[]"},"output.images[].alt":{"required":true,"type":"string"},"output.images[].caption":{"type":"string"},"output.images[].image_url":{"required":true,"type":"string"},"output.summary":{"required":true,"type":"string"},"output.text":{"type":"string"},"output.title":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"started_at":{"type":"string"},"status":{"enum":["queued","in_progress","completed"],"type":"string"}},"url":"/repos/:owner/:repo/check-runs"},"createSuite":{"headers":{"accept":"application/vnd.github.antiope-preview+json"},"method":"POST","params":{"head_sha":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-suites"},"get":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"check_run_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-runs/:check_run_id"},"getSuite":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"check_suite_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-suites/:check_suite_id"},"listAnnotations":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"check_run_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-runs/:check_run_id/annotations"},"listForRef":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"check_name":{"type":"string"},"filter":{"enum":["latest","all"],"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"status":{"enum":["queued","in_progress","completed"],"type":"string"}},"url":"/repos/:owner/:repo/commits/:ref/check-runs"},"listForSuite":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"check_name":{"type":"string"},"check_suite_id":{"required":true,"type":"integer"},"filter":{"enum":["latest","all"],"type":"string"},"id":{"alias":"check_suite_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"status":{"enum":["queued","in_progress","completed"],"type":"string"}},"url":"/repos/:owner/:repo/check-suites/:check_suite_id/check-runs"},"listSuitesForRef":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"app_id":{"type":"integer"},"check_name":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:ref/check-suites"},"requestSuites":{"deprecated":"use `rerequestSuite` instead","headers":{"accept":"application/vnd.github.antiope-preview+json"},"method":"POST","params":{"head_sha":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-suite-requests"},"rerequestSuite":{"headers":{"accept":"application/vnd.github.antiope-preview+json"},"method":"POST","params":{"check_suite_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-suites/:check_suite_id/rerequest"},"setSuitesPreferences":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"PATCH","params":{"auto_trigger_checks":{"type":"object[]"},"auto_trigger_checks[].app_id":{"required":true,"type":"integer"},"auto_trigger_checks[].setting":{"required":true,"type":"boolean"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-suites/preferences"},"update":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"PATCH","params":{"actions":{"type":"object[]"},"actions[].description":{"required":true,"type":"string"},"actions[].identifier":{"required":true,"type":"string"},"actions[].label":{"required":true,"type":"string"},"check_run_id":{"required":true,"type":"integer"},"completed_at":{"type":"string"},"conclusion":{"enum":["success","failure","neutral","cancelled","timed_out","action_required"],"type":"string"},"details_url":{"type":"string"},"external_id":{"type":"string"},"name":{"type":"string"},"output":{"type":"object"},"output.annotations":{"type":"object[]"},"output.annotations[].annotation_level":{"enum":["notice","warning","failure"],"required":true,"type":"string"},"output.annotations[].end_column":{"type":"integer"},"output.annotations[].end_line":{"required":true,"type":"integer"},"output.annotations[].filename":{"alias":"output.annotations[].path","deprecated":true},"output.annotations[].message":{"required":true,"type":"string"},"output.annotations[].path":{"required":true,"type":"string"},"output.annotations[].raw_details":{"type":"string"},"output.annotations[].start_column":{"type":"integer"},"output.annotations[].start_line":{"required":true,"type":"integer"},"output.annotations[].title":{"type":"string"},"output.annotations[].warning_level":{"alias":"output.annotations[].annotation_level","deprecated":true},"output.images":{"type":"object[]"},"output.images[].alt":{"required":true,"type":"string"},"output.images[].caption":{"type":"string"},"output.images[].image_url":{"required":true,"type":"string"},"output.summary":{"required":true,"type":"string"},"output.text":{"type":"string"},"output.title":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"started_at":{"type":"string"},"status":{"enum":["queued","in_progress","completed"],"type":"string"}},"url":"/repos/:owner/:repo/check-runs/:check_run_id"}},"codesOfConduct":{"getConductCode":{"headers":{"accept":"application/vnd.github.scarlet-witch-preview+json"},"method":"GET","params":{"key":{"required":true,"type":"string"}},"url":"/codes_of_conduct/:key"},"getForRepo":{"headers":{"accept":"application/vnd.github.scarlet-witch-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/community/code_of_conduct"},"listConductCodes":{"headers":{"accept":"application/vnd.github.scarlet-witch-preview+json"},"method":"GET","params":{},"url":"/codes_of_conduct"}},"emojis":{"get":{"method":"GET","params":{},"url":"/emojis"}},"enterprise":{"createOrg":{"method":"POST","params":{"admin":{"required":true,"type":"string"},"login":{"required":true,"type":"string"},"profile_name":{"type":"string"}},"url":"/admin/organizations"},"createPreReceiveEnvironment":{"method":"POST","params":{"image_url":{"required":true,"type":"string"},"name":{"required":true,"type":"string"}},"url":"/admin/pre-receive-environments"},"createPreReceiveHook":{"method":"POST","params":{"allow_downstream_configuration":{"type":"boolean"},"enforcement":{"type":"string"},"environment":{"required":true,"type":"object"},"name":{"required":true,"type":"string"},"script":{"required":true,"type":"string"},"script_repository":{"required":true,"type":"object"}},"url":"/admin/pre-receive-hooks"},"deletePreReceiveEnvironment":{"method":"DELETE","params":{"id":{"required":true,"type":"string"}},"url":"/admin/pre-receive-environments/:id"},"deletePreReceiveHook":{"method":"DELETE","params":{"id":{"required":true,"type":"string"}},"url":"/admin/pre_receive_hooks/:id"},"editPreReceiveEnvironment":{"method":"PATCH","params":{"id":{"required":true,"type":"string"},"image_url":{"required":true,"type":"string"},"name":{"required":true,"type":"string"}},"url":"/admin/pre-receive-environments/:id"},"editPreReceiveHook":{"method":"PATCH","params":{"hook":{"mapTo":"data","required":true,"type":"object"},"id":{"required":true,"type":"string"}},"url":"/admin/pre_receive_hooks/:id"},"getLicense":{"method":"GET","params":{},"url":"/enterprise/settings/license"},"getPreReceiveEnvironment":{"method":"GET","params":{"id":{"required":true,"type":"string"}},"url":"/admin/pre-receive-environments/:id"},"getPreReceiveEnvironmentDownloadStatus":{"method":"GET","params":{"id":{"required":true,"type":"string"}},"url":"/admin/pre-receive-environments/:id/downloads/latest"},"getPreReceiveEnvironments":{"method":"GET","params":{},"url":"/admin/pre-receive-environments"},"getPreReceiveHook":{"method":"GET","params":{"id":{"required":true,"type":"string"}},"url":"/admin/pre-receive-hooks/:id"},"getPreReceiveHooks":{"method":"GET","params":{},"url":"/admin/pre-receive-hooks"},"queueIndexingJob":{"method":"POST","params":{"target":{"required":true,"type":"string"}},"url":"/staff/indexing_jobs"},"stats":{"method":"GET","params":{"type":{"enum":["issues","hooks","milestones","orgs","comments","pages","users","gists","pulls","repos","all"],"required":true,"type":"string"}},"url":"/enterprise/stats/:type"},"syncLdapForTeam":{"method":"POST","params":{"team_id":{"required":true,"type":"integer"}},"url":"/admin/ldap/teams/:team_id/sync"},"syncLdapForUser":{"method":"POST","params":{"username":{"required":true,"type":"string"}},"url":"/admin/ldap/users/:username/sync"},"triggerPreReceiveEnvironmentDownload":{"method":"POST","params":{"id":{"required":true,"type":"string"}},"url":"/admin/pre-receive-environments/:id/downloads"},"updateLdapForTeam":{"method":"PATCH","params":{"ldap_dn":{"required":true,"type":"string"},"team_id":{"required":true,"type":"integer"}},"url":"/admin/ldap/teams/:team_id/mapping"},"updateLdapForUser":{"method":"PATCH","params":{"ldap_dn":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/admin/ldap/users/:username/mapping"}},"gists":{"checkIsStarred":{"method":"GET","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id/star"},"checkStar":{"alias":"gists.checkIsStarred","deprecated":"`gists.checkStar()` is deprecated, use `gists.checkIsStarred()`"},"create":{"method":"POST","params":{"description":{"type":"string"},"files":{"required":true,"type":"object"},"files.content":{"type":"string"},"public":{"type":"boolean"}},"url":"/gists"},"createComment":{"method":"POST","params":{"body":{"required":true,"type":"string"},"gist_id":{"required":true,"type":"string"}},"url":"/gists/:gist_id/comments"},"delete":{"method":"DELETE","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id"},"deleteComment":{"method":"DELETE","params":{"comment_id":{"required":true,"type":"integer"},"gist_id":{"required":true,"type":"string"},"id":{"alias":"comment_id","deprecated":true}},"url":"/gists/:gist_id/comments/:comment_id"},"edit":{"alias":"gists.update","deprecated":"`gists.edit()` is deprecated, use `gists.update()`"},"editComment":{"alias":"gists.updateComment","deprecated":"`gists.editComment()` is deprecated, use `gists.updateComment()`"},"fork":{"method":"POST","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id/forks"},"get":{"method":"GET","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id"},"getAll":{"alias":"gists.list","deprecated":"`gists.getAll()` is deprecated, use `gists.list()`"},"getComment":{"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"gist_id":{"required":true,"type":"string"},"id":{"alias":"comment_id","deprecated":true}},"url":"/gists/:gist_id/comments/:comment_id"},"getComments":{"alias":"gists.listComments","deprecated":"`gists.getComments()` is deprecated, use `gists.listComments()`"},"getCommits":{"alias":"gists.listCommits","deprecated":"`gists.getCommits()` is deprecated, use `gists.listCommits()`"},"getForUser":{"alias":"gists.listPublicForUser","deprecated":"`gists.getForUser()` is deprecated, use `gists.listPublicForUser()`"},"getForks":{"alias":"gists.listForks","deprecated":"`gists.getForks()` is deprecated, use `gists.listForks()`"},"getPublic":{"alias":"gists.listPublic","deprecated":"`gists.getPublic()` is deprecated, use `gists.listPublic()`"},"getRevision":{"method":"GET","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true},"sha":{"required":true,"type":"string"}},"url":"/gists/:gist_id/:sha"},"getStarred":{"alias":"gists.listStarred","deprecated":"`gists.getStarred()` is deprecated, use `gists.listStarred()`"},"list":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/gists"},"listComments":{"method":"GET","params":{"gist_id":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/gists/:gist_id/comments"},"listCommits":{"method":"GET","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/gists/:gist_id/commits"},"listForks":{"method":"GET","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/gists/:gist_id/forks"},"listPublic":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/gists/public"},"listPublicForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"},"username":{"required":true,"type":"string"}},"url":"/users/:username/gists"},"listStarred":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/gists/starred"},"star":{"method":"PUT","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id/star"},"unstar":{"method":"DELETE","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id/star"},"update":{"method":"PATCH","params":{"description":{"type":"string"},"files":{"type":"object"},"files.content":{"type":"string"},"files.filename":{"type":"string"},"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id"},"updateComment":{"method":"PATCH","params":{"body":{"required":true,"type":"string"},"comment_id":{"required":true,"type":"integer"},"gist_id":{"required":true,"type":"string"},"id":{"alias":"comment_id","deprecated":true}},"url":"/gists/:gist_id/comments/:comment_id"}},"gitdata":{"createBlob":{"method":"POST","params":{"content":{"required":true,"type":"string"},"encoding":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/blobs"},"createCommit":{"method":"POST","params":{"author":{"type":"object"},"committer":{"type":"object"},"message":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"parents":{"required":true,"type":"string[]"},"repo":{"required":true,"type":"string"},"tree":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/commits"},"createRef":{"method":"POST","params":{"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/refs"},"createReference":{"alias":"gitdata.createRef","deprecated":"`gitdata.createReference()` is deprecated, use `gitdata.createRef()`"},"createTag":{"method":"POST","params":{"message":{"required":true,"type":"string"},"object":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"tag":{"required":true,"type":"string"},"tagger":{"type":"object"},"tagger.date":{"type":"string"},"tagger.email":{"type":"string"},"tagger.name":{"type":"string"},"type":{"enum":["commit","tree","blob"],"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/tags"},"createTree":{"method":"POST","params":{"base_tree":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"tree":{"required":true,"type":"object[]"},"tree[].content":{"type":"string"},"tree[].mode":{"enum":["100644","100755","040000","160000","120000"],"type":"string"},"tree[].path":{"type":"string"},"tree[].sha":{"type":"string"},"tree[].type":{"enum":["blob","tree","commit"],"type":"string"}},"url":"/repos/:owner/:repo/git/trees"},"deleteRef":{"method":"DELETE","params":{"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/refs/:ref"},"deleteReference":{"alias":"gitdata.deleteRef","deprecated":"`gitdata.deleteReference()` is deprecated, use `gitdata.deleteRef()`"},"getBlob":{"method":"GET","params":{"file_sha":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"alias":"file_sha","deprecated":true}},"url":"/repos/:owner/:repo/git/blobs/:file_sha"},"getCommit":{"method":"GET","params":{"commit_sha":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"alias":"commit_sha","deprecated":true}},"url":"/repos/:owner/:repo/git/commits/:commit_sha"},"getCommitSignatureVerification":{"alias":"gitdata.getCommit","deprecated":"`gitdata.getCommitSignatureVerification()` is deprecated, use `gitdata.getCommit()`","params":{}},"getRef":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/refs/:ref"},"getReference":{"alias":"gitdata.getRef","deprecated":"`gitdata.getReference()` is deprecated, use `gitdata.getRef()`"},"getReferences":{"alias":"gitdata.listRefs","deprecated":"`gitdata.getReferences()` is deprecated, use `gitdata.listRefs()`"},"getTag":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"alias":"tag_sha","deprecated":true},"tag_sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/tags/:tag_sha"},"getTagSignatureVerification":{"alias":"gitdata.getTag","deprecated":"`gitdata.getTagSignatureVerification()` is deprecated, use `gitdata.getTag()`","params":{}},"getTags":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/refs/tags"},"getTree":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"recursive":{"enum":[1],"type":"integer"},"repo":{"required":true,"type":"string"},"sha":{"alias":"tree_sha","deprecated":true},"tree_sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/trees/:tree_sha"},"listRefs":{"method":"GET","params":{"namespace":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/refs/:namespace"},"updateRef":{"method":"PATCH","params":{"force":{"type":"boolean"},"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/refs/:ref"},"updateReference":{"alias":"gitdata.updateRef","deprecated":"`gitdata.updateReference()` is deprecated, use `gitdata.updateRef()`"}},"gitignore":{"getTemplate":{"method":"GET","params":{"name":{"required":true,"type":"string"}},"url":"/gitignore/templates/:name"},"listTemplates":{"method":"GET","params":{},"url":"/gitignore/templates"}},"integrations":{"addRepoToInstallation":{"alias":"apps.addRepoToInstallation","deprecated":"`integrations.addRepoToInstallation()` is deprecated, use `apps.addRepoToInstallation()`","params":{}},"createInstallationToken":{"alias":"apps.createInstallationToken","deprecated":"`integrations.createInstallationToken()` is deprecated, use `apps.createInstallationToken()`","params":{}},"getInstallationRepositories":{"alias":"apps.listRepos","deprecated":"`integrations.getInstallationRepositories()` is deprecated, use `apps.listRepos()`","params":{}},"getInstallations":{"alias":"apps.listInstallations","deprecated":"`integrations.getInstallations()` is deprecated, use `apps.listInstallations()`","params":{}},"removeRepoFromInstallation":{"alias":"apps.removeRepoFromInstallation","deprecated":"`integrations.removeRepoFromInstallation()` is deprecated, use `apps.removeRepoFromInstallation()`","params":{}}},"issues":{"addAssignees":{"method":"POST","params":{"assignees":{"type":"string[]"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/assignees"},"addAssigneesToIssue":{"alias":"issues.addAssignees","deprecated":"`issues.addAssigneesToIssue()` is deprecated, use `issues.addAssignees()`"},"addLabels":{"method":"POST","params":{"labels":{"required":true,"type":"string[]","mapTo":"data"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/labels"},"checkAssignee":{"method":"GET","params":{"assignee":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/assignees/:assignee"},"create":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"assignee":{"type":"string"},"assignees":{"type":"string[]"},"body":{"type":"string"},"labels":{"type":"string[]"},"milestone":{"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"title":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues"},"createComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"body":{"required":true,"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/comments"},"createLabel":{"method":"POST","params":{"color":{"required":true,"type":"string"},"description":{"type":"string"},"name":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/labels"},"createMilestone":{"method":"POST","params":{"description":{"type":"string"},"due_on":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"state":{"enum":["open","closed"],"type":"string"},"title":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/milestones"},"deleteComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"DELETE","params":{"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/comments/:comment_id"},"deleteLabel":{"method":"DELETE","params":{"name":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/labels/:name"},"deleteMilestone":{"method":"DELETE","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/milestones/:number"},"edit":{"alias":"issues.update","deprecated":"`issues.edit()` is deprecated, use `issues.update()`"},"editComment":{"alias":"issues.updateComment","deprecated":"`issues.editComment()` is deprecated, use `issues.updateComment()`"},"get":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number"},"getAll":{"alias":"issues.list","deprecated":"`issues.getAll()` is deprecated, use `issues.list()`"},"getAssignees":{"alias":"issues.listAssignees","deprecated":"`issues.getAssignees()` is deprecated, use `issues.listAssignees()`"},"getComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/comments/:comment_id"},"getComments":{"alias":"issues.listComments","deprecated":"`issues.getComments()` is deprecated, use `issues.listComments()`"},"getCommentsForRepo":{"alias":"issues.listCommentsForRepo","deprecated":"`issues.getCommentsForRepo()` is deprecated, use `issues.listCommentsForRepo()`"},"getEvent":{"method":"GET","params":{"event_id":{"required":true,"type":"integer"},"id":{"alias":"event_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/events/:event_id"},"getEvents":{"alias":"issues.listEvents","deprecated":"`issues.getEvents()` is deprecated, use `issues.listEvents()`"},"getEventsForRepo":{"alias":"issues.listEventsForRepo","deprecated":"`issues.getEventsForRepo()` is deprecated, use `issues.listEventsForRepo()`"},"getEventsTimeline":{"alias":"issues.listEventsForTimeline","deprecated":"`issues.getEventsTimeline()` is deprecated, use `issues.listEventsForTimeline()`"},"getForOrg":{"alias":"issues.listForOrg","deprecated":"`issues.getForOrg()` is deprecated, use `issues.listForOrg()`"},"getForRepo":{"alias":"issues.listForRepo","deprecated":"`issues.getForRepo()` is deprecated, use `issues.listForRepo()`"},"getForUser":{"alias":"issues.listForAuthenticatedUser","deprecated":"`issues.getForUser()` is deprecated, use `issues.listForAuthenticatedUser()`"},"getIssueLabels":{"alias":"issues.listLabelsOnIssue","deprecated":"`issues.getIssueLabels()` is deprecated, use `issues.listLabelsOnIssue()`"},"getLabel":{"method":"GET","params":{"name":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/labels/:name"},"getLabels":{"alias":"issues.listLabelsForRepo","deprecated":"`issues.getLabels()` is deprecated, use `issues.listLabelsForRepo()`"},"getMilestone":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/milestones/:number"},"getMilestoneLabels":{"alias":"issues.listLabelsForMilestone","deprecated":"`issues.getMilestoneLabels()` is deprecated, use `issues.listLabelsForMilestone()`"},"getMilestones":{"alias":"issues.listMilestonesForRepo","deprecated":"`issues.getMilestones()` is deprecated, use `issues.listMilestonesForRepo()`"},"list":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"filter":{"enum":["assigned","created","mentioned","subscribed","all"],"type":"string"},"labels":{"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"},"sort":{"enum":["created","updated","comments"],"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/issues"},"listAssignees":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/assignees"},"listComments":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"since":{"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/comments"},"listCommentsForRepo":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"since":{"type":"string"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/repos/:owner/:repo/issues/comments"},"listEvents":{"method":"GET","params":{"issue_number":{"alias":"number","deprecated":true},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/events"},"listEventsForRepo":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/events"},"listEventsForTimeline":{"headers":{"accept":"application/vnd.github.mockingbird-preview+json"},"method":"GET","params":{"issue_number":{"alias":"number","deprecated":true},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/timeline"},"listForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"filter":{"enum":["assigned","created","mentioned","subscribed","all"],"type":"string"},"labels":{"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"},"sort":{"enum":["created","updated","comments"],"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/user/issues"},"listForOrg":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"filter":{"enum":["assigned","created","mentioned","subscribed","all"],"type":"string"},"labels":{"type":"string"},"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"},"sort":{"enum":["created","updated","comments"],"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/orgs/:org/issues"},"listForRepo":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"assignee":{"type":"string"},"creator":{"type":"string"},"direction":{"enum":["asc","desc"],"type":"string"},"labels":{"type":"string"},"mentioned":{"type":"string"},"milestone":{"type":"string","validation":"^([0-9]+|none|\\*)$"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"since":{"type":"string"},"sort":{"enum":["created","updated","comments"],"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/repos/:owner/:repo/issues"},"listLabelsForMilestone":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/milestones/:number/labels"},"listLabelsForRepo":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/labels"},"listLabelsOnIssue":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/labels"},"listMilestonesForRepo":{"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"sort":{"enum":["due_on","completeness"],"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/repos/:owner/:repo/milestones"},"lock":{"method":"PUT","params":{"lock_reason":{"enum":["off-topic","too heated","resolved","spam"],"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/lock"},"removeAllLabels":{"alias":"issues.removeLabels","deprecated":"`issues.removeAllLabels()` is deprecated, use `issues.removeLabels()`"},"removeAssignees":{"method":"DELETE","params":{"assignees":{"type":"string[]"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/assignees"},"removeAssigneesFromIssue":{"alias":"issues.removeAssignees","deprecated":"`issues.removeAssigneesFromIssue()` is deprecated, use `issues.removeAssignees()`"},"removeLabel":{"method":"DELETE","params":{"name":{"required":true,"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/labels/:name"},"removeLabels":{"method":"DELETE","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/labels"},"replaceAllLabels":{"alias":"issues.replaceLabels","deprecated":"`issues.replaceAllLabels()` is deprecated, use `issues.replaceLabels()`"},"replaceLabels":{"method":"PUT","params":{"labels":{"type":"string[]"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/labels"},"unlock":{"method":"DELETE","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/lock"},"update":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"PATCH","params":{"assignee":{"type":"string"},"assignees":{"type":"string[]"},"body":{"type":"string"},"labels":{"type":"string[]"},"milestone":{"allowNull":true,"type":"integer"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"state":{"enum":["open","closed"],"type":"string"},"title":{"type":"string"}},"url":"/repos/:owner/:repo/issues/:number"},"updateComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"PATCH","params":{"body":{"required":true,"type":"string"},"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/comments/:comment_id"},"updateLabel":{"method":"PATCH","params":{"color":{"type":"string"},"current_name":{"required":true,"type":"string"},"description":{"type":"string"},"name":{"type":"string"},"oldname":{"alias":"current_name","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/labels/:current_name"},"updateMilestone":{"method":"PATCH","params":{"description":{"type":"string"},"due_on":{"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"state":{"enum":["open","closed"],"type":"string"},"title":{"type":"string"}},"url":"/repos/:owner/:repo/milestones/:number"}},"licenses":{"get":{"method":"GET","params":{"license":{"required":true,"type":"string"}},"url":"/licenses/:license"},"getForRepo":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/license"},"list":{"method":"GET","params":{},"url":"/licenses"}},"markdown":{"render":{"method":"POST","params":{"context":{"type":"string"},"mode":{"enum":["markdown","gfm"],"type":"string"},"text":{"required":true,"type":"string"}},"url":"/markdown"},"renderRaw":{"headers":{"content-type":"text/plain; charset=utf-8"},"method":"POST","params":{"data":{"mapTo":"data","required":true,"type":"string"}},"url":"/markdown/raw"}},"meta":{"get":{"method":"GET","params":{},"url":"/meta"}},"migrations":{"cancelImport":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"DELETE","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/import"},"deleteArchiveForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"DELETE","params":{"migration_id":{"required":true,"type":"integer"}},"url":"/user/migrations/:migration_id/archive"},"deleteArchiveForOrg":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"DELETE","params":{"id":{"alias":"migration_id","deprecated":true},"migration_id":{"required":true,"type":"integer"},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/migrations/:migration_id/archive"},"deleteMigrationArchive":{"alias":"migrations.deleteArchiveForOrg","deprecated":"`migrations.deleteMigrationArchive()` is deprecated, use `migrations.deleteArchiveForOrg()`"},"getArchiveForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"GET","params":{"migration_id":{"required":true,"type":"integer"}},"url":"/user/migrations/:migration_id/archive"},"getArchiveForOrg":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"GET","params":{"id":{"alias":"migration_id","deprecated":true},"migration_id":{"required":true,"type":"integer"},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/migrations/:migration_id/archive"},"getCommitAuthors":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"since":{"type":"string"}},"url":"/repos/:owner/:repo/import/authors"},"getImportCommitAuthors":{"alias":"migrations.getCommitAuthors","deprecated":"`migrations.getImportCommitAuthors()` is deprecated, use `migrations.getCommitAuthors()`"},"getImportProgress":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/import"},"getLargeFiles":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"GET","params":{"name":{"alias":"repo","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/import/large_files"},"getLargeImportFiles":{"alias":"migrations.getLargeFiles","deprecated":"`migrations.getLargeImportFiles()` is deprecated, use `migrations.getLargeFiles()`"},"getMigrationArchiveLink":{"alias":"migrations.getArchiveForOrg","deprecated":"`migrations.getMigrationArchiveLink()` is deprecated, use `migrations.getArchiveForOrg()`"},"getMigrationStatus":{"alias":"migrations.getStatusForOrg","deprecated":"`migrations.getMigrationStatus()` is deprecated, use `migrations.getStatusForOrg()`"},"getMigrations":{"alias":"migrations.listForOrg","deprecated":"`migrations.getMigrations()` is deprecated, use `migrations.listForOrg()`"},"getStatusForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"GET","params":{"migration_id":{"required":true,"type":"integer"}},"url":"/user/migrations/:migration_id"},"getStatusForOrg":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"GET","params":{"id":{"alias":"migration_id","deprecated":true},"migration_id":{"required":true,"type":"integer"},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/migrations/:migration_id"},"listForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/migrations"},"listForOrg":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/migrations"},"mapCommitAuthor":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"PATCH","params":{"author_id":{"required":true,"type":"integer"},"email":{"type":"string"},"name":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/import/authors/:author_id"},"mapImportCommitAuthor":{"alias":"migrations.mapCommitAuthor","deprecated":"`migrations.mapImportCommitAuthor()` is deprecated, use `migrations.mapCommitAuthor()`"},"setImportLfsPreference":{"alias":"migrations.setLfsPreference","deprecated":"`migrations.setImportLfsPreference()` is deprecated, use `migrations.setLfsPreference()`"},"setLfsPreference":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"PATCH","params":{"name":{"alias":"repo","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"use_lfs":{"enum":["opt_in","opt_out"],"required":true,"type":"string"}},"url":"/repos/:owner/:repo/import/lfs"},"startForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"POST","params":{"exclude_attachments":{"type":"boolean"},"lock_repositories":{"type":"boolean"},"repositories":{"required":true,"type":"string[]"}},"url":"/user/migrations"},"startForOrg":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"POST","params":{"exclude_attachments":{"type":"boolean"},"lock_repositories":{"type":"boolean"},"org":{"required":true,"type":"string"},"repositories":{"required":true,"type":"string[]"}},"url":"/orgs/:org/migrations"},"startImport":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"PUT","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"tfvc_project":{"type":"string"},"vcs":{"enum":["subversion","git","mercurial","tfvc"],"type":"string"},"vcs_password":{"type":"string"},"vcs_url":{"required":true,"type":"string"},"vcs_username":{"type":"string"}},"url":"/repos/:owner/:repo/import"},"startMigration":{"alias":"migrations.startForOrg","deprecated":"`migrations.startMigration()` is deprecated, use `migrations.startForOrg()`"},"unlockRepoForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"DELETE","params":{"migration_id":{"required":true,"type":"integer"},"repo_name":{"required":true,"type":"string"}},"url":"/user/migrations/:migration_id/repos/:repo_name/lock"},"unlockRepoForOrg":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"DELETE","params":{"id":{"alias":"migration_id","deprecated":true},"migration_id":{"required":true,"type":"integer"},"org":{"required":true,"type":"string"},"repo_name":{"required":true,"type":"string"}},"url":"/orgs/:org/migrations/:migration_id/repos/:repo_name/lock"},"unlockRepoLockedForMigration":{"alias":"migrations.unlockRepoForOrg","deprecated":"`migrations.unlockRepoLockedForMigration()` is deprecated, use `migrations.unlockRepoForOrg()`"},"updateImport":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"PATCH","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"vcs_password":{"type":"string"},"vcs_username":{"type":"string"}},"url":"/repos/:owner/:repo/import"}},"misc":{"getCodeOfConduct":{"alias":"codesOfConduct.getConductCode","deprecated":"`misc.getCodeOfConduct()` is deprecated, use `codesOfConduct.getConductCode()`"},"getCodesOfConduct":{"alias":"codesOfConduct.listConductCodes","deprecated":"`misc.getCodesOfConduct()` is deprecated, use `codesOfConduct.listConductCodes()`"},"getEmojis":{"alias":"emojis.get","deprecated":"`misc.getEmojis()` is deprecated, use `emojis.get()`","params":{}},"getGitignoreTemplate":{"alias":"gitignore.getTemplate","deprecated":"`misc.getGitignoreTemplate()` is deprecated, use `gitignore.getTemplate()`"},"getGitignoreTemplates":{"alias":"gitignore.listTemplates","deprecated":"`misc.getGitignoreTemplates()` is deprecated, use `gitignore.listTemplates()`"},"getLicense":{"alias":"licenses.get","deprecated":"`misc.getLicense()` is deprecated, use `licenses.get()`"},"getLicenses":{"alias":"licenses.list","deprecated":"`misc.getLicenses()` is deprecated, use `licenses.list()`"},"getMeta":{"alias":"meta.get","deprecated":"`misc.getMeta()` is deprecated, use `meta.get()`","params":{}},"getRateLimit":{"alias":"rateLimit.get","deprecated":"`misc.getRateLimit()` is deprecated, use `rateLimit.get()`"},"getRepoCodeOfConduct":{"alias":"codesOfConduct.getForRepo","deprecated":"`misc.getRepoCodeOfConduct()` is deprecated, use `codesOfConduct.getForRepo()`"},"getRepoLicense":{"alias":"licenses.getForRepo","deprecated":"`misc.getRepoLicense()` is deprecated, use `licenses.getForRepo()`"},"renderMarkdown":{"alias":"markdown.render","deprecated":"`misc.renderMarkdown()` is deprecated, use `markdown.render()`"},"renderMarkdownRaw":{"alias":"markdown.renderRaw","deprecated":"`misc.renderMarkdownRaw()` is deprecated, use `markdown.renderRaw()`"}},"orgs":{"addOrUpdateMembership":{"method":"PUT","params":{"org":{"required":true,"type":"string"},"role":{"enum":["admin","member"],"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/memberships/:username"},"addOrgMembership":{"alias":"orgs.addOrUpdateMembership","deprecated":"`orgs.addOrgMembership()` is deprecated, use `orgs.addOrUpdateMembership()`"},"addTeamMembership":{"alias":"teams.addOrUpdateMembership","deprecated":"`orgs.addTeamMembership()` is deprecated, use `teams.addOrUpdateMembership()`"},"addTeamRepo":{"alias":"teams.addOrUpdateRepo","deprecated":"`orgs.addTeamRepo()` is deprecated, use `teams.addOrUpdateRepo()`"},"blockUser":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"PUT","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/blocks/:username"},"checkBlockedUser":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"GET","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/blocks/:username"},"checkMembership":{"method":"GET","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/members/:username"},"checkPublicMembership":{"method":"GET","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/public_members/:username"},"checkTeamRepo":{"alias":"teams.checkManagesRepo","deprecated":"`orgs.checkTeamRepo()` is deprecated, use `teams.checkManagesRepo()`"},"concealMembership":{"method":"DELETE","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/public_members/:username"},"convertMemberToOutsideCollaborator":{"method":"PUT","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/outside_collaborators/:username"},"createHook":{"method":"POST","params":{"active":{"type":"boolean"},"config":{"required":true,"type":"object"},"config.content_type":{"type":"string"},"config.insecure_ssl":{"type":"string"},"config.secret":{"type":"string"},"config.url":{"required":true,"type":"string"},"events":{"type":"string[]"},"name":{"required":true,"type":"string"},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/hooks"},"createInvitation":{"headers":{"accept":"application/vnd.github.dazzler-preview+json"},"method":"POST","params":{"email":{"type":"string"},"invitee_id":{"type":"integer"},"org":{"required":true,"type":"string"},"role":{"enum":["admin","direct_member","billing_manager"],"type":"string"},"team_ids":{"type":"integer[]"}},"url":"/orgs/:org/invitations"},"createTeam":{"alias":"teams.create","deprecated":"`orgs.createTeam()` is deprecated, use `teams.create()`"},"deleteHook":{"method":"DELETE","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/hooks/:hook_id"},"deleteTeam":{"alias":"teams.delete","deprecated":"`orgs.deleteTeam()` is deprecated, use `teams.delete()`"},"deleteTeamRepo":{"alias":"teams.removeRepo","deprecated":"`orgs.deleteTeamRepo()` is deprecated, use `teams.removeRepo()`"},"editHook":{"alias":"orgs.updateHook","deprecated":"`orgs.editHook()` is deprecated, use `orgs.updateHook()`"},"editTeam":{"alias":"teams.update","deprecated":"`orgs.editTeam()` is deprecated, use `teams.update()`"},"get":{"method":"GET","params":{"org":{"required":true,"type":"string"}},"url":"/orgs/:org"},"getAll":{"alias":"orgs.list","deprecated":"`orgs.getAll()` is deprecated, use `orgs.list()`"},"getBlockedUsers":{"alias":"orgs.listBlockedUsers","deprecated":"`orgs.getBlockedUsers()` is deprecated, use `orgs.listBlockedUsers()`"},"getChildTeams":{"alias":"teams.listChild","deprecated":"`orgs.getChildTeams()` is deprecated, use `teams.listChild()`"},"getForUser":{"alias":"orgs.listForUser","deprecated":"`orgs.getForUser()` is deprecated, use `orgs.listForUser()`"},"getHook":{"method":"GET","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/hooks/:hook_id"},"getHooks":{"alias":"orgs.listHooks","deprecated":"`orgs.getHooks()` is deprecated, use `orgs.listHooks()`"},"getInvitationTeams":{"alias":"orgs.listInvitationTeams","deprecated":"`orgs.getInvitationTeams()` is deprecated, use `orgs.listInvitationTeams()`"},"getMembers":{"alias":"orgs.listMembers","deprecated":"`orgs.getMembers()` is deprecated, use `orgs.listMembers()`"},"getMembership":{"method":"GET","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/memberships/:username"},"getMembershipForAuthenticatedUser":{"method":"GET","params":{"org":{"required":true,"type":"string"}},"url":"/user/memberships/orgs/:org"},"getOrgMembership":{"alias":"orgs.getMembership","deprecated":"`orgs.getOrgMembership()` is deprecated, use `orgs.getMembership()`"},"getOutsideCollaborators":{"alias":"orgs.listOutsideCollaborators","deprecated":"`orgs.getOutsideCollaborators()` is deprecated, use `orgs.listOutsideCollaborators()`"},"getPendingOrgInvites":{"alias":"orgs.listPendingInvitations","deprecated":"`orgs.getPendingOrgInvites()` is deprecated, use `orgs.listPendingInvitations()`"},"getPendingTeamInvites":{"alias":"teams.listPendingInvitations","deprecated":"`orgs.getPendingTeamInvites()` is deprecated, use `teams.listPendingInvitations()`"},"getPublicMembers":{"alias":"orgs.listPublicMembers","deprecated":"`orgs.getPublicMembers()` is deprecated, use `orgs.listPublicMembers()`"},"getTeam":{"alias":"teams.get","deprecated":"`orgs.getTeam()` is deprecated, use `teams.get()`"},"getTeamMembers":{"alias":"teams.listMembers","deprecated":"`orgs.getTeamMembers()` is deprecated, use `teams.listMembers()`"},"getTeamMembership":{"alias":"teams.getMembership","deprecated":"`orgs.getTeamMembership()` is deprecated, use `teams.getMembership()`"},"getTeamRepos":{"alias":"teams.listRepos","deprecated":"`orgs.getTeamRepos()` is deprecated, use `teams.listRepos()`"},"getTeams":{"alias":"teams.list","deprecated":"`orgs.getTeams()` is deprecated, use `teams.list()`"},"list":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/organizations"},"listBlockedUsers":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"GET","params":{"org":{"required":true,"type":"string"}},"url":"/orgs/:org/blocks"},"listForAuthenticatedUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/orgs"},"listForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/orgs"},"listHooks":{"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/hooks"},"listInvitationTeams":{"method":"GET","params":{"invitation_id":{"required":true,"type":"integer"},"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/invitations/:invitation_id/teams"},"listMembers":{"method":"GET","params":{"filter":{"enum":["2fa_disabled","all"],"type":"string"},"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"role":{"enum":["all","admin","member"],"type":"string"}},"url":"/orgs/:org/members"},"listMemberships":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"state":{"enum":["active","pending"],"type":"string"}},"url":"/user/memberships/orgs"},"listOutsideCollaborators":{"method":"GET","params":{"filter":{"enum":["2fa_disabled","all"],"type":"string"},"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/outside_collaborators"},"listPendingInvitations":{"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/invitations"},"listPublicMembers":{"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/public_members"},"pingHook":{"method":"POST","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/hooks/:hook_id/pings"},"publicizeMembership":{"method":"PUT","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/public_members/:username"},"removeMember":{"method":"DELETE","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/members/:username"},"removeMembership":{"method":"DELETE","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/memberships/:username"},"removeOrgMembership":{"alias":"orgs.removeMembership","deprecated":"`orgs.removeOrgMembership()` is deprecated, use `orgs.removeMembership()`"},"removeOutsideCollaborator":{"method":"DELETE","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/outside_collaborators/:username"},"removeTeamMembership":{"alias":"teams.removeMembership","deprecated":"`orgs.removeTeamMembership()` is deprecated, use `teams.removeMembership()`"},"unblockUser":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"DELETE","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/blocks/:username"},"update":{"method":"PATCH","params":{"billing_email":{"type":"string"},"company":{"type":"string"},"default_repository_permission":{"enum":["read","write","admin","none"],"type":"string"},"description":{"type":"string"},"email":{"type":"string"},"has_organization_projects":{"type":"boolean"},"has_repository_projects":{"type":"boolean"},"location":{"type":"string"},"members_can_create_repositories":{"type":"boolean"},"name":{"type":"string"},"org":{"required":true,"type":"string"}},"url":"/orgs/:org"},"updateHook":{"method":"PATCH","params":{"active":{"type":"boolean"},"config":{"type":"object"},"config.content_type":{"type":"string"},"config.insecure_ssl":{"type":"string"},"config.secret":{"type":"string"},"config.url":{"required":true,"type":"string"},"events":{"type":"string[]"},"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/hooks/:hook_id"},"updateMembership":{"method":"PATCH","params":{"org":{"required":true,"type":"string"},"state":{"enum":["active"],"required":true,"type":"string"}},"url":"/user/memberships/orgs/:org"}},"projects":{"addCollaborator":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"PUT","params":{"id":{"alias":"project_id","deprecated":true},"permission":{"enum":["read","write","admin"],"type":"string"},"project_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/projects/:project_id/collaborators/:username"},"createCard":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"POST","params":{"column_id":{"required":true,"type":"integer"},"content_id":{"type":"integer"},"content_type":{"type":"string"},"note":{"type":"string"}},"url":"/projects/columns/:column_id/cards"},"createColumn":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"POST","params":{"id":{"alias":"project_id","deprecated":true},"name":{"required":true,"type":"string"},"project_id":{"required":true,"type":"integer"}},"url":"/projects/:project_id/columns"},"createForOrg":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"POST","params":{"body":{"type":"string"},"name":{"required":true,"type":"string"},"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/projects"},"createForRepo":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"POST","params":{"body":{"type":"string"},"name":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/projects"},"createOrgProject":{"alias":"projects.createForOrg","deprecated":"`projects.createOrgProject()` is deprecated, use `projects.createForOrg()`"},"createProjectCard":{"alias":"projects.createCard","deprecated":"`projects.createProjectCard()` is deprecated, use `projects.createCard()`"},"createProjectColumn":{"alias":"projects.createColumn","deprecated":"`projects.createProjectColumn()` is deprecated, use `projects.createColumn()`"},"createRepoProject":{"alias":"projects.createForRepo","deprecated":"`projects.createRepoProject()` is deprecated, use `projects.createForRepo()`"},"delete":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"DELETE","params":{"id":{"alias":"project_id","deprecated":true},"project_id":{"required":true,"type":"integer"}},"url":"/projects/:project_id"},"deleteCard":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"DELETE","params":{"card_id":{"required":true,"type":"integer"},"id":{"alias":"card_id","deprecated":true}},"url":"/projects/columns/cards/:card_id"},"deleteColumn":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"DELETE","params":{"column_id":{"required":true,"type":"integer"},"id":{"alias":"column_id","deprecated":true}},"url":"/projects/columns/:column_id"},"deleteProject":{"alias":"projects.delete","deprecated":"`projects.deleteProject()` is deprecated, use `projects.delete()`"},"deleteProjectCard":{"alias":"projects.deleteCard","deprecated":"`projects.deleteProjectCard()` is deprecated, use `projects.deleteCard()`"},"deleteProjectColumn":{"alias":"projects.deleteColumn","deprecated":"`projects.deleteProjectColumn()` is deprecated, use `projects.deleteColumn()`"},"get":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"id":{"alias":"project_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"project_id":{"required":true,"type":"integer"}},"url":"/projects/:project_id"},"getCard":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"card_id":{"required":true,"type":"integer"},"id":{"alias":"card_id","deprecated":true}},"url":"/projects/columns/cards/:card_id"},"getCollaborators":{"alias":"projects.listCollaborators","deprecated":"`projects.getCollaborators()` is deprecated, use `projects.listCollaborators()`"},"getColumn":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"column_id":{"required":true,"type":"integer"},"id":{"alias":"column_id","deprecated":true}},"url":"/projects/columns/:column_id"},"getOrgProjects":{"alias":"projects.listForOrg","deprecated":"`projects.getOrgProjects()` is deprecated, use `projects.listForOrg()`"},"getProject":{"alias":"projects.get","deprecated":"`projects.getProject()` is deprecated, use `projects.get()`"},"getProjectCard":{"alias":"projects.getCard","deprecated":"`projects.getProjectCard()` is deprecated, use `projects.getCard()`"},"getProjectCards":{"alias":"projects.listCards","deprecated":"`projects.getProjectCards()` is deprecated, use `projects.listCards()`"},"getProjectColumn":{"alias":"projects.getColumn","deprecated":"`projects.getProjectColumn()` is deprecated, use `projects.getColumn()`"},"getProjectColumns":{"alias":"projects.listColumns","deprecated":"`projects.getProjectColumns()` is deprecated, use `projects.listColumns()`"},"getRepoProjects":{"alias":"projects.listForRepo","deprecated":"`projects.getRepoProjects()` is deprecated, use `projects.listForRepo()`"},"getUserPermissionLevel":{"alias":"projects.reviewUserPermissionLevel","deprecated":"`projects.getUserPermissionLevel()` is deprecated, use `projects.reviewUserPermissionLevel()`"},"listCards":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"archived_state":{"enum":["all","archived","not_archived"],"type":"string"},"column_id":{"required":true,"type":"integer"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/projects/columns/:column_id/cards"},"listCollaborators":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"affiliation":{"enum":["outside","direct","all"],"type":"string"},"id":{"alias":"project_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"project_id":{"required":true,"type":"integer"}},"url":"/projects/:project_id/collaborators"},"listColumns":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"id":{"alias":"project_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"project_id":{"required":true,"type":"integer"}},"url":"/projects/:project_id/columns"},"listForOrg":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/orgs/:org/projects"},"listForRepo":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/repos/:owner/:repo/projects"},"moveCard":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"POST","params":{"card_id":{"required":true,"type":"integer"},"column_id":{"type":"integer"},"id":{"alias":"card_id","deprecated":true},"position":{"required":true,"type":"string","validation":"^(top|bottom|after:\\d+)$"}},"url":"/projects/columns/cards/:card_id/moves"},"moveColumn":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"POST","params":{"column_id":{"required":true,"type":"integer"},"id":{"alias":"column_id","deprecated":true},"position":{"required":true,"type":"string","validation":"^(first|last|after:\\d+)$"}},"url":"/projects/columns/:column_id/moves"},"moveProjectCard":{"alias":"projects.moveCard","deprecated":"`projects.moveProjectCard()` is deprecated, use `projects.moveCard()`"},"moveProjectColumn":{"alias":"projects.moveColumn","deprecated":"`projects.moveProjectColumn()` is deprecated, use `projects.moveColumn()`"},"removeCollaborator":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"DELETE","params":{"id":{"alias":"project_id","deprecated":true},"project_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/projects/:project_id/collaborators/:username"},"reviewUserPermissionLevel":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"id":{"alias":"project_id","deprecated":true},"project_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/projects/:project_id/collaborators/:username/permission"},"update":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"PATCH","params":{"body":{"type":"string"},"id":{"alias":"project_id","deprecated":true},"name":{"type":"string"},"organization_permission":{"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"project_id":{"required":true,"type":"integer"},"public":{"type":"boolean"},"state":{"enum":["open","closed"],"type":"string"}},"url":"/projects/:project_id"},"updateCard":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"PATCH","params":{"archived":{"type":"boolean"},"card_id":{"required":true,"type":"integer"},"id":{"alias":"card_id","deprecated":true},"note":{"type":"string"}},"url":"/projects/columns/cards/:card_id"},"updateColumn":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"PATCH","params":{"column_id":{"required":true,"type":"integer"},"id":{"alias":"column_id","deprecated":true},"name":{"required":true,"type":"string"}},"url":"/projects/columns/:column_id"},"updateProject":{"alias":"projects.update","deprecated":"`projects.updateProject()` is deprecated, use `projects.update()`"},"updateProjectCard":{"alias":"projects.updateCard","deprecated":"`projects.updateProjectCard()` is deprecated, use `projects.updateCard()`"},"updateProjectColumn":{"alias":"projects.updateColumn","deprecated":"`projects.updateProjectColumn()` is deprecated, use `projects.updateColumn()`"}},"pullRequests":{"checkIfMerged":{"headers":{"accept":"application/vnd.github.polaris-preview"},"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/merge"},"checkMerged":{"alias":"pullRequests.checkIfMerged","deprecated":"`pullRequests.checkMerged()` is deprecated, use `pullRequests.checkIfMerged()`"},"create":{"method":"POST","params":{"base":{"required":true,"type":"string"},"body":{"type":"string"},"head":{"required":true,"type":"string"},"maintainer_can_modify":{"type":"boolean"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"title":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls"},"createComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"body":{"required":true,"type":"string"},"commit_id":{"required":true,"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"path":{"required":true,"type":"string"},"position":{"required":true,"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/comments"},"createCommentReply":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"body":{"required":true,"type":"string"},"in_reply_to":{"required":true,"type":"integer"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/comments"},"createFromIssue":{"method":"POST","params":{"base":{"required":true,"type":"string"},"head":{"required":true,"type":"string"},"issue":{"required":true,"type":"integer"},"maintainer_can_modify":{"type":"boolean"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls"},"createReview":{"method":"POST","params":{"body":{"type":"string"},"comments":{"type":"object[]"},"comments[].body":{"required":true,"type":"string"},"comments[].path":{"required":true,"type":"string"},"comments[].position":{"required":true,"type":"integer"},"commit_id":{"type":"string"},"event":{"enum":["APPROVE","REQUEST_CHANGES","COMMENT"],"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/reviews"},"createReviewRequest":{"method":"POST","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"reviewers":{"type":"string[]"},"team_reviewers":{"type":"string[]"}},"url":"/repos/:owner/:repo/pulls/:number/requested_reviewers"},"deleteComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"DELETE","params":{"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/comments/:comment_id"},"deletePendingReview":{"method":"DELETE","params":{"id":{"alias":"review_id","deprecated":true},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"review_id":{"required":true,"type":"integer"}},"url":"/repos/:owner/:repo/pulls/:number/reviews/:review_id"},"deleteReviewRequest":{"method":"DELETE","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"reviewers":{"type":"string[]"},"team_reviewers":{"type":"string[]"}},"url":"/repos/:owner/:repo/pulls/:number/requested_reviewers"},"dismissReview":{"method":"PUT","params":{"id":{"alias":"review_id","deprecated":true},"message":{"required":true,"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"review_id":{"required":true,"type":"integer"}},"url":"/repos/:owner/:repo/pulls/:number/reviews/:review_id/dismissals"},"editComment":{"alias":"pullRequests.updateComment","deprecated":"`pullRequests.editComment()` is deprecated, use `pullRequests.updateComment()`"},"get":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number"},"getAll":{"alias":"pullRequests.list","deprecated":"`pullRequests.getAll()` is deprecated, use `pullRequests.list()`"},"getComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/comments/:comment_id"},"getComments":{"alias":"pullRequests.listComments","deprecated":"`pullRequests.getComments()` is deprecated, use `pullRequests.listComments()`"},"getCommentsForRepo":{"alias":"pullRequests.listCommentsForRepo","deprecated":"`pullRequests.getCommentsForRepo()` is deprecated, use `pullRequests.listCommentsForRepo()`"},"getCommentsForReview":{"method":"GET","params":{"id":{"alias":"review_id","deprecated":true},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"review_id":{"required":true,"type":"integer"}},"url":"/repos/:owner/:repo/pulls/:number/reviews/:review_id/comments"},"getCommits":{"alias":"pullRequests.listCommits","deprecated":"`pullRequests.getCommits()` is deprecated, use `pullRequests.listCommits()`"},"getFiles":{"alias":"pullRequests.listFiles","deprecated":"`pullRequests.getFiles()` is deprecated, use `pullRequests.listFiles()`"},"getReview":{"method":"GET","params":{"id":{"alias":"review_id","deprecated":true},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"review_id":{"required":true,"type":"integer"}},"url":"/repos/:owner/:repo/pulls/:number/reviews/:review_id"},"getReviewComments":{"alias":"pullRequests.getCommentsForReview","deprecated":"`pullRequests.getReviewComments()` is deprecated, use `pullRequests.getCommentsForReview()`"},"getReviewRequests":{"alias":"pullRequests.listReviewRequests","deprecated":"`pullRequests.getReviewRequests()` is deprecated, use `pullRequests.listReviewRequests()`"},"getReviews":{"alias":"pullRequests.listReviews","deprecated":"`pullRequests.getReviews()` is deprecated, use `pullRequests.listReviews()`"},"list":{"method":"GET","params":{"base":{"type":"string"},"direction":{"enum":["asc","desc"],"type":"string"},"head":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"sort":{"enum":["created","updated","popularity","long-running"],"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/repos/:owner/:repo/pulls"},"listComments":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"since":{"type":"string"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/comments"},"listCommentsForRepo":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"since":{"type":"string"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/repos/:owner/:repo/pulls/comments"},"listCommits":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/commits"},"listFiles":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/files"},"listReviewRequests":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/requested_reviewers"},"listReviews":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/reviews"},"merge":{"headers":{"accept":"application/vnd.github.polaris-preview"},"method":"PUT","params":{"commit_message":{"type":"string"},"commit_title":{"type":"string"},"merge_method":{"enum":["merge","squash","rebase"],"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/merge"},"submitReview":{"method":"POST","params":{"body":{"type":"string"},"event":{"enum":["APPROVE","REQUEST_CHANGES","COMMENT"],"required":true,"type":"string"},"id":{"alias":"review_id","deprecated":true},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"review_id":{"required":true,"type":"integer"}},"url":"/repos/:owner/:repo/pulls/:number/reviews/:review_id/events"},"update":{"method":"PATCH","params":{"base":{"type":"string"},"body":{"type":"string"},"maintainer_can_modify":{"type":"boolean"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"state":{"enum":["open","closed"],"type":"string"},"title":{"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number"},"updateComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"PATCH","params":{"body":{"required":true,"type":"string"},"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/comments/:comment_id"}},"rateLimit":{"get":{"method":"GET","params":{},"url":"/rate_limit"}},"reactions":{"createForCommitComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"comment_id":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"required":true,"type":"string"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/comments/:comment_id/reactions"},"createForIssue":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"required":true,"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/reactions"},"createForIssueComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"comment_id":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"required":true,"type":"string"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/comments/:comment_id/reactions"},"createForPullRequestReviewComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"comment_id":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"required":true,"type":"string"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/comments/:comment_id/reactions"},"createForTeamDiscussion":{"headers":{"accept":"application/vnd.github.echo-preview+json,application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"required":true,"type":"string"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/reactions"},"createForTeamDiscussionComment":{"headers":{"accept":"application/vnd.github.echo-preview+json,application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"comment_number":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"required":true,"type":"string"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments/:comment_number/reactions"},"delete":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"DELETE","params":{"id":{"alias":"reaction_id","deprecated":true},"reaction_id":{"required":true,"type":"integer"}},"url":"/reactions/:reaction_id"},"getForCommitComment":{"alias":"reactions.listForCommitComment","deprecated":"`reactions.getForCommitComment()` is deprecated, use `reactions.listForCommitComment()`"},"getForIssue":{"alias":"reactions.listForIssue","deprecated":"`reactions.getForIssue()` is deprecated, use `reactions.listForIssue()`"},"getForIssueComment":{"alias":"reactions.listForIssueComment","deprecated":"`reactions.getForIssueComment()` is deprecated, use `reactions.listForIssueComment()`"},"getForPullRequestReviewComment":{"alias":"reactions.listForPullRequestReviewComment","deprecated":"`reactions.getForPullRequestReviewComment()` is deprecated, use `reactions.listForPullRequestReviewComment()`"},"getForTeamDiscussion":{"alias":"reactions.listForTeamDiscussion","deprecated":"`reactions.getForTeamDiscussion()` is deprecated, use `reactions.listForTeamDiscussion()`"},"getForTeamDiscussionComment":{"alias":"reactions.listForTeamDiscussionComment","deprecated":"`reactions.getForTeamDiscussionComment()` is deprecated, use `reactions.listForTeamDiscussionComment()`"},"listForCommitComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"type":"string"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/comments/:comment_id/reactions"},"listForIssue":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/reactions"},"listForIssueComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"type":"string"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/comments/:comment_id/reactions"},"listForPullRequestReviewComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"type":"string"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/comments/:comment_id/reactions"},"listForTeamDiscussion":{"headers":{"accept":"application/vnd.github.echo-preview+json,application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"type":"string"},"discussion_number":{"required":true,"type":"integer"},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/reactions"},"listForTeamDiscussionComment":{"headers":{"accept":"application/vnd.github.echo-preview+json,application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"comment_number":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"type":"string"},"discussion_number":{"required":true,"type":"integer"},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments/:comment_number/reactions"}},"repos":{"acceptInvitation":{"method":"PATCH","params":{"invitation_id":{"required":true,"type":"integer"}},"url":"/user/repository_invitations/:invitation_id"},"addCollaborator":{"method":"PUT","params":{"owner":{"required":true,"type":"string"},"permission":{"enum":["pull","push","admin"],"type":"string"},"repo":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/collaborators/:username"},"addDeployKey":{"method":"POST","params":{"key":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"read_only":{"type":"boolean"},"repo":{"required":true,"type":"string"},"title":{"type":"string"}},"url":"/repos/:owner/:repo/keys"},"addProtectedBranchAdminEnforcement":{"method":"POST","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/enforce_admins"},"addProtectedBranchRequiredSignatures":{"headers":{"accept":"application/vnd.github.zzzax-preview+json"},"method":"POST","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_signatures"},"addProtectedBranchRequiredStatusChecksContexts":{"method":"POST","params":{"branch":{"required":true,"type":"string"},"contexts":{"mapTo":"data","required":true,"type":"string[]"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks/contexts"},"addProtectedBranchTeamRestrictions":{"method":"POST","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"teams":{"mapTo":"data","required":true,"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/teams"},"addProtectedBranchUserRestrictions":{"method":"POST","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"users":{"mapTo":"data","required":true,"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/users"},"checkCollaborator":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/collaborators/:username"},"compareCommits":{"method":"GET","params":{"base":{"required":true,"type":"string"},"head":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/compare/:base...:head"},"create":{"alias":"repos.createForAuthenticatedUser","deprecated":"`repos.create()` is deprecated, use `repos.createForAuthenticatedUser()`"},"createCommitComment":{"method":"POST","params":{"body":{"required":true,"type":"string"},"line":{"type":"integer"},"owner":{"required":true,"type":"string"},"path":{"type":"string"},"position":{"type":"integer"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:sha/comments"},"createDeployment":{"headers":{"accept":"application/vnd.github.ant-man-preview+json"},"method":"POST","params":{"auto_merge":{"type":"boolean"},"description":{"type":"string"},"environment":{"type":"string"},"owner":{"required":true,"type":"string"},"payload":{"type":"string"},"production_environment":{"type":"boolean"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"required_contexts":{"type":"string[]"},"task":{"type":"string"},"transient_environment":{"type":"boolean"}},"url":"/repos/:owner/:repo/deployments"},"createDeploymentStatus":{"headers":{"accept":"application/vnd.github.ant-man-preview+json"},"method":"POST","params":{"auto_inactive":{"type":"boolean"},"deployment_id":{"required":true,"type":"integer"},"description":{"type":"string"},"environment":{"enum":["production","staging","qa"],"type":"string"},"environment_url":{"type":"string"},"id":{"alias":"deployment_id","deprecated":true},"log_url":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"state":{"enum":["error","failure","inactive","in_progress","queued","pending","success"],"required":true,"type":"string"},"target_url":{"type":"string"}},"url":"/repos/:owner/:repo/deployments/:deployment_id/statuses"},"createFile":{"method":"PUT","params":{"author":{"type":"object"},"author.email":{"required":true,"type":"string"},"author.name":{"required":true,"type":"string"},"branch":{"type":"string"},"committer":{"type":"object"},"committer.email":{"required":true,"type":"string"},"committer.name":{"required":true,"type":"string"},"content":{"required":true,"type":"string"},"message":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"path":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/contents/:path"},"createForAuthenticatedUser":{"method":"POST","params":{"allow_merge_commit":{"type":"boolean"},"allow_rebase_merge":{"type":"boolean"},"allow_squash_merge":{"type":"boolean"},"auto_init":{"type":"boolean"},"description":{"type":"string"},"gitignore_template":{"type":"string"},"has_issues":{"type":"boolean"},"has_projects":{"type":"boolean"},"has_wiki":{"type":"boolean"},"homepage":{"type":"string"},"license_template":{"type":"string"},"name":{"required":true,"type":"string"},"private":{"type":"boolean"},"team_id":{"type":"integer"}},"url":"/user/repos"},"createForOrg":{"alias":"repos.createInOrg","deprecated":"`repos.createForOrg()` is deprecated, use `repos.createInOrg()`"},"createFork":{"method":"POST","params":{"organization":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/forks"},"createHook":{"method":"POST","params":{"active":{"type":"boolean"},"config":{"required":true,"type":"object"},"config.content_type":{"type":"string"},"config.insecure_ssl":{"type":"string"},"config.secret":{"type":"string"},"config.url":{"required":true,"type":"string"},"events":{"type":"string[]"},"name":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks"},"createInOrg":{"method":"POST","params":{"allow_merge_commit":{"type":"boolean"},"allow_rebase_merge":{"type":"boolean"},"allow_squash_merge":{"type":"boolean"},"auto_init":{"type":"boolean"},"description":{"type":"string"},"gitignore_template":{"type":"string"},"has_issues":{"type":"boolean"},"has_projects":{"type":"boolean"},"has_wiki":{"type":"boolean"},"homepage":{"type":"string"},"license_template":{"type":"string"},"name":{"required":true,"type":"string"},"org":{"required":true,"type":"string"},"private":{"type":"boolean"},"team_id":{"type":"integer"}},"url":"/orgs/:org/repos"},"createRelease":{"method":"POST","params":{"body":{"type":"string"},"draft":{"type":"boolean"},"name":{"type":"string"},"owner":{"required":true,"type":"string"},"prerelease":{"type":"boolean"},"repo":{"required":true,"type":"string"},"tag_name":{"required":true,"type":"string"},"target_commitish":{"type":"string"}},"url":"/repos/:owner/:repo/releases"},"createStatus":{"method":"POST","params":{"context":{"type":"string"},"description":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"},"state":{"enum":["error","failure","pending","success"],"required":true,"type":"string"},"target_url":{"type":"string"}},"url":"/repos/:owner/:repo/statuses/:sha"},"declineInvitation":{"method":"DELETE","params":{"invitation_id":{"required":true,"type":"integer"}},"url":"/user/repository_invitations/:invitation_id"},"delete":{"method":"DELETE","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo"},"deleteAsset":{"alias":"repos.deleteReleaseAsset","deprecated":"`repos.deleteAsset()` is deprecated, use `repos.deleteReleaseAsset()`"},"deleteCommitComment":{"method":"DELETE","params":{"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/comments/:comment_id"},"deleteDeployKey":{"alias":"repos.removeDeployKey","deprecated":"`repos.deleteDeployKey()` is deprecated, use `repos.removeDeployKey()`"},"deleteDownload":{"method":"DELETE","params":{"download_id":{"required":true,"type":"integer"},"id":{"alias":"download_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/downloads/:download_id"},"deleteFile":{"method":"DELETE","params":{"author":{"type":"object"},"branch":{"type":"string"},"committer":{"type":"object"},"message":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"path":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/contents/:path"},"deleteHook":{"method":"DELETE","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks/:hook_id"},"deleteInvitation":{"method":"DELETE","params":{"invitation_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/invitations/:invitation_id"},"deleteInvite":{"alias":"repos.deleteInvitation","deprecated":"`repos.deleteInvite()` is deprecated, use `repos.deleteInvitation()`"},"deleteRelease":{"method":"DELETE","params":{"id":{"alias":"release_id","deprecated":true},"owner":{"required":true,"type":"string"},"release_id":{"required":true,"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/:release_id"},"deleteReleaseAsset":{"method":"DELETE","params":{"asset_id":{"required":true,"type":"integer"},"id":{"alias":"asset_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/assets/:asset_id"},"edit":{"alias":"repos.update","deprecated":"`repos.edit()` is deprecated, use `repos.update()`"},"editAsset":{"alias":"repos.updateReleaseAsset","deprecated":"`repos.editAsset()` is deprecated, use `repos.updateReleaseAsset()`"},"editHook":{"alias":"repos.updateHook","deprecated":"`repos.editHook()` is deprecated, use `repos.updateHook()`"},"editRelease":{"alias":"repos.updateRelease","deprecated":"`repos.editRelease()` is deprecated, use `repos.updateRelease()`"},"fork":{"alias":"repos.createFork","deprecated":"`repos.fork()` is deprecated, use `repos.createFork()`"},"get":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo"},"getAll":{"alias":"repos.list","deprecated":"`repos.getAll()` is deprecated, use `repos.list()`"},"getAllCommitComments":{"alias":"repos.listCommitComments","deprecated":"`repos.getAllCommitComments()` is deprecated, use `repos.listCommitComments()`"},"getArchiveLink":{"method":"GET","params":{"archive_format":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/:archive_format/:ref"},"getAsset":{"alias":"repos.getReleaseAsset","deprecated":"`repos.getAsset()` is deprecated, use `repos.getReleaseAsset()`"},"getAssets":{"alias":"repos.listAssetsForRelease","deprecated":"`repos.getAssets()` is deprecated, use `repos.listAssetsForRelease()`"},"getBranch":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch"},"getBranchProtection":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection"},"getBranches":{"alias":"repos.listBranches","deprecated":"`repos.getBranches()` is deprecated, use `repos.listBranches()`"},"getById":{"method":"GET","params":{"id":{"required":true,"type":"string"}},"url":"/repositories/:id"},"getClones":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"per":{"enum":["day","week"],"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/traffic/clones"},"getCodeFrequencyStats":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/stats/code_frequency"},"getCollaboratorPermissionLevel":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/collaborators/:username/permission"},"getCollaborators":{"alias":"repos.listCollaborators","deprecated":"`repos.getCollaborators()` is deprecated, use `repos.listCollaborators()`"},"getCombinedStatusForRef":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:ref/status"},"getCommit":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:sha"},"getCommitActivityStats":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/stats/commit_activity"},"getCommitComment":{"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/comments/:comment_id"},"getCommitComments":{"alias":"repos.listCommentsForCommit","deprecated":"`repos.getCommitComments()` is deprecated, use `repos.listCommentsForCommit()`"},"getCommitRefSha":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:ref"},"getCommits":{"alias":"repos.listCommits","deprecated":"`repos.getCommits()` is deprecated, use `repos.listCommits()`"},"getCommunityProfileMetrics":{"alias":"repos.retrieveCommunityProfileMetrics","deprecated":"`repos.getCommunityProfileMetrics()` is deprecated, use `repos.retrieveCommunityProfileMetrics()`"},"getContent":{"alias":"repos.getContents","deprecated":"`repos.getContent()` is deprecated, use `repos.getContents()`"},"getContents":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"path":{"required":true,"type":"string"},"ref":{"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/contents/:path"},"getContributors":{"alias":"repos.listContributors","deprecated":"`repos.getContributors()` is deprecated, use `repos.listContributors()`"},"getContributorsStats":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/stats/contributors"},"getDeployKey":{"method":"GET","params":{"id":{"alias":"key_id","deprecated":true},"key_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/keys/:key_id"},"getDeployKeys":{"alias":"repos.listDeployKeys","deprecated":"`repos.getDeployKeys()` is deprecated, use `repos.listDeployKeys()`"},"getDeployment":{"method":"GET","params":{"deployment_id":{"required":true,"type":"integer"},"id":{"alias":"deployment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/deployments/:deployment_id"},"getDeploymentStatus":{"method":"GET","params":{"deployment_id":{"required":true,"type":"integer"},"id":{"alias":"deployment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"status_id":{"required":true,"type":"integer"}},"url":"/repos/:owner/:repo/deployments/:deployment_id/statuses/:status_id"},"getDeploymentStatuses":{"alias":"repos.listDeploymentStatuses","deprecated":"`repos.getDeploymentStatuses()` is deprecated, use `repos.listDeploymentStatuses()`"},"getDeployments":{"alias":"repos.listDeployments","deprecated":"`repos.getDeployments()` is deprecated, use `repos.listDeployments()`"},"getDownload":{"method":"GET","params":{"download_id":{"required":true,"type":"integer"},"id":{"alias":"download_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/downloads/:download_id"},"getDownloads":{"alias":"repos.listDownloads","deprecated":"`repos.getDownloads()` is deprecated, use `repos.listDownloads()`"},"getForOrg":{"alias":"repos.listForOrg","deprecated":"`repos.getForOrg()` is deprecated, use `repos.listForOrg()`"},"getForUser":{"alias":"repos.listForUser","deprecated":"`repos.getForUser()` is deprecated, use `repos.listForUser()`"},"getForks":{"alias":"repos.listForks","deprecated":"`repos.getForks()` is deprecated, use `repos.listForks()`"},"getHook":{"method":"GET","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks/:hook_id"},"getHooks":{"alias":"repos.listHooks","deprecated":"`repos.getHooks()` is deprecated, use `repos.listHooks()`"},"getInvites":{"alias":"repos.listInvitations","deprecated":"`repos.getInvites()` is deprecated, use `repos.listInvitations()`"},"getLanguages":{"alias":"repos.listLanguages","deprecated":"`repos.getLanguages()` is deprecated, use `repos.listLanguages()`"},"getLatestPagesBuild":{"headers":{"accept":"application/vnd.github.mister-fantastic-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pages/builds/latest"},"getLatestRelease":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/latest"},"getPages":{"headers":{"accept":"application/vnd.github.mister-fantastic-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pages"},"getPagesBuild":{"headers":{"accept":"application/vnd.github.mister-fantastic-preview+json"},"method":"GET","params":{"build_id":{"required":true,"type":"integer"},"id":{"alias":"build_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pages/builds/:build_id"},"getPagesBuilds":{"alias":"repos.listPagesBuilds","deprecated":"`repos.getPagesBuilds()` is deprecated, use `repos.listPagesBuilds()`"},"getParticipationStats":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/stats/participation"},"getPaths":{"alias":"repos.getTopPaths","deprecated":"`repos.getPaths()` is deprecated, use `repos.getTopPaths()`"},"getProtectedBranchAdminEnforcement":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/enforce_admins"},"getProtectedBranchPullRequestReviewEnforcement":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_pull_request_reviews"},"getProtectedBranchRequiredSignatures":{"headers":{"accept":"application/vnd.github.zzzax-preview+json"},"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_signatures"},"getProtectedBranchRequiredStatusChecks":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks"},"getProtectedBranchRequiredStatusChecksContexts":{"alias":"repos.listProtectedBranchRequiredStatusChecksContexts","deprecated":"`repos.getProtectedBranchRequiredStatusChecksContexts()` is deprecated, use `repos.listProtectedBranchRequiredStatusChecksContexts()`"},"getProtectedBranchRestrictions":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions"},"getProtectedBranchTeamRestrictions":{"alias":"repos.listProtectedBranchTeamRestrictions","deprecated":"`repos.getProtectedBranchTeamRestrictions()` is deprecated, use `repos.listProtectedBranchTeamRestrictions()`"},"getProtectedBranchUserRestrictions":{"alias":"repos.listProtectedBranchUserRestrictions","deprecated":"`repos.getProtectedBranchUserRestrictions()` is deprecated, use `repos.listProtectedBranchUserRestrictions()`"},"getPublic":{"alias":"repos.listPublic","deprecated":"`repos.getPublic()` is deprecated, use `repos.listPublic()`"},"getPunchCardStats":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/stats/punch_card"},"getReadme":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"ref":{"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/readme"},"getReferrers":{"alias":"repos.getTopReferrers","deprecated":"`repos.getReferrers()` is deprecated, use `repos.getTopReferrers()`"},"getRelease":{"method":"GET","params":{"id":{"alias":"release_id","deprecated":true},"owner":{"required":true,"type":"string"},"release_id":{"required":true,"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/:release_id"},"getReleaseAsset":{"method":"GET","params":{"asset_id":{"required":true,"type":"integer"},"id":{"alias":"asset_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/assets/:asset_id"},"getReleaseByTag":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"tag":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/tags/:tag"},"getReleases":{"alias":"repos.listReleases","deprecated":"`repos.getReleases()` is deprecated, use `repos.listReleases()`"},"getShaOfCommitRef":{"alias":"repos.getCommitRefSha","deprecated":"`repos.getShaOfCommitRef()` is deprecated, use `repos.getCommitRefSha()`"},"getStatsCodeFrequency":{"alias":"repos.getCodeFrequencyStats","deprecated":"`repos.getStatsCodeFrequency()` is deprecated, use `repos.getCodeFrequencyStats()`"},"getStatsCommitActivity":{"alias":"repos.getCommitActivityStats","deprecated":"`repos.getStatsCommitActivity()` is deprecated, use `repos.getCommitActivityStats()`"},"getStatsContributors":{"alias":"repos.getContributorsStats","deprecated":"`repos.getStatsContributors()` is deprecated, use `repos.getContributorsStats()`"},"getStatsParticipation":{"alias":"repos.getParticipationStats","deprecated":"`repos.getStatsParticipation()` is deprecated, use `repos.getParticipationStats()`"},"getStatsPunchCard":{"alias":"repos.getPunchCardStats","deprecated":"`repos.getStatsPunchCard()` is deprecated, use `repos.getPunchCardStats()`"},"getStatuses":{"alias":"repos.listStatusesForRef","deprecated":"`repos.getStatuses()` is deprecated, use `repos.listStatusesForRef()`"},"getTags":{"alias":"repos.listTags","deprecated":"`repos.getTags()` is deprecated, use `repos.listTags()`"},"getTeams":{"alias":"repos.listTeams","deprecated":"`repos.getTeams()` is deprecated, use `repos.listTeams()`"},"getTopPaths":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/traffic/popular/paths"},"getTopReferrers":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/traffic/popular/referrers"},"getTopics":{"alias":"repos.listTopics","deprecated":"`repos.getTopics()` is deprecated, use `repos.listTopics()`"},"getViews":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"per":{"enum":["day","week"],"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/traffic/views"},"list":{"method":"GET","params":{"affiliation":{"enum":["owner","collaborator","organization_member"],"type":"string"},"direction":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"sort":{"enum":["created","updated","pushed","full_name"],"type":"string"},"type":{"enum":["all","owner","public","private","member"],"type":"string"},"visibility":{"enum":["all","public","private"],"type":"string"}},"url":"/user/repos"},"listAssetsForRelease":{"method":"GET","params":{"id":{"alias":"release_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"release_id":{"required":true,"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/:release_id/assets"},"listBranches":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"protected":{"type":"boolean"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches"},"listCollaborators":{"method":"GET","params":{"affiliation":{"enum":["outside","direct","all"],"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/collaborators"},"listCommentsForCommit":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:ref/comments"},"listCommitComments":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/comments"},"listCommits":{"method":"GET","params":{"author":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"path":{"type":"string"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"sha":{"type":"string"},"since":{"type":"string"},"until":{"type":"string"}},"url":"/repos/:owner/:repo/commits"},"listContributors":{"method":"GET","params":{"anon":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/contributors"},"listDeployKeys":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/keys"},"listDeploymentStatuses":{"headers":{"accept":"application/vnd.github.ant-man-preview+json"},"method":"GET","params":{"deployment_id":{"required":true,"type":"integer"},"id":{"alias":"deployment_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/deployments/:deployment_id/statuses"},"listDeployments":{"headers":{"accept":"application/vnd.github.ant-man-preview+json"},"method":"GET","params":{"environment":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"ref":{"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"type":"string"},"task":{"type":"string"}},"url":"/repos/:owner/:repo/deployments"},"listDownloads":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/downloads"},"listForOrg":{"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"type":{"enum":["all","public","private","forks","sources","member"],"type":"string"}},"url":"/orgs/:org/repos"},"listForUser":{"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"sort":{"enum":["created","updated","pushed","full_name"],"type":"string"},"type":{"enum":["all","owner","member"],"type":"string"},"username":{"required":true,"type":"string"}},"url":"/users/:username/repos"},"listForks":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"sort":{"enum":["newest","oldest","stargazers"],"type":"string"}},"url":"/repos/:owner/:repo/forks"},"listHooks":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks"},"listInvitations":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/invitations"},"listInvitationsForAuthenticatedUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/repository_invitations"},"listLanguages":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/languages"},"listPagesBuilds":{"headers":{"accept":"application/vnd.github.mister-fantastic-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pages/builds"},"listProtectedBranchRequiredStatusChecksContexts":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks/contexts"},"listProtectedBranchTeamRestrictions":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/teams"},"listProtectedBranchUserRestrictions":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/users"},"listPublic":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/repositories"},"listReleases":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases"},"listStatusesForRef":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:ref/statuses"},"listTags":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/tags"},"listTeams":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/teams"},"listTopics":{"headers":{"accept":"application/vnd.github.mercy-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/topics"},"merge":{"method":"POST","params":{"base":{"required":true,"type":"string"},"commit_message":{"type":"string"},"head":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/merges"},"pingHook":{"method":"POST","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks/:hook_id/pings"},"removeBranchProtection":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection"},"removeCollaborator":{"method":"DELETE","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/collaborators/:username"},"removeDeployKey":{"method":"DELETE","params":{"id":{"alias":"key_id","deprecated":true},"key_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/keys/:key_id"},"removeProtectedBranchAdminEnforcement":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/enforce_admins"},"removeProtectedBranchPullRequestReviewEnforcement":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_pull_request_reviews"},"removeProtectedBranchRequiredSignatures":{"headers":{"accept":"application/vnd.github.zzzax-preview+json"},"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_signatures"},"removeProtectedBranchRequiredStatusChecks":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks"},"removeProtectedBranchRequiredStatusChecksContexts":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"contexts":{"mapTo":"data","required":true,"type":"string[]"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks/contexts"},"removeProtectedBranchRestrictions":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions"},"removeProtectedBranchTeamRestrictions":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"teams":{"mapTo":"data","required":true,"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/teams"},"removeProtectedBranchUserRestrictions":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"users":{"mapTo":"data","required":true,"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/users"},"replaceProtectedBranchRequiredStatusChecksContexts":{"method":"PUT","params":{"branch":{"required":true,"type":"string"},"contexts":{"mapTo":"data","required":true,"type":"string[]"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks/contexts"},"replaceProtectedBranchTeamRestrictions":{"method":"PUT","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"teams":{"mapTo":"data","required":true,"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/teams"},"replaceProtectedBranchUserRestrictions":{"method":"PUT","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"users":{"mapTo":"data","required":true,"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/users"},"replaceTopics":{"headers":{"accept":"application/vnd.github.mercy-preview+json"},"method":"PUT","params":{"names":{"required":true,"type":"string[]"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/topics"},"requestPageBuild":{"headers":{"accept":"application/vnd.github.mister-fantastic-preview+json"},"method":"POST","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pages/builds"},"retrieveCommunityProfileMetrics":{"headers":{"accept":"application/vnd.github.black-panther-preview+json"},"method":"GET","params":{"name":{"alias":"repo","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/community/profile"},"reviewUserPermissionLevel":{"alias":"repos.getCollaboratorPermissionLevel","deprecated":"`repos.reviewUserPermissionLevel()` is deprecated, use `repos.getCollaboratorPermissionLevel()`"},"testHook":{"alias":"repos.testPushHook","deprecated":"`repos.testHook()` is deprecated, use `repos.testPushHook()`"},"testPushHook":{"method":"POST","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks/:hook_id/tests"},"transfer":{"headers":{"accept":"application/vnd.github.nightshade-preview+json"},"method":"POST","params":{"new_owner":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"team_id":{"alias":"team_ids","deprecated":true},"team_ids":{"type":"integer[]"}},"url":"/repos/:owner/:repo/transfer"},"update":{"method":"PATCH","params":{"allow_merge_commit":{"type":"boolean"},"allow_rebase_merge":{"type":"boolean"},"allow_squash_merge":{"type":"boolean"},"archived":{"type":"boolean"},"default_branch":{"type":"string"},"description":{"type":"string"},"has_issues":{"type":"boolean"},"has_projects":{"type":"boolean"},"has_wiki":{"type":"boolean"},"homepage":{"type":"string"},"name":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"private":{"type":"boolean"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo"},"updateBranchProtection":{"method":"PUT","params":{"branch":{"required":true,"type":"string"},"enforce_admins":{"allowNull":true,"required":true,"type":"boolean"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"required_pull_request_reviews":{"allowNull":true,"required":true,"type":"object"},"required_pull_request_reviews.dismiss_stale_reviews":{"type":"boolean"},"required_pull_request_reviews.dismissal_restrictions":{"type":"object"},"required_pull_request_reviews.dismissal_restrictions.teams":{"type":"string[]"},"required_pull_request_reviews.dismissal_restrictions.users":{"type":"string[]"},"required_pull_request_reviews.require_code_owner_reviews":{"type":"boolean"},"required_pull_request_reviews.required_approving_review_count":{"type":"integer"},"required_status_checks":{"allowNull":true,"required":true,"type":"object"},"required_status_checks.contexts":{"required":true,"type":"string[]"},"required_status_checks.strict":{"required":true,"type":"boolean"},"restrictions":{"allowNull":true,"required":true,"type":"object"},"restrictions.teams":{"type":"string[]"},"restrictions.users":{"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection"},"updateCommitComment":{"method":"PATCH","params":{"body":{"required":true,"type":"string"},"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/comments/:comment_id"},"updateFile":{"method":"PUT","params":{"author":{"type":"object"},"author.email":{"required":true,"type":"string"},"author.name":{"required":true,"type":"string"},"branch":{"type":"string"},"committer":{"type":"object"},"committer.email":{"required":true,"type":"string"},"committer.name":{"required":true,"type":"string"},"content":{"required":true,"type":"string"},"message":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"path":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/contents/:path"},"updateHook":{"method":"PATCH","params":{"active":{"type":"boolean"},"add_events":{"type":"string[]"},"config":{"type":"object"},"config.content_type":{"type":"string"},"config.insecure_ssl":{"type":"string"},"config.secret":{"type":"string"},"config.url":{"required":true,"type":"string"},"events":{"type":"string[]"},"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"owner":{"required":true,"type":"string"},"remove_events":{"type":"string[]"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks/:hook_id"},"updateInformationAboutPagesSite":{"headers":{"accept":"application/vnd.github.mister-fantastic-preview+json"},"method":"PUT","params":{"cname":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"source":{"enum":["\"gh-pages\"","\"master\"","\"master /docs\""],"type":"string"}},"url":"/repos/:owner/:repo/pages"},"updateInvitation":{"method":"PATCH","params":{"invitation_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"permissions":{"enum":["read","write","admin"],"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/invitations/:invitation_id"},"updateInvite":{"alias":"repos.updateInvitation","deprecated":"`repos.updateInvite()` is deprecated, use `repos.updateInvitation()`"},"updateProtectedBranchPullRequestReviewEnforcement":{"method":"PATCH","params":{"branch":{"required":true,"type":"string"},"dismiss_stale_reviews":{"type":"boolean"},"dismissal_restrictions":{"type":"object"},"dismissal_restrictions.teams":{"type":"string[]"},"dismissal_restrictions.users":{"type":"string[]"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"require_code_owner_reviews":{"type":"boolean"},"required_approving_review_count":{"type":"integer"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_pull_request_reviews"},"updateProtectedBranchRequiredStatusChecks":{"method":"PATCH","params":{"branch":{"required":true,"type":"string"},"contexts":{"type":"string[]"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"strict":{"type":"boolean"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks"},"updateRelease":{"method":"PATCH","params":{"body":{"type":"string"},"draft":{"type":"boolean"},"id":{"alias":"release_id","deprecated":true},"name":{"type":"string"},"owner":{"required":true,"type":"string"},"prerelease":{"type":"boolean"},"release_id":{"required":true,"type":"integer"},"repo":{"required":true,"type":"string"},"tag_name":{"type":"string"},"target_commitish":{"type":"string"}},"url":"/repos/:owner/:repo/releases/:release_id"},"updateReleaseAsset":{"method":"PATCH","params":{"asset_id":{"required":true,"type":"integer"},"id":{"alias":"asset_id","deprecated":true},"label":{"type":"string"},"name":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/assets/:asset_id"},"uploadAsset":{"alias":"repos.uploadReleaseAsset","deprecated":"`repos.uploadAsset()` is deprecated, use `repos.uploadReleaseAsset()`"},"uploadReleaseAsset":{"method":"POST","params":{"contentLength":{"alias":"headers.content-length","deprecated":true},"contentType":{"alias":"headers.content-type","deprecated":true},"file":{"mapTo":"data","required":true,"type":"string | object"},"headers.content-length":{"required":true,"type":"integer"},"headers.content-type":{"required":true,"type":"string"},"label":{"type":"string"},"name":{"required":true,"type":"string"},"url":{"required":true,"type":"string"}},"url":":url"}},"search":{"code":{"method":"GET","params":{"order":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"q":{"required":true,"type":"string"},"sort":{"enum":["indexed"],"type":"string"}},"url":"/search/code"},"commits":{"headers":{"accept":"application/vnd.github.cloak-preview+json"},"method":"GET","params":{"order":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"q":{"required":true,"type":"string"},"sort":{"enum":["author-date","committer-date"],"type":"string"}},"url":"/search/commits"},"issues":{"method":"GET","params":{"order":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"q":{"required":true,"type":"string"},"sort":{"enum":["comments","created","updated"],"type":"string"}},"url":"/search/issues"},"labels":{"headers":{"accept":"application/vnd.github.symmetra-preview+json"},"method":"GET","params":{"order":{"enum":["asc","desc"],"type":"string"},"q":{"required":true,"type":"string"},"repository_id":{"required":true,"type":"integer"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/search/labels"},"repos":{"headers":{"accept":"application/vnd.github.mercy-preview+json"},"method":"GET","params":{"order":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"q":{"required":true,"type":"string"},"sort":{"enum":["stars","forks","updated"],"type":"string"}},"url":"/search/repositories"},"topics":{"headers":{"accept":"application/vnd.github.mercy-preview+json"},"method":"GET","params":{"q":{"required":true,"type":"string"}},"url":"/search/topics"},"users":{"method":"GET","params":{"order":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"q":{"required":true,"type":"string"},"sort":{"enum":["followers","repositories","joined"],"type":"string"}},"url":"/search/users"}},"teams":{"addMember":{"method":"PUT","params":{"team_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/teams/:team_id/members/:username"},"addOrUpdateMembership":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"PUT","params":{"id":{"alias":"team_id","deprecated":true},"role":{"enum":["member","maintainer"],"type":"string"},"team_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/teams/:team_id/memberships/:username"},"addOrUpdateProject":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"PUT","params":{"permission":{"enum":["read","write","admin"],"type":"string"},"project_id":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/projects/:project_id"},"addOrUpdateRepo":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"PUT","params":{"id":{"alias":"team_id","deprecated":true},"org":{"alias":"owner","deprecated":true},"owner":{"required":true,"type":"string"},"permission":{"enum":["pull","push","admin"],"type":"string"},"repo":{"required":true,"type":"string"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/repos/:owner/:repo"},"checkManagesRepo":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/repos/:owner/:repo"},"create":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"POST","params":{"description":{"type":"string"},"maintainers":{"type":"string[]"},"name":{"required":true,"type":"string"},"org":{"required":true,"type":"string"},"parent_team_id":{"type":"integer"},"permission":{"enum":["pull","push","admin"],"type":"string"},"privacy":{"enum":["secret","closed"],"type":"string"},"repo_names":{"type":"string[]"}},"url":"/orgs/:org/teams"},"createDiscussion":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"POST","params":{"body":{"required":true,"type":"string"},"private":{"type":"boolean"},"team_id":{"required":true,"type":"integer"},"title":{"required":true,"type":"string"}},"url":"/teams/:team_id/discussions"},"createDiscussionComment":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"POST","params":{"body":{"required":true,"type":"string"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments"},"delete":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"DELETE","params":{"id":{"alias":"team_id","deprecated":true},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id"},"deleteDiscussion":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"DELETE","params":{"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number"},"deleteDiscussionComment":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"DELETE","params":{"comment_number":{"required":true,"type":"integer"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments/:comment_number"},"get":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id"},"getDiscussion":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"GET","params":{"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number"},"getDiscussionComment":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"GET","params":{"comment_number":{"required":true,"type":"integer"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments/:comment_number"},"getMember":{"method":"GET","params":{"team_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/teams/:team_id/members/:username"},"getMembership":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"team_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/teams/:team_id/memberships/:username"},"list":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/teams"},"listChild":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/teams"},"listDiscussionComments":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"discussion_number":{"required":true,"type":"integer"},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments"},"listDiscussions":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions"},"listForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/teams"},"listMembers":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"role":{"enum":["member","maintainer","all"],"type":"string"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/members"},"listPendingInvitations":{"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/invitations"},"listProjects":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/projects"},"listRepos":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/repos"},"removeMember":{"method":"DELETE","params":{"team_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/teams/:team_id/members/:username"},"removeMembership":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"DELETE","params":{"id":{"alias":"team_id","deprecated":true},"team_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/teams/:team_id/memberships/:username"},"removeProject":{"method":"DELETE","params":{"project_id":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/projects/:project_id"},"removeRepo":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"DELETE","params":{"id":{"alias":"team_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/repos/:owner/:repo"},"reviewProject":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"project_id":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/projects/:project_id"},"update":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"PATCH","params":{"description":{"type":"string"},"id":{"alias":"team_id","deprecated":true},"name":{"required":true,"type":"string"},"parent_team_id":{"type":"integer"},"permission":{"enum":["pull","push","admin"],"type":"string"},"privacy":{"type":"string"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id"},"updateDiscussion":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"PATCH","params":{"body":{"type":"string"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"},"title":{"type":"string"}},"url":"/teams/:team_id/discussions/:discussion_number"},"updateDiscussionComment":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"PATCH","params":{"body":{"required":true,"type":"string"},"comment_number":{"required":true,"type":"integer"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments/:comment_number"}},"users":{"acceptRepoInvite":{"alias":"repos.acceptInvitation","deprecated":"`users.acceptRepoInvite()` is deprecated, use `repos.acceptInvitation()`"},"addEmails":{"method":"POST","params":{"emails":{"required":true,"type":"string[]"}},"url":"/user/emails"},"addRepoToInstallation":{"alias":"apps.addRepoToInstallation","deprecated":"`integrations.addRepoToInstallation()` is deprecated, use `apps.addRepoToInstallation()`","params":{}},"block":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"PUT","params":{"username":{"required":true,"type":"string"}},"url":"/user/blocks/:username"},"blockUser":{"alias":"users.block","deprecated":"`users.blockUser()` is deprecated, use `users.block()`"},"checkBlocked":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"GET","params":{"username":{"required":true,"type":"string"}},"url":"/user/blocks/:username"},"checkBlockedUser":{"alias":"users.checkBlocked","deprecated":"`users.checkBlockedUser()` is deprecated, use `users.checkBlocked()`"},"checkFollowing":{"method":"GET","params":{"username":{"required":true,"type":"string"}},"url":"/user/following/:username"},"checkFollowingForUser":{"method":"GET","params":{"target_user":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/users/:username/following/:target_user"},"checkIfOneFollowersOther":{"alias":"users.checkFollowingForUser","deprecated":"`users.checkIfOneFollowersOther()` is deprecated, use `users.checkFollowingForUser()`"},"createGpgKey":{"method":"POST","params":{"armored_public_key":{"type":"string"}},"url":"/user/gpg_keys"},"createKey":{"alias":"users.createPublicKey","deprecated":"`users.createKey()` is deprecated, use `users.createPublicKey()`"},"createPublicKey":{"method":"POST","params":{"key":{"type":"string"},"title":{"type":"string"}},"url":"/user/keys"},"declineRepoInvite":{"alias":"repos.declineInvitation","deprecated":"`users.declineRepoInvite()` is deprecated, use `repos.declineInvitation()`"},"deleteEmails":{"method":"DELETE","params":{"emails":{"required":true,"type":"string[]"}},"url":"/user/emails"},"deleteGpgKey":{"method":"DELETE","params":{"gpg_key_id":{"required":true,"type":"integer"},"id":{"alias":"gpg_key_id","deprecated":true}},"url":"/user/gpg_keys/:gpg_key_id"},"deleteKey":{"alias":"users.deletePublicKey","deprecated":"`users.deleteKey()` is deprecated, use `users.deletePublicKey()`"},"deletePublicKey":{"method":"DELETE","params":{"id":{"alias":"key_id","deprecated":true},"key_id":{"required":true,"type":"integer"}},"url":"/user/keys/:key_id"},"demote":{"method":"DELETE","params":{"username":{"required":true,"type":"string"}},"url":"/users/:username/site_admin"},"editOrgMembership":{"alias":"orgs.updateMembership","deprecated":"`users.editOrgMembership()` is deprecated, use `orgs.updateMembership()`"},"follow":{"method":"PUT","params":{"username":{"required":true,"type":"string"}},"url":"/user/following/:username"},"followUser":{"alias":"users.follow","deprecated":"`users.followUser()` is deprecated, use `users.follow()`"},"get":{"alias":"users.getAuthenticated","deprecated":"`users.get()` is deprecated, use `users.getAuthenticated()`"},"getAll":{"alias":"users.list","deprecated":"`users.getAll()` is deprecated, use `users.list()`"},"getAuthenticated":{"method":"GET","params":{},"url":"/user"},"getBlockedUsers":{"alias":"users.listBlocked","deprecated":"`users.getBlockedUsers()` is deprecated, use `users.listBlocked()`"},"getById":{"method":"GET","params":{"id":{"required":true,"type":"string"}},"url":"/user/:id"},"getByUsername":{"method":"GET","params":{"username":{"required":true,"type":"string"}},"url":"/users/:username"},"getContextForUser":{"headers":{"accept":"application/vnd.github.hagar-preview+json"},"method":"GET","params":{"subject_id":{"type":"string"},"subject_type":{"enum":["organization","repository","issue","pull_request"],"type":"string"},"username":{"required":true,"type":"string"}},"url":"/users/:username/hovercard"},"getEmails":{"alias":"users.listEmails","deprecated":"`users.getEmails()` is deprecated, use `users.listEmails()`"},"getFollowers":{"alias":"users.listFollowersForAuthenticatedUser","deprecated":"`users.getFollowers()` is deprecated, use `users.listFollowersForAuthenticatedUser()`"},"getFollowersForUser":{"alias":"users.listFollowersForUser","deprecated":"`users.getFollowersForUser()` is deprecated, use `users.listFollowersForUser()`"},"getFollowing":{"alias":"users.listFollowingForAuthenticatedUser","deprecated":"`users.getFollowing()` is deprecated, use `users.listFollowingForAuthenticatedUser()`"},"getFollowingForUser":{"alias":"users.listFollowingForUser","deprecated":"`users.getFollowingForUser()` is deprecated, use `users.listFollowingForUser()`"},"getForUser":{"alias":"users.getByUsername","deprecated":"`users.getForUser()` is deprecated, use `users.getByUsername()`"},"getGpgKey":{"method":"GET","params":{"gpg_key_id":{"required":true,"type":"integer"},"id":{"alias":"gpg_key_id","deprecated":true}},"url":"/user/gpg_keys/:gpg_key_id"},"getGpgKeys":{"alias":"users.listGpgKeys","deprecated":"`users.getGpgKeys()` is deprecated, use `users.listGpgKeys()`"},"getGpgKeysForUser":{"alias":"users.listGpgKeysForUser","deprecated":"`users.getGpgKeysForUser()` is deprecated, use `users.listGpgKeysForUser()`"},"getInstallationRepos":{"alias":"apps.listInstallationReposForAuthenticatedUser","deprecated":"`users.getInstallationRepos()` is deprecated, use `apps.listInstallationReposForAuthenticatedUser()`"},"getInstallations":{"alias":"apps.listInstallationsForAuthenticatedUser","deprecated":"`users.getInstallations()` is deprecated, use `apps.listInstallationsForAuthenticatedUser()`"},"getKey":{"alias":"users.getPublicKey","deprecated":"`users.getKey()` is deprecated, use `users.getPublicKey()`"},"getKeys":{"alias":"users.listPublicKeys","deprecated":"`users.getKeys()` is deprecated, use `users.listPublicKeys()`"},"getKeysForUser":{"alias":"users.listPublicKeysForUser","deprecated":"`users.getKeysForUser()` is deprecated, use `users.listPublicKeysForUser()`"},"getMarketplacePurchases":{"alias":"apps.listMarketplacePurchasesForAuthenticatedUser","deprecated":"`users.getMarketplacePurchases()` is deprecated, use `apps.listMarketplacePurchasesForAuthenticatedUser()`"},"getMarketplaceStubbedPurchases":{"alias":"apps.listMarketplacePurchasesForAuthenticatedUserStubbed","deprecated":"`users.getMarketplaceStubbedPurchases()` is deprecated, use `apps.listMarketplacePurchasesForAuthenticatedUserStubbed()`"},"getOrgMembership":{"alias":"orgs.getMembershipForAuthenticatedUser","deprecated":"`users.getOrgMembership()` is deprecated, use `orgs.getMembershipForAuthenticatedUser()`"},"getOrgMemberships":{"alias":"orgs.listMemberships","deprecated":"`users.getOrgMemberships()` is deprecated, use `orgs.listMemberships()`"},"getOrgs":{"alias":"orgs.listForAuthenticatedUser","deprecated":"`users.getOrgs()` is deprecated, use `orgs.listForAuthenticatedUser()`"},"getPublicEmails":{"alias":"users.listPublicEmails","deprecated":"`users.getPublicEmails()` is deprecated, use `users.listPublicEmails()`"},"getPublicKey":{"method":"GET","params":{"id":{"alias":"key_id","deprecated":true},"key_id":{"required":true,"type":"integer"}},"url":"/user/keys/:key_id"},"getRepoInvites":{"alias":"repos.listInvitationsForAuthenticatedUser","deprecated":"`users.getRepoInvites()` is deprecated, use `repos.listInvitationsForAuthenticatedUser()`"},"getTeams":{"alias":"teams.listForAuthenticatedUser","deprecated":"`users.getTeams()` is deprecated, use `teams.listForAuthenticatedUser()`"},"list":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/users"},"listBlocked":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"GET","params":{},"url":"/user/blocks"},"listEmails":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/emails"},"listFollowersForAuthenticatedUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/followers"},"listFollowersForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/followers"},"listFollowingForAuthenticatedUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/following"},"listFollowingForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/following"},"listGpgKeys":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/gpg_keys"},"listGpgKeysForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/gpg_keys"},"listPublicEmails":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/public_emails"},"listPublicKeys":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/keys"},"listPublicKeysForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/keys"},"promote":{"method":"PUT","params":{"username":{"required":true,"type":"string"}},"url":"/users/:username/site_admin"},"removeRepoFromInstallation":{"alias":"apps.removeRepoFromInstallation","deprecated":"`integrations.removeRepoFromInstallation()` is deprecated, use `apps.removeRepoFromInstallation()`","params":{}},"suspend":{"method":"PUT","params":{"username":{"required":true,"type":"string"}},"url":"/users/:username/suspended"},"togglePrimaryEmailVisibility":{"method":"PATCH","params":{"email":{"required":true,"type":"string"},"visibility":{"required":true,"type":"string"}},"url":"/user/email/visibility"},"unblock":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"DELETE","params":{"username":{"required":true,"type":"string"}},"url":"/user/blocks/:username"},"unblockUser":{"alias":"users.unblock","deprecated":"`users.unblockUser()` is deprecated, use `users.unblock()`"},"unfollow":{"method":"DELETE","params":{"username":{"required":true,"type":"string"}},"url":"/user/following/:username"},"unfollowUser":{"alias":"users.unfollow","deprecated":"`users.unfollowUser()` is deprecated, use `users.unfollow()`"},"unsuspend":{"method":"DELETE","params":{"username":{"required":true,"type":"string"}},"url":"/users/:username/suspended"},"update":{"alias":"users.updateAuthenticated","deprecated":"`users.update()` is deprecated, use `users.updateAuthenticated()`"},"updateAuthenticated":{"method":"PATCH","params":{"bio":{"type":"string"},"blog":{"type":"string"},"company":{"type":"string"},"email":{"type":"string"},"hireable":{"type":"boolean"},"location":{"type":"string"},"name":{"type":"string"}},"url":"/user"}}};
+module.exports = Yallist
+
+Yallist.Node = Node
+Yallist.create = Yallist
+
+function Yallist (list) {
+  var self = this
+  if (!(self instanceof Yallist)) {
+    self = new Yallist()
+  }
+
+  self.tail = null
+  self.head = null
+  self.length = 0
+
+  if (list && typeof list.forEach === 'function') {
+    list.forEach(function (item) {
+      self.push(item)
+    })
+  } else if (arguments.length > 0) {
+    for (var i = 0, l = arguments.length; i < l; i++) {
+      self.push(arguments[i])
+    }
+  }
+
+  return self
+}
+
+Yallist.prototype.removeNode = function (node) {
+  if (node.list !== this) {
+    throw new Error('removing node which does not belong to this list')
+  }
+
+  var next = node.next
+  var prev = node.prev
+
+  if (next) {
+    next.prev = prev
+  }
+
+  if (prev) {
+    prev.next = next
+  }
+
+  if (node === this.head) {
+    this.head = next
+  }
+  if (node === this.tail) {
+    this.tail = prev
+  }
+
+  node.list.length--
+  node.next = null
+  node.prev = null
+  node.list = null
+}
+
+Yallist.prototype.unshiftNode = function (node) {
+  if (node === this.head) {
+    return
+  }
+
+  if (node.list) {
+    node.list.removeNode(node)
+  }
+
+  var head = this.head
+  node.list = this
+  node.next = head
+  if (head) {
+    head.prev = node
+  }
+
+  this.head = node
+  if (!this.tail) {
+    this.tail = node
+  }
+  this.length++
+}
+
+Yallist.prototype.pushNode = function (node) {
+  if (node === this.tail) {
+    return
+  }
+
+  if (node.list) {
+    node.list.removeNode(node)
+  }
+
+  var tail = this.tail
+  node.list = this
+  node.prev = tail
+  if (tail) {
+    tail.next = node
+  }
+
+  this.tail = node
+  if (!this.head) {
+    this.head = node
+  }
+  this.length++
+}
+
+Yallist.prototype.push = function () {
+  for (var i = 0, l = arguments.length; i < l; i++) {
+    push(this, arguments[i])
+  }
+  return this.length
+}
+
+Yallist.prototype.unshift = function () {
+  for (var i = 0, l = arguments.length; i < l; i++) {
+    unshift(this, arguments[i])
+  }
+  return this.length
+}
+
+Yallist.prototype.pop = function () {
+  if (!this.tail) {
+    return undefined
+  }
+
+  var res = this.tail.value
+  this.tail = this.tail.prev
+  if (this.tail) {
+    this.tail.next = null
+  } else {
+    this.head = null
+  }
+  this.length--
+  return res
+}
+
+Yallist.prototype.shift = function () {
+  if (!this.head) {
+    return undefined
+  }
+
+  var res = this.head.value
+  this.head = this.head.next
+  if (this.head) {
+    this.head.prev = null
+  } else {
+    this.tail = null
+  }
+  this.length--
+  return res
+}
+
+Yallist.prototype.forEach = function (fn, thisp) {
+  thisp = thisp || this
+  for (var walker = this.head, i = 0; walker !== null; i++) {
+    fn.call(thisp, walker.value, i, this)
+    walker = walker.next
+  }
+}
+
+Yallist.prototype.forEachReverse = function (fn, thisp) {
+  thisp = thisp || this
+  for (var walker = this.tail, i = this.length - 1; walker !== null; i--) {
+    fn.call(thisp, walker.value, i, this)
+    walker = walker.prev
+  }
+}
+
+Yallist.prototype.get = function (n) {
+  for (var i = 0, walker = this.head; walker !== null && i < n; i++) {
+    // abort out of the list early if we hit a cycle
+    walker = walker.next
+  }
+  if (i === n && walker !== null) {
+    return walker.value
+  }
+}
+
+Yallist.prototype.getReverse = function (n) {
+  for (var i = 0, walker = this.tail; walker !== null && i < n; i++) {
+    // abort out of the list early if we hit a cycle
+    walker = walker.prev
+  }
+  if (i === n && walker !== null) {
+    return walker.value
+  }
+}
+
+Yallist.prototype.map = function (fn, thisp) {
+  thisp = thisp || this
+  var res = new Yallist()
+  for (var walker = this.head; walker !== null;) {
+    res.push(fn.call(thisp, walker.value, this))
+    walker = walker.next
+  }
+  return res
+}
+
+Yallist.prototype.mapReverse = function (fn, thisp) {
+  thisp = thisp || this
+  var res = new Yallist()
+  for (var walker = this.tail; walker !== null;) {
+    res.push(fn.call(thisp, walker.value, this))
+    walker = walker.prev
+  }
+  return res
+}
+
+Yallist.prototype.reduce = function (fn, initial) {
+  var acc
+  var walker = this.head
+  if (arguments.length > 1) {
+    acc = initial
+  } else if (this.head) {
+    walker = this.head.next
+    acc = this.head.value
+  } else {
+    throw new TypeError('Reduce of empty list with no initial value')
+  }
+
+  for (var i = 0; walker !== null; i++) {
+    acc = fn(acc, walker.value, i)
+    walker = walker.next
+  }
+
+  return acc
+}
+
+Yallist.prototype.reduceReverse = function (fn, initial) {
+  var acc
+  var walker = this.tail
+  if (arguments.length > 1) {
+    acc = initial
+  } else if (this.tail) {
+    walker = this.tail.prev
+    acc = this.tail.value
+  } else {
+    throw new TypeError('Reduce of empty list with no initial value')
+  }
+
+  for (var i = this.length - 1; walker !== null; i--) {
+    acc = fn(acc, walker.value, i)
+    walker = walker.prev
+  }
+
+  return acc
+}
+
+Yallist.prototype.toArray = function () {
+  var arr = new Array(this.length)
+  for (var i = 0, walker = this.head; walker !== null; i++) {
+    arr[i] = walker.value
+    walker = walker.next
+  }
+  return arr
+}
+
+Yallist.prototype.toArrayReverse = function () {
+  var arr = new Array(this.length)
+  for (var i = 0, walker = this.tail; walker !== null; i++) {
+    arr[i] = walker.value
+    walker = walker.prev
+  }
+  return arr
+}
+
+Yallist.prototype.slice = function (from, to) {
+  to = to || this.length
+  if (to < 0) {
+    to += this.length
+  }
+  from = from || 0
+  if (from < 0) {
+    from += this.length
+  }
+  var ret = new Yallist()
+  if (to < from || to < 0) {
+    return ret
+  }
+  if (from < 0) {
+    from = 0
+  }
+  if (to > this.length) {
+    to = this.length
+  }
+  for (var i = 0, walker = this.head; walker !== null && i < from; i++) {
+    walker = walker.next
+  }
+  for (; walker !== null && i < to; i++, walker = walker.next) {
+    ret.push(walker.value)
+  }
+  return ret
+}
+
+Yallist.prototype.sliceReverse = function (from, to) {
+  to = to || this.length
+  if (to < 0) {
+    to += this.length
+  }
+  from = from || 0
+  if (from < 0) {
+    from += this.length
+  }
+  var ret = new Yallist()
+  if (to < from || to < 0) {
+    return ret
+  }
+  if (from < 0) {
+    from = 0
+  }
+  if (to > this.length) {
+    to = this.length
+  }
+  for (var i = this.length, walker = this.tail; walker !== null && i > to; i--) {
+    walker = walker.prev
+  }
+  for (; walker !== null && i > from; i--, walker = walker.prev) {
+    ret.push(walker.value)
+  }
+  return ret
+}
+
+Yallist.prototype.reverse = function () {
+  var head = this.head
+  var tail = this.tail
+  for (var walker = head; walker !== null; walker = walker.prev) {
+    var p = walker.prev
+    walker.prev = walker.next
+    walker.next = p
+  }
+  this.head = tail
+  this.tail = head
+  return this
+}
+
+function push (self, item) {
+  self.tail = new Node(item, self.tail, null, self)
+  if (!self.head) {
+    self.head = self.tail
+  }
+  self.length++
+}
+
+function unshift (self, item) {
+  self.head = new Node(item, null, self.head, self)
+  if (!self.tail) {
+    self.tail = self.head
+  }
+  self.length++
+}
+
+function Node (value, prev, next, list) {
+  if (!(this instanceof Node)) {
+    return new Node(value, prev, next, list)
+  }
+
+  this.list = list
+  this.value = value
+
+  if (prev) {
+    prev.next = this
+    this.prev = prev
+  } else {
+    this.prev = null
+  }
+
+  if (next) {
+    next.prev = this
+    this.next = next
+  } else {
+    this.next = null
+  }
+}
+
 
 /***/ }),
 /* 120 */
@@ -15851,7 +15878,90 @@ module.exports = basePickBy;
 module.exports = require("child_process");
 
 /***/ }),
-/* 130 */,
+/* 130 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const os = __importStar(__webpack_require__(87));
+/**
+ * Commands
+ *
+ * Command Format:
+ *   ::name key=value,key=value::message
+ *
+ * Examples:
+ *   ::warning::This is the message
+ *   ::set-env name=MY_VAR::some value
+ */
+function issueCommand(command, properties, message) {
+    const cmd = new Command(command, properties, message);
+    process.stdout.write(cmd.toString() + os.EOL);
+}
+exports.issueCommand = issueCommand;
+function issue(name, message = '') {
+    issueCommand(name, {}, message);
+}
+exports.issue = issue;
+const CMD_STRING = '::';
+class Command {
+    constructor(command, properties, message) {
+        if (!command) {
+            command = 'missing.command';
+        }
+        this.command = command;
+        this.properties = properties;
+        this.message = message;
+    }
+    toString() {
+        let cmdStr = CMD_STRING + this.command;
+        if (this.properties && Object.keys(this.properties).length > 0) {
+            cmdStr += ' ';
+            let first = true;
+            for (const key in this.properties) {
+                if (this.properties.hasOwnProperty(key)) {
+                    const val = this.properties[key];
+                    if (val) {
+                        if (first) {
+                            first = false;
+                        }
+                        else {
+                            cmdStr += ',';
+                        }
+                        cmdStr += `${key}=${escapeProperty(val)}`;
+                    }
+                }
+            }
+        }
+        cmdStr += `${CMD_STRING}${escapeData(this.message)}`;
+        return cmdStr;
+    }
+}
+function escapeData(s) {
+    return (s || '')
+        .replace(/%/g, '%25')
+        .replace(/\r/g, '%0D')
+        .replace(/\n/g, '%0A');
+}
+function escapeProperty(s) {
+    return (s || '')
+        .replace(/%/g, '%25')
+        .replace(/\r/g, '%0D')
+        .replace(/\n/g, '%0A')
+        .replace(/:/g, '%3A')
+        .replace(/,/g, '%2C');
+}
+//# sourceMappingURL=command.js.map
+
+/***/ }),
 /* 131 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -16325,7 +16435,24 @@ module.exports = function formatRecord(rec, opts) {
 
 
 /***/ }),
-/* 134 */,
+/* 134 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+module.exports = paginationPlugin
+
+function paginationPlugin (octokit) {
+  octokit.getFirstPage = __webpack_require__(502).bind(null, octokit)
+  octokit.getLastPage = __webpack_require__(645).bind(null, octokit)
+  octokit.getNextPage = __webpack_require__(690).bind(null, octokit)
+  octokit.getPreviousPage = __webpack_require__(355).bind(null, octokit)
+  octokit.hasFirstPage = __webpack_require__(214)
+  octokit.hasLastPage = __webpack_require__(302)
+  octokit.hasNextPage = __webpack_require__(337)
+  octokit.hasPreviousPage = __webpack_require__(728)
+}
+
+
+/***/ }),
 /* 135 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -17138,156 +17265,7 @@ module.exports = arrayLikeKeys;
 
 /***/ }),
 /* 147 */,
-/* 148 */
-/***/ (function(module) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-var _this = this;
-module.exports = function (app) { return __awaiter(_this, void 0, void 0, function () {
-    function refresh() {
-        return __awaiter(this, void 0, void 0, function () {
-            var installations, _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0: return [4 /*yield*/, getInstallations()];
-                    case 1:
-                        installations = _b.sent();
-                        stats.installations = installations.length;
-                        _a = stats;
-                        return [4 /*yield*/, popularInstallations(installations)];
-                    case 2:
-                        _a.popular = _b.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    }
-    function getInstallations() {
-        return __awaiter(this, void 0, void 0, function () {
-            var github, req;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, app.auth()];
-                    case 1:
-                        github = _a.sent();
-                        req = github.apps.listInstallations({ per_page: 100 });
-                        return [2 /*return*/, github.paginate(req, function (response) {
-                                return response.data;
-                            })];
-                }
-            });
-        });
-    }
-    function popularInstallations(installations) {
-        return __awaiter(this, void 0, void 0, function () {
-            var popular;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, Promise.all(installations.map(function (installation) { return __awaiter(_this, void 0, void 0, function () {
-                            var account, github, req, repositories;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        account = installation.account;
-                                        if (ignoredAccounts.includes(account.login.toLowerCase())) {
-                                            account.stars = 0;
-                                            app.log.debug({ installation: installation }, 'Installation is ignored');
-                                            return [2 /*return*/, account];
-                                        }
-                                        return [4 /*yield*/, app.auth(installation.id)];
-                                    case 1:
-                                        github = _a.sent();
-                                        req = github.apps.listRepos({ per_page: 100 });
-                                        return [4 /*yield*/, github.paginate(req, function (response) {
-                                                return response.data.repositories.filter(function (repository) { return !repository.private; });
-                                            })];
-                                    case 2:
-                                        repositories = _a.sent();
-                                        account.stars = repositories.reduce(function (stars, repository) {
-                                            return stars + repository.stargazers_count;
-                                        }, 0);
-                                        return [2 /*return*/, account];
-                                }
-                            });
-                        }); }))];
-                    case 1:
-                        popular = _a.sent();
-                        popular = popular.filter(function (installation) { return installation.stars > 0; });
-                        return [2 /*return*/, popular.sort(function (a, b) { return b.stars - a.stars; }).slice(0, 10)];
-                }
-            });
-        });
-    }
-    var REFRESH_INTERVAL, stats, initializing, ignoredAccounts;
-    var _this = this;
-    return __generator(this, function (_a) {
-        if (process.env.DISABLE_STATS) {
-            return [2 /*return*/];
-        }
-        REFRESH_INTERVAL = 60 * 60 * 1000;
-        stats = { installations: 0, popular: [{}] };
-        initializing = refresh();
-        // Refresh the stats on an interval
-        setInterval(refresh, REFRESH_INTERVAL);
-        ignoredAccounts = (process.env.IGNORED_ACCOUNTS || '').toLowerCase().split(',');
-        // Setup /probot/stats endpoint to return cached stats
-        app.router.get('/probot/stats', function (req, res) { return __awaiter(_this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: 
-                    // ensure stats are loaded
-                    return [4 /*yield*/, initializing];
-                    case 1:
-                        // ensure stats are loaded
-                        _a.sent();
-                        res.json(stats);
-                        return [2 /*return*/];
-                }
-            });
-        }); });
-        return [2 /*return*/];
-    });
-}); };
-//# sourceMappingURL=stats.js.map
-
-/***/ }),
+/* 148 */,
 /* 149 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -17753,7 +17731,93 @@ if (typeof process === 'undefined' || process.type === 'renderer' || process.bro
 
 
 /***/ }),
-/* 156 */,
+/* 156 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+if (global.GENTLY) __webpack_require__(451) = GENTLY.hijack(require);
+
+var util = __webpack_require__(669),
+    fs = __webpack_require__(747),
+    EventEmitter = __webpack_require__(614).EventEmitter,
+    crypto = __webpack_require__(373);
+
+function File(properties) {
+  EventEmitter.call(this);
+
+  this.size = 0;
+  this.path = null;
+  this.name = null;
+  this.type = null;
+  this.hash = null;
+  this.lastModifiedDate = null;
+
+  this._writeStream = null;
+  
+  for (var key in properties) {
+    this[key] = properties[key];
+  }
+
+  if(typeof this.hash === 'string') {
+    this.hash = crypto.createHash(properties.hash);
+  } else {
+    this.hash = null;
+  }
+}
+module.exports = File;
+util.inherits(File, EventEmitter);
+
+File.prototype.open = function() {
+  this._writeStream = new fs.WriteStream(this.path);
+};
+
+File.prototype.toJSON = function() {
+  var json = {
+    size: this.size,
+    path: this.path,
+    name: this.name,
+    type: this.type,
+    mtime: this.lastModifiedDate,
+    length: this.length,
+    filename: this.filename,
+    mime: this.mime
+  };
+  if (this.hash && this.hash != "") {
+    json.hash = this.hash;
+  }
+  return json;
+};
+
+File.prototype.write = function(buffer, cb) {
+  var self = this;
+  if (self.hash) {
+    self.hash.update(buffer);
+  }
+
+  if (this._writeStream.closed) {
+    return cb();
+  }
+
+  this._writeStream.write(buffer, function() {
+    self.lastModifiedDate = new Date();
+    self.size += buffer.length;
+    self.emit('progress', self.size);
+    cb();
+  });
+};
+
+File.prototype.end = function(cb) {
+  var self = this;
+  if (self.hash) {
+    self.hash = self.hash.digest('hex');
+  }
+  this._writeStream.end(function() {
+    self.emit('end');
+    cb();
+  });
+};
+
+
+/***/ }),
 /* 157 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -18181,60 +18245,38 @@ module.exports.ensureProperties = ensureProperties;
 
 /***/ }),
 /* 161 */
-/***/ (function(module) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-// This is not the set of all possible signals.
-//
-// It IS, however, the set of all signals that trigger
-// an exit on either Linux or BSD systems.  Linux is a
-// superset of the signal names supported on BSD, and
-// the unknown signals just fail to register, so we can
-// catch that easily enough.
-//
-// Don't bother with SIGKILL.  It's uncatchable, which
-// means that we can't fire any callbacks anyway.
-//
-// If a user does happen to register a handler on a non-
-// fatal signal like SIGWINCH or something, and then
-// exit, it'll end up firing `process.emit('exit')`, so
-// the handler will be fired anyway.
-//
-// SIGBUS, SIGFPE, SIGSEGV and SIGILL, when not raised
-// artificially, inherently leave the process in a
-// state from which it is not safe to try and enter JS
-// listeners.
-module.exports = [
-  'SIGABRT',
-  'SIGALRM',
-  'SIGHUP',
-  'SIGINT',
-  'SIGTERM'
+module.exports = GitHubApi
+
+const defaultsDeep = __webpack_require__(318)
+const Hook = __webpack_require__(858)
+
+const parseClientOptions = __webpack_require__(792)
+const request = __webpack_require__(915)
+const ENDPOINT_DEFAULTS = __webpack_require__(100).DEFAULTS
+
+const PLUGINS = [
+  __webpack_require__(414),
+  __webpack_require__(778),
+  __webpack_require__(134)
 ]
 
-if (process.platform !== 'win32') {
-  module.exports.push(
-    'SIGVTALRM',
-    'SIGXCPU',
-    'SIGXFSZ',
-    'SIGUSR2',
-    'SIGTRAP',
-    'SIGSYS',
-    'SIGQUIT',
-    'SIGIOT'
-    // should detect profiler and enable/disable accordingly.
-    // see #21
-    // 'SIGPROF'
-  )
-}
+function GitHubApi (options) {
+  const defaults = defaultsDeep(parseClientOptions(options), ENDPOINT_DEFAULTS)
 
-if (process.platform === 'linux') {
-  module.exports.push(
-    'SIGIO',
-    'SIGPOLL',
-    'SIGPWR',
-    'SIGSTKFLT',
-    'SIGUNUSED'
-  )
+  const hook = new Hook()
+  const api = {
+    // NOTE: github.hook, github.plugin and github.request are experimental APIs
+    //       at this point and can change at any time
+    hook,
+    plugin: (pluginFunction) => pluginFunction(api),
+    request: (options) => api.hook('request', defaultsDeep(options, defaults), request)
+  }
+
+  PLUGINS.forEach(api.plugin)
+
+  return api
 }
 
 
@@ -18575,41 +18617,7 @@ module.exports = new Type('tag:yaml.org,2002:float', {
 
 
 /***/ }),
-/* 165 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-var rng = __webpack_require__(86);
-var bytesToUuid = __webpack_require__(864);
-
-function v4(options, buf, offset) {
-  var i = buf && offset || 0;
-
-  if (typeof(options) == 'string') {
-    buf = options === 'binary' ? new Array(16) : null;
-    options = null;
-  }
-  options = options || {};
-
-  var rnds = options.random || (options.rng || rng)();
-
-  // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
-  rnds[6] = (rnds[6] & 0x0f) | 0x40;
-  rnds[8] = (rnds[8] & 0x3f) | 0x80;
-
-  // Copy bytes to buffer, if provided
-  if (buf) {
-    for (var ii = 0; ii < 16; ++ii) {
-      buf[i + ii] = rnds[ii];
-    }
-  }
-
-  return buf || bytesToUuid(rnds);
-}
-
-module.exports = v4;
-
-
-/***/ }),
+/* 165 */,
 /* 166 */
 /***/ (function(module) {
 
@@ -18661,7 +18669,7 @@ module.exports = {
 /* 167 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-var v1 = __webpack_require__(24);
+var v1 = __webpack_require__(360);
 var v4 = __webpack_require__(527);
 
 var uuid = v4;
@@ -18954,7 +18962,87 @@ function isDefaultPort(port, secure) {
 
 
 /***/ }),
-/* 172 */,
+/* 172 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+var async = __webpack_require__(395)
+  , abort = __webpack_require__(869)
+  ;
+
+// API
+module.exports = iterate;
+
+/**
+ * Iterates over each job object
+ *
+ * @param {array|object} list - array or object (named list) to iterate over
+ * @param {function} iterator - iterator to run
+ * @param {object} state - current job status
+ * @param {function} callback - invoked when all elements processed
+ */
+function iterate(list, iterator, state, callback)
+{
+  // store current index
+  var key = state['keyedList'] ? state['keyedList'][state.index] : state.index;
+
+  state.jobs[key] = runJob(iterator, key, list[key], function(error, output)
+  {
+    // don't repeat yourself
+    // skip secondary callbacks
+    if (!(key in state.jobs))
+    {
+      return;
+    }
+
+    // clean up jobs
+    delete state.jobs[key];
+
+    if (error)
+    {
+      // don't process rest of the results
+      // stop still active jobs
+      // and reset the list
+      abort(state);
+    }
+    else
+    {
+      state.results[key] = output;
+    }
+
+    // return salvaged results
+    callback(error, state.results);
+  });
+}
+
+/**
+ * Runs iterator over provided job element
+ *
+ * @param   {function} iterator - iterator to invoke
+ * @param   {string|number} key - key/index of the element in the list of jobs
+ * @param   {mixed} item - job description
+ * @param   {function} callback - invoked after iterator is done with the job
+ * @returns {function|mixed} - job abort function or something else
+ */
+function runJob(iterator, key, item, callback)
+{
+  var aborter;
+
+  // allow shortcut if iterator expects only two arguments
+  if (iterator.length == 2)
+  {
+    aborter = iterator(item, async(callback));
+  }
+  // otherwise go with full three arguments
+  else
+  {
+    aborter = iterator(item, key, async(callback));
+  }
+
+  return aborter;
+}
+
+
+/***/ }),
 /* 173 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -19172,7 +19260,7 @@ var Map = __webpack_require__(312)
 var util = __webpack_require__(669)
 
 // A linked list to keep track of recently-used-ness
-var Yallist = __webpack_require__(364)
+var Yallist = __webpack_require__(119)
 
 // use symbols if possible, otherwise just _props
 var symbols = {}
@@ -21939,7 +22027,7 @@ FormData.prototype.toString = function () {
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
 var v1 = __webpack_require__(253);
-var v4 = __webpack_require__(165);
+var v4 = __webpack_require__(470);
 
 var uuid = v4;
 uuid.v1 = v1;
@@ -22584,7 +22672,7 @@ module.exports = isArrayLikeObject;
 var assignMergeValue = __webpack_require__(815),
     cloneBuffer = __webpack_require__(842),
     cloneTypedArray = __webpack_require__(217),
-    copyArray = __webpack_require__(849),
+    copyArray = __webpack_require__(487),
     initCloneObject = __webpack_require__(653),
     isArguments = __webpack_require__(209),
     isArray = __webpack_require__(989),
@@ -22723,27 +22811,16 @@ module.exports = createAssigner;
 
 /***/ }),
 /* 214 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-"use strict";
+module.exports = hasFirstPage
 
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.createWebhookProxy = function (opts) {
-    try {
-        // tslint:disable-next-line
-        var SmeeClient = __webpack_require__(691);
-        var smee = new SmeeClient({
-            logger: opts.logger,
-            source: opts.url,
-            target: "http://localhost:" + opts.port + opts.path
-        });
-        return smee.start();
-    }
-    catch (err) {
-        opts.logger.warn('Run `npm install --save-dev smee-client` to proxy webhooks to localhost.');
-    }
-};
-//# sourceMappingURL=webhook-proxy.js.map
+const getPageLinks = __webpack_require__(560)
+
+function hasFirstPage (link) {
+  return getPageLinks(link).first
+}
+
 
 /***/ }),
 /* 215 */,
@@ -22882,17 +22959,7 @@ module.exports = assocIndexOf;
 
 
 /***/ }),
-/* 222 */
-/***/ (function(module) {
-
-module.exports = getBufferResponse
-
-function getBufferResponse (response) {
-  return response.buffer()
-}
-
-
-/***/ }),
+/* 222 */,
 /* 223 */,
 /* 224 */
 /***/ (function(module) {
@@ -25484,7 +25551,214 @@ function plural(ms, n, name) {
 
 /***/ }),
 /* 241 */,
-/* 242 */,
+/* 242 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const command_1 = __webpack_require__(130);
+const os = __importStar(__webpack_require__(87));
+const path = __importStar(__webpack_require__(622));
+/**
+ * The code to exit an action
+ */
+var ExitCode;
+(function (ExitCode) {
+    /**
+     * A code indicating that the action was successful
+     */
+    ExitCode[ExitCode["Success"] = 0] = "Success";
+    /**
+     * A code indicating that the action was a failure
+     */
+    ExitCode[ExitCode["Failure"] = 1] = "Failure";
+})(ExitCode = exports.ExitCode || (exports.ExitCode = {}));
+//-----------------------------------------------------------------------
+// Variables
+//-----------------------------------------------------------------------
+/**
+ * Sets env variable for this action and future actions in the job
+ * @param name the name of the variable to set
+ * @param val the value of the variable
+ */
+function exportVariable(name, val) {
+    process.env[name] = val;
+    command_1.issueCommand('set-env', { name }, val);
+}
+exports.exportVariable = exportVariable;
+/**
+ * Registers a secret which will get masked from logs
+ * @param secret value of the secret
+ */
+function setSecret(secret) {
+    command_1.issueCommand('add-mask', {}, secret);
+}
+exports.setSecret = setSecret;
+/**
+ * Prepends inputPath to the PATH (for this action and future actions)
+ * @param inputPath
+ */
+function addPath(inputPath) {
+    command_1.issueCommand('add-path', {}, inputPath);
+    process.env['PATH'] = `${inputPath}${path.delimiter}${process.env['PATH']}`;
+}
+exports.addPath = addPath;
+/**
+ * Gets the value of an input.  The value is also trimmed.
+ *
+ * @param     name     name of the input to get
+ * @param     options  optional. See InputOptions.
+ * @returns   string
+ */
+function getInput(name, options) {
+    const val = process.env[`INPUT_${name.replace(/ /g, '_').toUpperCase()}`] || '';
+    if (options && options.required && !val) {
+        throw new Error(`Input required and not supplied: ${name}`);
+    }
+    return val.trim();
+}
+exports.getInput = getInput;
+/**
+ * Sets the value of an output.
+ *
+ * @param     name     name of the output to set
+ * @param     value    value to store
+ */
+function setOutput(name, value) {
+    command_1.issueCommand('set-output', { name }, value);
+}
+exports.setOutput = setOutput;
+//-----------------------------------------------------------------------
+// Results
+//-----------------------------------------------------------------------
+/**
+ * Sets the action status to failed.
+ * When the action exits it will be with an exit code of 1
+ * @param message add error issue message
+ */
+function setFailed(message) {
+    process.exitCode = ExitCode.Failure;
+    error(message);
+}
+exports.setFailed = setFailed;
+//-----------------------------------------------------------------------
+// Logging Commands
+//-----------------------------------------------------------------------
+/**
+ * Writes debug message to user log
+ * @param message debug message
+ */
+function debug(message) {
+    command_1.issueCommand('debug', {}, message);
+}
+exports.debug = debug;
+/**
+ * Adds an error issue
+ * @param message error issue message
+ */
+function error(message) {
+    command_1.issue('error', message);
+}
+exports.error = error;
+/**
+ * Adds an warning issue
+ * @param message warning issue message
+ */
+function warning(message) {
+    command_1.issue('warning', message);
+}
+exports.warning = warning;
+/**
+ * Writes info to log with console.log.
+ * @param message info message
+ */
+function info(message) {
+    process.stdout.write(message + os.EOL);
+}
+exports.info = info;
+/**
+ * Begin an output group.
+ *
+ * Output until the next `groupEnd` will be foldable in this group
+ *
+ * @param name The name of the output group
+ */
+function startGroup(name) {
+    command_1.issue('group', name);
+}
+exports.startGroup = startGroup;
+/**
+ * End an output group.
+ */
+function endGroup() {
+    command_1.issue('endgroup');
+}
+exports.endGroup = endGroup;
+/**
+ * Wrap an asynchronous function call in a group.
+ *
+ * Returns the same type as the function itself.
+ *
+ * @param name The name of the group
+ * @param fn The function to wrap in the group
+ */
+function group(name, fn) {
+    return __awaiter(this, void 0, void 0, function* () {
+        startGroup(name);
+        let result;
+        try {
+            result = yield fn();
+        }
+        finally {
+            endGroup();
+        }
+        return result;
+    });
+}
+exports.group = group;
+//-----------------------------------------------------------------------
+// Wrapper action state
+//-----------------------------------------------------------------------
+/**
+ * Saves state for current action, the state can only be retrieved by this action's post job execution.
+ *
+ * @param     name     name of the state to store
+ * @param     value    value to store
+ */
+function saveState(name, value) {
+    command_1.issueCommand('save-state', { name }, value);
+}
+exports.saveState = saveState;
+/**
+ * Gets the value of an state set by this action's main execution.
+ *
+ * @param     name     name of the state to get
+ * @returns   string
+ */
+function getState(name) {
+    return process.env[`STATE_${name}`] || '';
+}
+exports.getState = getState;
+//# sourceMappingURL=core.js.map
+
+/***/ }),
 /* 243 */
 /***/ (function(module) {
 
@@ -26748,7 +27022,7 @@ formatters.j = function (v) {
 /* 253 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-var rng = __webpack_require__(86);
+var rng = __webpack_require__(662);
 var bytesToUuid = __webpack_require__(864);
 
 // **`v1()` - Generate time-based UUID**
@@ -26864,7 +27138,7 @@ module.exports = v1;
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
 (function(){
-  var crypt = __webpack_require__(363),
+  var crypt = __webpack_require__(715),
       utf8 = __webpack_require__(589).utf8,
       isBuffer = __webpack_require__(773),
       bin = __webpack_require__(589).bin,
@@ -27365,7 +27639,45 @@ MultipartParser.prototype.explain = function() {
 
 
 /***/ }),
-/* 257 */,
+/* 257 */
+/***/ (function(module) {
+
+module.exports = register
+
+function register (state, name, options, method) {
+  if (arguments.length === 3) {
+    method = options
+    options = {}
+  }
+
+  if (typeof method !== 'function') {
+    throw new Error('method for before hook must be a function')
+  }
+
+  if (typeof options !== 'object') {
+    throw new Error('options for before hook must be an object')
+  }
+
+  if (Array.isArray(name)) {
+    return name.reverse().reduce(function (callback, name) {
+      return register.bind(null, state, name, options, callback)
+    }, method)()
+  }
+
+  return Promise.resolve()
+    .then(function () {
+      if (!state.registry[name]) {
+        return method(options)
+      }
+
+      return (state.registry[name]).reduce(function (method, registered) {
+        return registered.hook.bind(null, method, options)
+      }, method)()
+    })
+}
+
+
+/***/ }),
 /* 258 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -27413,15 +27725,15 @@ if (typeof process !== 'undefined' && process.type === 'renderer') {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = escape;
+exports.default = unescape;
 
 var _assertString = _interopRequireDefault(__webpack_require__(567));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function escape(str) {
+function unescape(str) {
   (0, _assertString.default)(str);
-  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\//g, '&#x2F;').replace(/\\/g, '&#x5C;').replace(/`/g, '&#96;');
+  return str.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#x2F;/g, '/').replace(/&#x5C;/g, '\\').replace(/&#96;/g, '`');
 }
 
 module.exports = exports.default;
@@ -27839,7 +28151,7 @@ var url = __webpack_require__(835);
 var transports = __webpack_require__(411);
 var path = __webpack_require__(622);
 var lsmod = __webpack_require__(772);
-var stacktrace = __webpack_require__(858);
+var stacktrace = __webpack_require__(766);
 var stringify = __webpack_require__(266);
 
 var ravenVersion = __webpack_require__(670).version;
@@ -28225,7 +28537,7 @@ module.exports.getModule = getModule;
  * Module dependencies.
  */
 
-var utils = __webpack_require__(720);
+var utils = __webpack_require__(757);
 
 /**
  * Expose `ResponseBase`.
@@ -29757,130 +30069,7 @@ module.exports = function (iconv) {
 
 
 /***/ }),
-/* 292 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = validate
-
-const set = __webpack_require__(624)
-const get = __webpack_require__(736)
-const HttpError = __webpack_require__(910)
-const deprecate = __webpack_require__(501)
-
-function validate (endpointParams, options) {
-  // Alias are handled before validation, as validation rules
-  // ar set the aliased parameter. The `mapTo` property is the other way
-  // around, the final parameter name is the mapTo value, but validation
-  // rules are on parameter with the mapTo property
-  Object.keys(options).forEach(optionName => {
-    if (!endpointParams[optionName] || !endpointParams[optionName].alias) {
-      return
-    }
-
-    set(options, endpointParams[optionName].alias, options[optionName])
-    delete options[optionName]
-
-    // right now all parameters with an alias property also have a deprecated
-    // property, but that might change in future, so we wrap it in the if block,
-    // but ignore if for coverage
-    /* istanbul ignore else */
-    if (endpointParams[optionName].deprecated) {
-      deprecate(`"${optionName}" parameter has been renamed to "${endpointParams[optionName].alias}"`)
-    }
-  })
-
-  Object.keys(endpointParams).forEach(parameterName => {
-    const parameter = get(endpointParams, parameterName)
-    const expectedType = parameter.type
-    let parentParameterName
-    let parentValue
-    let parentParamIsPresent = true
-    let parentParameterIsArray = false
-
-    if (/\./.test(parameterName)) {
-      parentParameterName = parameterName.replace(/\.[^.]+$/, '')
-      parentParameterIsArray = parentParameterName.slice(-2) === '[]'
-      if (parentParameterIsArray) {
-        parentParameterName = parentParameterName.slice(0, -2)
-      }
-      parentValue = get(options, parentParameterName)
-      parentParamIsPresent = parentParameterName === 'headers' || (typeof parentValue === 'object' && parentValue !== null)
-    }
-
-    let values = parentParameterIsArray
-      ? (get(options, parentParameterName) || []).map(value => value[parameterName.split(/\./).pop()])
-      : [get(options, parameterName)]
-
-    values.forEach((value, i) => {
-      const valueIsPresent = typeof value !== 'undefined'
-      const valueIsNull = value === null
-      const currentParameterName = parentParameterIsArray
-        ? parameterName.replace(/\[\]/, `[${i}]`)
-        : parameterName
-
-      if (!parameter.required && !valueIsPresent) {
-        return
-      }
-
-      // if the parent parameter is of type object but allows null
-      // then the child parameters can be ignored
-      if (!parentParamIsPresent) {
-        return
-      }
-
-      if (parameter.allowNull && valueIsNull) {
-        return
-      }
-
-      if (!parameter.allowNull && valueIsNull) {
-        throw new HttpError(`'${currentParameterName}' cannot be null`, 400)
-      }
-
-      if (parameter.required && !valueIsPresent) {
-        throw new HttpError(`Empty value for parameter '${currentParameterName}': ${JSON.stringify(value)}`, 400)
-      }
-
-      // parse to integer before checking for enum
-      // so that string "1" will match enum with number 1
-      if (expectedType === 'integer') {
-        const unparsedValue = value
-        value = parseInt(value, 10)
-        if (isNaN(value)) {
-          throw new HttpError(`Invalid value for parameter '${currentParameterName}': ${JSON.stringify(unparsedValue)} is NaN`, 400)
-        }
-      }
-
-      if (parameter.enum && parameter.enum.indexOf(value) === -1) {
-        throw new HttpError(`Invalid value for parameter '${currentParameterName}': ${JSON.stringify(value)}`, 400)
-      }
-
-      if (parameter.validation) {
-        const regex = new RegExp(parameter.validation)
-        if (!regex.test(value)) {
-          throw new HttpError(`Invalid value for parameter '${currentParameterName}': ${JSON.stringify(value)}`, 400)
-        }
-      }
-
-      if (expectedType === 'object' && typeof value === 'string') {
-        try {
-          value = JSON.parse(value)
-        } catch (exception) {
-          throw new HttpError(`JSON parse error of value for parameter '${currentParameterName}': ${JSON.stringify(value)}`, 400)
-        }
-      }
-
-      set(options, parameter.mapTo || currentParameterName, value)
-    })
-  })
-
-  return options
-}
-
-
-/***/ }),
+/* 292 */,
 /* 293 */
 /***/ (function(module) {
 
@@ -30218,940 +30407,53 @@ function typeChecker (type) {
 
 /***/ }),
 /* 297 */
-/***/ (function(module) {
-
-/**
- * lodash (Custom Build) <https://lodash.com/>
- * Build: `lodash modularize exports="npm" -o ./`
- * Copyright jQuery Foundation and other contributors <https://jquery.org/>
- * Released under MIT license <https://lodash.com/license>
- * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
- * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
- */
-
-/** `Object#toString` result references. */
-var objectTag = '[object Object]';
-
-/**
- * Checks if `value` is a host object in IE < 9.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a host object, else `false`.
- */
-function isHostObject(value) {
-  // Many host objects are `Object` objects that can coerce to strings
-  // despite having improperly defined `toString` methods.
-  var result = false;
-  if (value != null && typeof value.toString != 'function') {
-    try {
-      result = !!(value + '');
-    } catch (e) {}
-  }
-  return result;
-}
-
-/**
- * Creates a unary function that invokes `func` with its argument transformed.
- *
- * @private
- * @param {Function} func The function to wrap.
- * @param {Function} transform The argument transform.
- * @returns {Function} Returns the new function.
- */
-function overArg(func, transform) {
-  return function(arg) {
-    return func(transform(arg));
-  };
-}
-
-/** Used for built-in method references. */
-var funcProto = Function.prototype,
-    objectProto = Object.prototype;
-
-/** Used to resolve the decompiled source of functions. */
-var funcToString = funcProto.toString;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/** Used to infer the `Object` constructor. */
-var objectCtorString = funcToString.call(Object);
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objectToString = objectProto.toString;
-
-/** Built-in value references. */
-var getPrototype = overArg(Object.getPrototypeOf, Object);
-
-/**
- * Checks if `value` is object-like. A value is object-like if it's not `null`
- * and has a `typeof` result of "object".
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
- * @example
- *
- * _.isObjectLike({});
- * // => true
- *
- * _.isObjectLike([1, 2, 3]);
- * // => true
- *
- * _.isObjectLike(_.noop);
- * // => false
- *
- * _.isObjectLike(null);
- * // => false
- */
-function isObjectLike(value) {
-  return !!value && typeof value == 'object';
-}
-
-/**
- * Checks if `value` is a plain object, that is, an object created by the
- * `Object` constructor or one with a `[[Prototype]]` of `null`.
- *
- * @static
- * @memberOf _
- * @since 0.8.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a plain object, else `false`.
- * @example
- *
- * function Foo() {
- *   this.a = 1;
- * }
- *
- * _.isPlainObject(new Foo);
- * // => false
- *
- * _.isPlainObject([1, 2, 3]);
- * // => false
- *
- * _.isPlainObject({ 'x': 0, 'y': 0 });
- * // => true
- *
- * _.isPlainObject(Object.create(null));
- * // => true
- */
-function isPlainObject(value) {
-  if (!isObjectLike(value) ||
-      objectToString.call(value) != objectTag || isHostObject(value)) {
-    return false;
-  }
-  var proto = getPrototype(value);
-  if (proto === null) {
-    return true;
-  }
-  var Ctor = hasOwnProperty.call(proto, 'constructor') && proto.constructor;
-  return (typeof Ctor == 'function' &&
-    Ctor instanceof Ctor && funcToString.call(Ctor) == objectCtorString);
-}
-
-module.exports = isPlainObject;
-
-
-/***/ }),
-/* 298 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var stringify = __webpack_require__(266);
-var parsers = __webpack_require__(30);
-var zlib = __webpack_require__(761);
-var utils = __webpack_require__(270);
-var uuid = __webpack_require__(196);
-var transports = __webpack_require__(411);
-var nodeUtil = __webpack_require__(669); // nodeUtil to avoid confusion with "utils"
-var events = __webpack_require__(614);
-var domain = __webpack_require__(333);
-var md5 = __webpack_require__(254);
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = blacklist;
 
-var instrumentor = __webpack_require__(203);
+var _assertString = _interopRequireDefault(__webpack_require__(567));
 
-var extend = utils.extend;
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function Raven() {
-  this.breadcrumbs = {
-    record: this.captureBreadcrumb.bind(this)
-  };
+function blacklist(str, chars) {
+  (0, _assertString.default)(str);
+  return str.replace(new RegExp("[".concat(chars, "]+"), 'g'), '');
 }
 
-nodeUtil.inherits(Raven, events.EventEmitter);
+module.exports = exports.default;
+module.exports.default = exports.default;
 
-extend(Raven.prototype, {
-  config: function config(dsn, options) {
-    // We get lots of users using raven-node when they want raven-js, hence this warning if it seems like a browser
-    if (
-      typeof window !== 'undefined' &&
-      typeof document !== 'undefined' &&
-      typeof navigator !== 'undefined'
-    ) {
-      utils.consoleAlertOnce(
-        "This looks like a browser environment; are you sure you don't want Raven.js for browser JavaScript? https://sentry.io/for/javascript"
-      );
-    }
+/***/ }),
+/* 298 */,
+/* 299 */
+/***/ (function(module) {
 
-    if (arguments.length === 0) {
-      // no arguments, use default from environment
-      dsn = global.process.env.SENTRY_DSN;
-      options = {};
-    }
-    if (typeof dsn === 'object') {
-      // They must only be passing through options
-      options = dsn;
-      dsn = global.process.env.SENTRY_DSN;
-    }
-    options = options || {};
+function Agent() {
+  this._defaults = [];
+}
 
-    this.raw_dsn = dsn;
-    this.dsn = utils.parseDSN(dsn);
-    this.name =
-      options.name || global.process.env.SENTRY_NAME || __webpack_require__(87).hostname();
-    this.root = options.root || global.process.cwd();
-    this.transport = options.transport || transports[this.dsn.protocol];
-    this.sendTimeout = options.sendTimeout || 1;
-    this.release = options.release || global.process.env.SENTRY_RELEASE;
-    this.environment =
-      options.environment ||
-      global.process.env.SENTRY_ENVIRONMENT ||
-      global.process.env.NODE_ENV;
-
-    // autoBreadcrumbs: true enables all, autoBreadcrumbs: false disables all
-    // autoBreadcrumbs: { http: true } enables a single type
-    this.autoBreadcrumbs = options.autoBreadcrumbs || false;
-    // default to 30, don't allow higher than 100
-    this.maxBreadcrumbs = Math.max(0, Math.min(options.maxBreadcrumbs || 30, 100));
-
-    this.captureUnhandledRejections = options.captureUnhandledRejections;
-    this.loggerName = options.logger;
-    this.dataCallback = options.dataCallback;
-    this.shouldSendCallback = options.shouldSendCallback;
-    this.sampleRate = typeof options.sampleRate === 'undefined' ? 1 : options.sampleRate;
-    this.maxReqQueueCount = options.maxReqQueueCount || 100;
-    this.parseUser = options.parseUser;
-    this.stacktrace = options.stacktrace || false;
-
-    if (!this.dsn) {
-      utils.consoleAlert('no DSN provided, error reporting disabled');
-    }
-
-    if (this.dsn.protocol === 'https') {
-      // In case we want to provide our own SSL certificates / keys
-      this.ca = options.ca || null;
-    }
-
-    // enabled if a dsn is set
-    this._enabled = !!this.dsn;
-
-    var globalContext = (this._globalContext = {});
-    if (options.tags) {
-      globalContext.tags = options.tags;
-    }
-    if (options.extra) {
-      globalContext.extra = options.extra;
-    }
-
-    this.onFatalError = this.defaultOnFatalError = function(err, sendErr, eventId) {
-      console.error(err && err.stack ? err.stack : err);
-      global.process.exit(1);
-    };
-    this.uncaughtErrorHandler = this.makeErrorHandler();
-
-    this.on('error', function(err) {
-      utils.consoleAlert('failed to send exception to sentry: ' + err.message);
-    });
-
+["use", "on", "once", "set", "query", "type", "accept", "auth", "withCredentials", "sortQuery", "retry", "ok", "redirects",
+ "timeout", "buffer", "serialize", "parse", "ca", "key", "pfx", "cert"].forEach(function(fn) {
+  /** Default setting for all requests from this agent */
+  Agent.prototype[fn] = function(/*varargs*/) {
+    this._defaults.push({fn:fn, arguments:arguments});
     return this;
-  },
-
-  install: function install(cb) {
-    if (this.installed) return this;
-
-    if (typeof cb === 'function') {
-      this.onFatalError = cb;
-    }
-
-    global.process.on('uncaughtException', this.uncaughtErrorHandler);
-
-    if (this.captureUnhandledRejections) {
-      var self = this;
-      global.process.on('unhandledRejection', function(reason, promise) {
-        var context = (promise.domain && promise.domain.sentryContext) || {};
-        context.extra = context.extra || {};
-        context.extra.unhandledPromiseRejection = true;
-        self.captureException(reason, context, function(sendErr, eventId) {
-          if (!sendErr) {
-            var reasonMessage = (reason && reason.message) || reason;
-            utils.consoleAlert(
-              'unhandledRejection captured\n' +
-                'Event ID: ' +
-                eventId +
-                '\n' +
-                'Reason: ' +
-                reasonMessage
-            );
-          }
-        });
-      });
-    }
-
-    instrumentor.instrument(this, this.autoBreadcrumbs);
-
-    this.installed = true;
-
-    return this;
-  },
-
-  uninstall: function uninstall() {
-    if (!this.installed) return this;
-
-    instrumentor.deinstrument(this);
-
-    // todo: this works for tests for now, but isn't what we ultimately want to be doing
-    global.process.removeAllListeners('uncaughtException');
-    global.process.removeAllListeners('unhandledRejection');
-
-    this.installed = false;
-
-    return this;
-  },
-
-  makeErrorHandler: function() {
-    var self = this;
-    var caughtFirstError = false;
-    var caughtSecondError = false;
-    var calledFatalError = false;
-    var firstError;
-    return function(err) {
-      if (!caughtFirstError) {
-        // this is the first uncaught error and the ultimate reason for shutting down
-        // we want to do absolutely everything possible to ensure it gets captured
-        // also we want to make sure we don't go recursion crazy if more errors happen after this one
-        firstError = err;
-        caughtFirstError = true;
-        self.captureException(err, {level: 'fatal'}, function(sendErr, eventId) {
-          if (!calledFatalError) {
-            calledFatalError = true;
-            self.onFatalError(err, sendErr, eventId);
-          }
-        });
-      } else if (calledFatalError) {
-        // we hit an error *after* calling onFatalError - pretty boned at this point, just shut it down
-        utils.consoleAlert(
-          'uncaught exception after calling fatal error shutdown callback - this is bad! forcing shutdown'
-        );
-        self.defaultOnFatalError(err);
-      } else if (!caughtSecondError) {
-        // two cases for how we can hit this branch:
-        //   - capturing of first error blew up and we just caught the exception from that
-        //     - quit trying to capture, proceed with shutdown
-        //   - a second independent error happened while waiting for first error to capture
-        //     - want to avoid causing premature shutdown before first error capture finishes
-        // it's hard to immediately tell case 1 from case 2 without doing some fancy/questionable domain stuff
-        // so let's instead just delay a bit before we proceed with our action here
-        // in case 1, we just wait a bit unnecessarily but ultimately do the same thing
-        // in case 2, the delay hopefully made us wait long enough for the capture to finish
-        // two potential nonideal outcomes:
-        //   nonideal case 1: capturing fails fast, we sit around for a few seconds unnecessarily before proceeding correctly by calling onFatalError
-        //   nonideal case 2: case 2 happens, 1st error is captured but slowly, timeout completes before capture and we treat second error as the sendErr of (nonexistent) failure from trying to capture first error
-        // note that after hitting this branch, we might catch more errors where (caughtSecondError && !calledFatalError)
-        //   we ignore them - they don't matter to us, we're just waiting for the second error timeout to finish
-        caughtSecondError = true;
-        setTimeout(function() {
-          if (!calledFatalError) {
-            // it was probably case 1, let's treat err as the sendErr and call onFatalError
-            calledFatalError = true;
-            self.onFatalError(firstError, err);
-          } else {
-            // it was probably case 2, our first error finished capturing while we waited, cool, do nothing
-          }
-        }, (self.sendTimeout + 1) * 1000); // capturing could take at least sendTimeout to fail, plus an arbitrary second for how long it takes to collect surrounding source etc
-      }
-    };
-  },
-
-  generateEventId: function generateEventId() {
-    return uuid().replace(/-/g, '');
-  },
-
-  process: function process(eventId, kwargs, cb) {
-    // prod codepaths shouldn't hit this branch, for testing
-    if (typeof eventId === 'object') {
-      cb = kwargs;
-      kwargs = eventId;
-      eventId = this.generateEventId();
-    }
-
-    var domainContext = (domain.active && domain.active.sentryContext) || {};
-    var globalContext = this._globalContext || {};
-    kwargs.user = extend({}, globalContext.user, domainContext.user, kwargs.user);
-    kwargs.tags = extend({}, globalContext.tags, domainContext.tags, kwargs.tags);
-    kwargs.extra = extend({}, globalContext.extra, domainContext.extra, kwargs.extra);
-    // Perform a shallow copy of breadcrums to not send one that we'll capture below through as well
-    kwargs.breadcrumbs = {
-      values:
-        (domainContext.breadcrumbs && domainContext.breadcrumbs.slice()) ||
-        (globalContext.breadcrumbs && globalContext.breadcrumbs.slice()) ||
-        []
-    };
-
-    /*
-      `request` is our specified property name for the http interface: https://docs.sentry.io/clientdev/interfaces/http/
-      `req` is the conventional name for a request object in node/express/etc
-      we want to enable someone to pass a `request` property to kwargs according to http interface
-      but also want to provide convenience for passing a req object and having us parse it out
-      so we only parse a `req` property if the `request` property is absent/empty (and hence we won't clobber)
-      parseUser returns a partial kwargs object with a `request` property and possibly a `user` property
-      */
-    var request = this._createRequestObject(
-      globalContext.request,
-      domainContext.request,
-      kwargs.request
-    );
-    delete kwargs.request;
-
-    if (Object.keys(request).length === 0) {
-      request = this._createRequestObject(
-        globalContext.req,
-        domainContext.req,
-        kwargs.req
-      );
-      delete kwargs.req;
-    }
-
-    if (Object.keys(request).length > 0) {
-      var parseUser = Object.keys(kwargs.user).length === 0 ? this.parseUser : false;
-      extend(kwargs, parsers.parseRequest(request, parseUser));
-    } else {
-      kwargs.request = {};
-    }
-
-    kwargs.modules = utils.getModules();
-    kwargs.server_name = kwargs.server_name || this.name;
-
-    if (typeof global.process.version !== 'undefined') {
-      kwargs.extra.node = global.process.version;
-    }
-
-    kwargs.environment = kwargs.environment || this.environment;
-    kwargs.logger = kwargs.logger || this.loggerName;
-    kwargs.event_id = eventId;
-    kwargs.timestamp = new Date().toISOString().split('.')[0];
-    kwargs.project = this.dsn && this.dsn.project_id;
-    kwargs.platform = 'node';
-    kwargs.release = this.release;
-
-    // Cleanup empty properties before sending them to the server
-    Object.keys(kwargs).forEach(function(key) {
-      if (kwargs[key] == null || kwargs[key] === '') {
-        delete kwargs[key];
-      }
-    });
-
-    if (this.dataCallback) {
-      kwargs = this.dataCallback(kwargs);
-    }
-
-    // Capture breadcrumb before sending it, as we also want to have it even when
-    // it was dropped due to sampleRate or shouldSendCallback
-    this.captureBreadcrumb({
-      category: 'sentry',
-      message: kwargs.message,
-      event_id: kwargs.event_id,
-      level: kwargs.level || 'error' // presume error unless specified
-    });
-
-    var shouldSend = true;
-    if (!this._enabled) shouldSend = false;
-    if (this.shouldSendCallback && !this.shouldSendCallback(kwargs)) shouldSend = false;
-    if (Math.random() >= this.sampleRate) shouldSend = false;
-
-    if (shouldSend) {
-      this.send(kwargs, cb);
-    } else {
-      // wish there was a good way to communicate to cb why we didn't send; worth considering cb api change?
-      // could be shouldSendCallback, could be disabled, could be sample rate
-      // avoiding setImmediate here because node 0.8
-      cb &&
-        setTimeout(function() {
-          cb(null, eventId);
-        }, 0);
-    }
-  },
-
-  send: function send(kwargs, cb) {
-    var self = this;
-    var skwargs = stringify(kwargs);
-    var eventId = kwargs.event_id;
-
-    zlib.deflate(skwargs, function(err, buff) {
-      var message = buff.toString('base64'),
-        timestamp = new Date().getTime(),
-        headers = {
-          'X-Sentry-Auth': utils.getAuthHeader(
-            timestamp,
-            self.dsn.public_key,
-            self.dsn.private_key
-          ),
-          'Content-Type': 'application/octet-stream',
-          'Content-Length': message.length
-        };
-
-      self.transport.send(self, message, headers, eventId, cb);
-    });
-  },
-
-  captureMessage: function captureMessage(message, kwargs, cb) {
-    if (!cb && typeof kwargs === 'function') {
-      cb = kwargs;
-      kwargs = {};
-    } else {
-      kwargs = utils.isPlainObject(kwargs) ? extend({}, kwargs) : {};
-    }
-
-    var eventId = this.generateEventId();
-
-    if (this.stacktrace) {
-      var ex = new Error(message);
-
-      console.log(ex);
-
-      utils.parseStack(
-        ex,
-        function(frames) {
-          // We trim last frame, as it's our `new Error(message)` statement itself, which is redundant
-          kwargs.stacktrace = {
-            frames: frames.slice(0, -1)
-          };
-          this.process(eventId, parsers.parseText(message, kwargs), cb);
-        }.bind(this)
-      );
-    } else {
-      this.process(eventId, parsers.parseText(message, kwargs), cb);
-    }
-
-    return eventId;
-  },
-
-  captureException: function captureException(err, kwargs, cb) {
-    if (!cb && typeof kwargs === 'function') {
-      cb = kwargs;
-      kwargs = {};
-    } else {
-      kwargs = utils.isPlainObject(kwargs) ? extend({}, kwargs) : {};
-    }
-
-    if (!utils.isError(err)) {
-      if (utils.isPlainObject(err)) {
-        // This will allow us to group events based on top-level keys
-        // which is much better than creating new group when any key/value change
-        var keys = Object.keys(err).sort();
-        var message =
-          'Non-Error exception captured with keys: ' +
-          utils.serializeKeysForMessage(keys);
-        kwargs = extend(kwargs, {
-          message: message,
-          fingerprint: [md5(keys)],
-          extra: kwargs.extra || {}
-        });
-        kwargs.extra.__serialized__ = utils.serializeException(err);
-
-        err = new Error(message);
-      } else {
-        // This handles when someone does:
-        //   throw "something awesome";
-        // We synthesize an Error here so we can extract a (rough) stack trace.
-        err = new Error(err);
-      }
-    }
-
-    var self = this;
-    var eventId = this.generateEventId();
-    parsers.parseError(err, kwargs, function(kw) {
-      self.process(eventId, kw, cb);
-    });
-
-    return eventId;
-  },
-
-  context: function(ctx, func) {
-    if (!func && typeof ctx === 'function') {
-      func = ctx;
-      ctx = {};
-    }
-
-    // todo/note: raven-js takes an args param to do apply(this, args)
-    // i don't think it's correct/necessary to bind this to the wrap call
-    // and i don't know if we need to support the args param; it's undocumented
-    return this.wrap(ctx, func).apply(null);
-  },
-
-  wrap: function(options, func) {
-    if (!this.installed) {
-      utils.consoleAlertOnce(
-        'Raven has not been installed, therefore no breadcrumbs will be captured. Call `Raven.config(...).install()` to fix this.'
-      );
-    }
-    if (!func && typeof options === 'function') {
-      func = options;
-      options = {};
-    }
-
-    var wrapDomain = domain.create();
-    // todo: better property name than sentryContext, maybe __raven__ or sth?
-    wrapDomain.sentryContext = options;
-
-    wrapDomain.on('error', this.uncaughtErrorHandler);
-    var wrapped = wrapDomain.bind(func);
-
-    for (var property in func) {
-      if ({}.hasOwnProperty.call(func, property)) {
-        wrapped[property] = func[property];
-      }
-    }
-    wrapped.prototype = func.prototype;
-    wrapped.__raven__ = true;
-    wrapped.__inner__ = func;
-    // note: domain.bind sets wrapped.domain, but it's not documented, unsure if we should rely on that
-    wrapped.__domain__ = wrapDomain;
-
-    return wrapped;
-  },
-
-  interceptErr: function(options, func) {
-    if (!func && typeof options === 'function') {
-      func = options;
-      options = {};
-    }
-    var self = this;
-    var wrapped = function() {
-      var err = arguments[0];
-      if (utils.isError(err)) {
-        self.captureException(err, options);
-      } else {
-        func.apply(null, arguments);
-      }
-    };
-
-    // repetitive with wrap
-    for (var property in func) {
-      if ({}.hasOwnProperty.call(func, property)) {
-        wrapped[property] = func[property];
-      }
-    }
-    wrapped.prototype = func.prototype;
-    wrapped.__raven__ = true;
-    wrapped.__inner__ = func;
-
-    return wrapped;
-  },
-
-  setContext: function setContext(ctx) {
-    if (domain.active) {
-      domain.active.sentryContext = ctx;
-    } else {
-      this._globalContext = ctx;
-    }
-    return this;
-  },
-
-  mergeContext: function mergeContext(ctx) {
-    extend(this.getContext(), ctx);
-    return this;
-  },
-
-  getContext: function getContext() {
-    if (domain.active) {
-      if (!domain.active.sentryContext) {
-        domain.active.sentryContext = {};
-        utils.consoleAlert('sentry context not found on active domain');
-      }
-      return domain.active.sentryContext;
-    }
-    return this._globalContext;
-  },
-
-  setCallbackHelper: function(propertyName, callback) {
-    var original = this[propertyName];
-    if (typeof callback === 'function') {
-      this[propertyName] = function(data) {
-        return callback(data, original);
-      };
-    } else {
-      this[propertyName] = callback;
-    }
-
-    return this;
-  },
-
-  /*
-   * Set the dataCallback option
-   *
-   * @param {function} callback The callback to run which allows the
-   *                            data blob to be mutated before sending
-   * @return {Raven}
-   */
-  setDataCallback: function(callback) {
-    return this.setCallbackHelper('dataCallback', callback);
-  },
-
-  /*
-   * Set the shouldSendCallback option
-   *
-   * @param {function} callback The callback to run which allows
-   *                            introspecting the blob before sending
-   * @return {Raven}
-   */
-  setShouldSendCallback: function(callback) {
-    return this.setCallbackHelper('shouldSendCallback', callback);
-  },
-
-  requestHandler: function() {
-    var self = this;
-    return function ravenRequestMiddleware(req, res, next) {
-      self.context({req: req}, function() {
-        domain.active.add(req);
-        domain.active.add(res);
-        next();
-      });
-    };
-  },
-
-  errorHandler: function() {
-    var self = this;
-    return function ravenErrorMiddleware(err, req, res, next) {
-      var status =
-        err.status ||
-        err.statusCode ||
-        err.status_code ||
-        (err.output && err.output.statusCode) ||
-        500;
-
-      // skip anything not marked as an internal server error
-      if (status < 500) return next(err);
-
-      var eventId = self.captureException(err, {req: req});
-      res.sentry = eventId;
-      return next(err);
-    };
-  },
-
-  captureBreadcrumb: function(breadcrumb) {
-    // Avoid capturing global-scoped breadcrumbs before instrumentation finishes
-    if (!this.installed) return;
-
-    breadcrumb = extend(
-      {
-        timestamp: +new Date() / 1000
-      },
-      breadcrumb
-    );
-    var currCtx = this.getContext();
-    if (!currCtx.breadcrumbs) currCtx.breadcrumbs = [];
-    currCtx.breadcrumbs.push(breadcrumb);
-    if (currCtx.breadcrumbs.length > this.maxBreadcrumbs) {
-      currCtx.breadcrumbs.shift();
-    }
-    this.setContext(currCtx);
-  },
-
-  _createRequestObject: function() {
-    /**
-     * When using proxy, some of the attributes of req/request objects are non-enumerable.
-     * To make sure, that they are still available to us after we consolidate our sources
-     * (eg. globalContext.request + domainContext.request + kwargs.request),
-     * we manually pull them out from original objects.
-     *
-     * Same scenario happens when some frameworks (eg. Koa) decide to use request within
-     * request. eg `this.request.req`, which adds aliases to the main `request` object.
-     * By manually reassigning them here, we don't need to add additional checks
-     * like `req.method || (req.req && req.req.method)`
-     *
-     * We don't use Object.assign/extend as it's only merging over objects own properties,
-     * and we don't want to go through all of the properties as well, as we simply don't
-     * need all of them.
-     **/
-    var sources = Array.from(arguments).filter(function(source) {
-      return Object.prototype.toString.call(source) === '[object Object]';
-    });
-    sources = [{}].concat(sources);
-    var request = extend.apply(null, sources);
-    var nonEnumerables = [
-      'headers',
-      'hostname',
-      'ip',
-      'method',
-      'protocol',
-      'query',
-      'secure',
-      'url'
-    ];
-
-    nonEnumerables.forEach(function(key) {
-      sources.forEach(function(source) {
-        if (source[key]) request[key] = source[key];
-      });
-    });
-
-    /**
-     * Check for 'host' *only* after we checked for 'hostname' first.
-     * This way we can avoid the noise coming from Express deprecation warning
-     * https://github.com/expressjs/express/blob/b97faff6e2aa4d34d79485fe4331cb0eec13ad57/lib/request.js#L450-L452
-     * REF: https://github.com/getsentry/raven-node/issues/96#issuecomment-354748884
-     **/
-    if (!request.hasOwnProperty('hostname')) {
-      sources.forEach(function(source) {
-        if (source.host) request.host = source.host;
-      });
-    }
-
-    return request;
   }
 });
 
-// Maintain old API compat, need to make sure arguments length is preserved
-function Client(dsn, options) {
-  if (dsn instanceof Client) return dsn;
-  var ravenInstance = new Raven();
-  return ravenInstance.config.apply(ravenInstance, arguments);
-}
-nodeUtil.inherits(Client, Raven);
+Agent.prototype._setDefaults = function(req) {
+    this._defaults.forEach(function(def) {
+      req[def.fn].apply(req, def.arguments);
+    });
+};
 
-// Singleton-by-default but not strictly enforced
-// todo these extra export props are sort of an adhoc mess, better way to manage?
-var defaultInstance = new Raven();
-defaultInstance.Client = Client;
-defaultInstance.version = __webpack_require__(670).version;
-defaultInstance.disableConsoleAlerts = utils.disableConsoleAlerts;
-
-module.exports = defaultInstance;
-
-
-/***/ }),
-/* 299 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = request
-
-const fetch = __webpack_require__(53).default
-const debug = __webpack_require__(155)('octokit:rest')
-const defaults = __webpack_require__(438)
-const isPlainObject = __webpack_require__(768)
-const pick = __webpack_require__(449)
-
-const deprecate = __webpack_require__(501)
-const getBuffer = __webpack_require__(222)
-const HttpError = __webpack_require__(910)
-
-function request (requestOptions) {
-  debug('REQUEST:', requestOptions)
-
-  // calculate content length unless body is a stream, in which case the
-  // content length is already set per option
-  if (requestOptions.body) {
-    defaults(requestOptions.headers, {
-      'content-type': 'application/json; charset=utf-8'
-    })
-  }
-
-  // https://fetch.spec.whatwg.org/#methods
-  requestOptions.method = requestOptions.method.toUpperCase()
-
-  // GitHub expects "content-length: 0" header for PUT/PATCH requests without body
-  // fetch does not allow to set `content-length` header, but we can set body to an empty string
-  if (['PATCH', 'PUT'].indexOf(requestOptions.method) >= 0 && !requestOptions.body) {
-    requestOptions.body = ''
-  }
-
-  if (isPlainObject(requestOptions.body) || Array.isArray(requestOptions.body)) {
-    requestOptions.body = JSON.stringify(requestOptions.body)
-  }
-
-  let headers = {}
-  let status
-
-  return fetch(requestOptions.url, pick(requestOptions, 'method', 'body', 'headers', 'timeout', 'agent'))
-
-    .then(response => {
-      status = response.status
-      for (const keyAndValue of response.headers.entries()) {
-        headers[keyAndValue[0]] = keyAndValue[1]
-      }
-
-      if (status === 204 || status === 205) {
-        return
-      }
-
-      // GitHub API returns 200 for HEAD requsets
-      if (requestOptions.method === 'HEAD') {
-        if (status < 400) {
-          return
-        }
-
-        throw new HttpError(response.statusText, status, headers)
-      }
-
-      if (status === 304) {
-        requestOptions.url = response.headers.location
-        throw new HttpError('Not modified', status, headers)
-      }
-
-      if (status >= 400) {
-        return response.text()
-
-          .then(message => {
-            throw new HttpError(message, status, headers)
-          })
-      }
-
-      const contentType = response.headers.get('content-type')
-      if (/application\/json/.test(contentType)) {
-        return response.json()
-      }
-
-      if (!contentType || /^text\/|charset=utf-8$/.test(contentType)) {
-        return response.text()
-      }
-
-      return getBuffer(response)
-    })
-
-    .then(data => {
-      return {
-        data,
-        status,
-        headers,
-        get meta () {
-          deprecate('response.meta – use response.headers instead (#896)')
-          return headers
-        }
-      }
-    })
-
-    .catch(error => {
-      if (error instanceof HttpError) {
-        throw error
-      }
-
-      throw new HttpError(error.message, 500, headers)
-    })
-}
+module.exports = Agent;
 
 
 /***/ }),
@@ -31205,7 +30507,19 @@ module.exports = Map;
 
 
 /***/ }),
-/* 302 */,
+/* 302 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+module.exports = hasLastPage
+
+const getPageLinks = __webpack_require__(560)
+
+function hasLastPage (link) {
+  return getPageLinks(link).last
+}
+
+
+/***/ }),
 /* 303 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -31586,9 +30900,9 @@ module.exports = require("string_decoder");
 "use strict";
 
 
-exports['application/x-www-form-urlencoded'] = __webpack_require__(645);
+exports['application/x-www-form-urlencoded'] = __webpack_require__(785);
 exports['application/json'] = __webpack_require__(467);
-exports.text = __webpack_require__(837);
+exports.text = __webpack_require__(795);
 
 const binary = __webpack_require__(316);
 exports['application/octet-stream'] = binary;
@@ -31597,54 +30911,7 @@ exports.image = binary;
 
 
 /***/ }),
-/* 306 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-var path = __webpack_require__(622);
-var parse = path.parse || __webpack_require__(816);
-
-var getNodeModulesDirs = function getNodeModulesDirs(absoluteStart, modules) {
-    var prefix = '/';
-    if ((/^([A-Za-z]:)/).test(absoluteStart)) {
-        prefix = '';
-    } else if ((/^\\\\/).test(absoluteStart)) {
-        prefix = '\\\\';
-    }
-
-    var paths = [absoluteStart];
-    var parsed = parse(absoluteStart);
-    while (parsed.dir !== paths[paths.length - 1]) {
-        paths.push(parsed.dir);
-        parsed = parse(parsed.dir);
-    }
-
-    return paths.reduce(function (dirs, aPath) {
-        return dirs.concat(modules.map(function (moduleDir) {
-            return path.resolve(prefix, aPath, moduleDir);
-        }));
-    }, []);
-};
-
-module.exports = function nodeModulesPaths(start, opts, request) {
-    var modules = opts && opts.moduleDirectory
-        ? [].concat(opts.moduleDirectory)
-        : ['node_modules'];
-
-    if (opts && typeof opts.paths === 'function') {
-        return opts.paths(
-            request,
-            start,
-            function () { return getNodeModulesDirs(start, modules); },
-            opts
-        );
-    }
-
-    var dirs = getNodeModulesDirs(start, modules);
-    return opts && opts.paths ? dirs.concat(opts.paths) : dirs;
-};
-
-
-/***/ }),
+/* 306 */,
 /* 307 */,
 /* 308 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
@@ -31706,21 +30973,26 @@ process.env.DISABLE_STATS = 'true';
 
 const handler = __webpack_require__(655)
 const path = __webpack_require__(622);
-const core = __webpack_require__(327);
 const { createProbot } = __webpack_require__(552);
+const core = __webpack_require__(242);
+
+const token = process.env.GITHUB_TOKEN;
 
 // Setup Probot app
-const githubToken = process.env.GITHUB_TOKEN;
-const probot = createProbot({ githubToken });
+const probot = createProbot({ token });
 probot.setup([handler]);
 
 // Process the event
-const event = process.env.GITHUB_EVENT_NAME;
-const payloadPath = process.env.GITHUB_EVENT_PATH;
-const payload = require(path.resolve(payloadPath));
-core.debug(`Receiving event ${JSON.stringify(event)}`);
-probot.receive({ name: event, payload }).catch(err => core.setFailed(`Action failed with error: ${err.message}`))
-  
+async function run() {
+  const event = process.env.GITHUB_EVENT_NAME;
+  const payloadPath = process.env.GITHUB_EVENT_PATH;
+  const payload = require(path.resolve(payloadPath));
+  core.debug(`Receiving event ${JSON.stringify(event)}`);
+
+  probot.receive({ name: event, payload }).catch(err => core.setFailed(`Action failed with error: ${err.message}`))
+}
+
+run();
 
 /***/ }),
 /* 310 */
@@ -31769,27 +31041,57 @@ module.exports = hasPath;
 
 /***/ }),
 /* 311 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-"use strict";
+module.exports = authenticationBeforeRequest
 
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-var jsonwebtoken_1 = __importDefault(__webpack_require__(110));
-exports.createApp = function (options) {
-    return function () {
-        var payload = {
-            exp: Math.floor(Date.now() / 1000) + 60,
-            iat: Math.floor(Date.now() / 1000),
-            iss: options.id // GitHub App ID
-        };
-        // Sign with RSA SHA256
-        return jsonwebtoken_1.default.sign(payload, options.cert, { algorithm: 'RS256' });
-    };
-};
-//# sourceMappingURL=github-app.js.map
+const btoa = __webpack_require__(627)
+const uniq = __webpack_require__(513)
+
+const deprecate = __webpack_require__(730)
+
+function authenticationBeforeRequest (state, options) {
+  if (!state.auth.type) {
+    return
+  }
+
+  if (state.auth.type === 'basic') {
+    const hash = btoa(`${state.auth.username}:${state.auth.password}`)
+    options.headers['authorization'] = `Basic ${hash}`
+    return
+  }
+
+  if (state.auth.type === 'token') {
+    options.headers['authorization'] = `token ${state.auth.token}`
+    return
+  }
+
+  // deprecate state.auth.type === 'integration', rename to 'app'
+  if (state.auth.type === 'integration') {
+    deprecate('authentication type "integration" is deprecated. Use "app" instead.')
+    state.auth.type = 'app'
+  }
+
+  if (state.auth.type === 'app') {
+    options.headers['authorization'] = `Bearer ${state.auth.token}`
+    const acceptHeaders = options.headers['accept'].split(',')
+      .concat('application/vnd.github.machine-man-preview+json')
+    options.headers['accept'] = uniq(acceptHeaders).filter(Boolean).join(',')
+    return
+  }
+
+  options.url += options.url.indexOf('?') === -1 ? '?' : '&'
+
+  if (state.auth.token) {
+    options.url += `access_token=${encodeURIComponent(state.auth.token)}`
+    return
+  }
+
+  const key = encodeURIComponent(state.auth.key)
+  const secret = encodeURIComponent(state.auth.secret)
+  options.url += `client_id=${key}&client_secret=${secret}`
+}
+
 
 /***/ }),
 /* 312 */
@@ -31802,7 +31104,7 @@ if (process.env.npm_package_name === 'pseudomap' &&
 if (typeof Map === 'function' && !process.env.TEST_PSEUDOMAP) {
   module.exports = Map
 } else {
-  module.exports = __webpack_require__(795)
+  module.exports = __webpack_require__(484)
 }
 
 
@@ -33434,7 +32736,7 @@ var BottleneckError, IORedisConnection, RedisConnection, RedisDatastore, parser;
 parser = __webpack_require__(188);
 BottleneckError = __webpack_require__(40);
 RedisConnection = __webpack_require__(516);
-IORedisConnection = __webpack_require__(103);
+IORedisConnection = __webpack_require__(559);
 RedisDatastore = class RedisDatastore {
   constructor(instance, storeOptions, storeInstanceOptions) {
     this.instance = instance;
@@ -33781,207 +33083,167 @@ module.exports = [["a140","",62],["a180","",32],["a240","",62],["a280",
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
+
+var headers, lua, templates;
+lua = __webpack_require__(144);
+headers = {
+  refs: lua["refs.lua"],
+  validate_keys: lua["validate_keys.lua"],
+  validate_client: lua["validate_client.lua"],
+  refresh_expiration: lua["refresh_expiration.lua"],
+  process_tick: lua["process_tick.lua"],
+  conditions_check: lua["conditions_check.lua"],
+  get_time: lua["get_time.lua"]
 };
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
+
+exports.allKeys = function (id) {
+  return [
+  /*
+  HASH
+  */
+  `b_${id}_settings`,
+  /*
+  HASH
+  job index -> weight
+  */
+  `b_${id}_job_weights`,
+  /*
+  ZSET
+  job index -> expiration
+  */
+  `b_${id}_job_expirations`,
+  /*
+  HASH
+  job index -> client
+  */
+  `b_${id}_job_clients`,
+  /*
+  ZSET
+  client -> sum running
+  */
+  `b_${id}_client_running`,
+  /*
+  HASH
+  client -> num queued
+  */
+  `b_${id}_client_num_queued`,
+  /*
+  ZSET
+  client -> last job registered
+  */
+  `b_${id}_client_last_registered`,
+  /*
+  ZSET
+  client -> last seen
+  */
+  `b_${id}_client_last_seen`];
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-const command_1 = __webpack_require__(487);
-const os = __importStar(__webpack_require__(87));
-const path = __importStar(__webpack_require__(622));
-/**
- * The code to exit an action
- */
-var ExitCode;
-(function (ExitCode) {
-    /**
-     * A code indicating that the action was successful
-     */
-    ExitCode[ExitCode["Success"] = 0] = "Success";
-    /**
-     * A code indicating that the action was a failure
-     */
-    ExitCode[ExitCode["Failure"] = 1] = "Failure";
-})(ExitCode = exports.ExitCode || (exports.ExitCode = {}));
-//-----------------------------------------------------------------------
-// Variables
-//-----------------------------------------------------------------------
-/**
- * Sets env variable for this action and future actions in the job
- * @param name the name of the variable to set
- * @param val the value of the variable
- */
-function exportVariable(name, val) {
-    process.env[name] = val;
-    command_1.issueCommand('set-env', { name }, val);
-}
-exports.exportVariable = exportVariable;
-/**
- * Registers a secret which will get masked from logs
- * @param secret value of the secret
- */
-function setSecret(secret) {
-    command_1.issueCommand('add-mask', {}, secret);
-}
-exports.setSecret = setSecret;
-/**
- * Prepends inputPath to the PATH (for this action and future actions)
- * @param inputPath
- */
-function addPath(inputPath) {
-    command_1.issueCommand('add-path', {}, inputPath);
-    process.env['PATH'] = `${inputPath}${path.delimiter}${process.env['PATH']}`;
-}
-exports.addPath = addPath;
-/**
- * Gets the value of an input.  The value is also trimmed.
- *
- * @param     name     name of the input to get
- * @param     options  optional. See InputOptions.
- * @returns   string
- */
-function getInput(name, options) {
-    const val = process.env[`INPUT_${name.replace(/ /g, '_').toUpperCase()}`] || '';
-    if (options && options.required && !val) {
-        throw new Error(`Input required and not supplied: ${name}`);
-    }
-    return val.trim();
-}
-exports.getInput = getInput;
-/**
- * Sets the value of an output.
- *
- * @param     name     name of the output to set
- * @param     value    value to store
- */
-function setOutput(name, value) {
-    command_1.issueCommand('set-output', { name }, value);
-}
-exports.setOutput = setOutput;
-//-----------------------------------------------------------------------
-// Results
-//-----------------------------------------------------------------------
-/**
- * Sets the action status to failed.
- * When the action exits it will be with an exit code of 1
- * @param message add error issue message
- */
-function setFailed(message) {
-    process.exitCode = ExitCode.Failure;
-    error(message);
-}
-exports.setFailed = setFailed;
-//-----------------------------------------------------------------------
-// Logging Commands
-//-----------------------------------------------------------------------
-/**
- * Writes debug message to user log
- * @param message debug message
- */
-function debug(message) {
-    command_1.issueCommand('debug', {}, message);
-}
-exports.debug = debug;
-/**
- * Adds an error issue
- * @param message error issue message
- */
-function error(message) {
-    command_1.issue('error', message);
-}
-exports.error = error;
-/**
- * Adds an warning issue
- * @param message warning issue message
- */
-function warning(message) {
-    command_1.issue('warning', message);
-}
-exports.warning = warning;
-/**
- * Writes info to log with console.log.
- * @param message info message
- */
-function info(message) {
-    process.stdout.write(message + os.EOL);
-}
-exports.info = info;
-/**
- * Begin an output group.
- *
- * Output until the next `groupEnd` will be foldable in this group
- *
- * @param name The name of the output group
- */
-function startGroup(name) {
-    command_1.issue('group', name);
-}
-exports.startGroup = startGroup;
-/**
- * End an output group.
- */
-function endGroup() {
-    command_1.issue('endgroup');
-}
-exports.endGroup = endGroup;
-/**
- * Wrap an asynchronous function call in a group.
- *
- * Returns the same type as the function itself.
- *
- * @param name The name of the group
- * @param fn The function to wrap in the group
- */
-function group(name, fn) {
-    return __awaiter(this, void 0, void 0, function* () {
-        startGroup(name);
-        let result;
-        try {
-            result = yield fn();
-        }
-        finally {
-            endGroup();
-        }
-        return result;
-    });
-}
-exports.group = group;
-//-----------------------------------------------------------------------
-// Wrapper action state
-//-----------------------------------------------------------------------
-/**
- * Saves state for current action, the state can only be retrieved by this action's post job execution.
- *
- * @param     name     name of the state to store
- * @param     value    value to store
- */
-function saveState(name, value) {
-    command_1.issueCommand('save-state', { name }, value);
-}
-exports.saveState = saveState;
-/**
- * Gets the value of an state set by this action's main execution.
- *
- * @param     name     name of the state to get
- * @returns   string
- */
-function getState(name) {
-    return process.env[`STATE_${name}`] || '';
-}
-exports.getState = getState;
-//# sourceMappingURL=core.js.map
+
+templates = {
+  init: {
+    keys: exports.allKeys,
+    headers: ["process_tick"],
+    refresh_expiration: true,
+    code: lua["init.lua"]
+  },
+  group_check: {
+    keys: exports.allKeys,
+    headers: [],
+    refresh_expiration: false,
+    code: lua["group_check.lua"]
+  },
+  register_client: {
+    keys: exports.allKeys,
+    headers: ["validate_keys"],
+    refresh_expiration: false,
+    code: lua["register_client.lua"]
+  },
+  blacklist_client: {
+    keys: exports.allKeys,
+    headers: ["validate_keys", "validate_client"],
+    refresh_expiration: false,
+    code: lua["blacklist_client.lua"]
+  },
+  heartbeat: {
+    keys: exports.allKeys,
+    headers: ["validate_keys", "validate_client", "process_tick"],
+    refresh_expiration: false,
+    code: lua["heartbeat.lua"]
+  },
+  update_settings: {
+    keys: exports.allKeys,
+    headers: ["validate_keys", "validate_client", "process_tick"],
+    refresh_expiration: true,
+    code: lua["update_settings.lua"]
+  },
+  running: {
+    keys: exports.allKeys,
+    headers: ["validate_keys", "validate_client", "process_tick"],
+    refresh_expiration: false,
+    code: lua["running.lua"]
+  },
+  queued: {
+    keys: exports.allKeys,
+    headers: ["validate_keys", "validate_client"],
+    refresh_expiration: false,
+    code: lua["queued.lua"]
+  },
+  done: {
+    keys: exports.allKeys,
+    headers: ["validate_keys", "validate_client", "process_tick"],
+    refresh_expiration: false,
+    code: lua["done.lua"]
+  },
+  check: {
+    keys: exports.allKeys,
+    headers: ["validate_keys", "validate_client", "process_tick", "conditions_check"],
+    refresh_expiration: false,
+    code: lua["check.lua"]
+  },
+  submit: {
+    keys: exports.allKeys,
+    headers: ["validate_keys", "validate_client", "process_tick", "conditions_check"],
+    refresh_expiration: true,
+    code: lua["submit.lua"]
+  },
+  register: {
+    keys: exports.allKeys,
+    headers: ["validate_keys", "validate_client", "process_tick", "conditions_check"],
+    refresh_expiration: true,
+    code: lua["register.lua"]
+  },
+  free: {
+    keys: exports.allKeys,
+    headers: ["validate_keys", "validate_client", "process_tick"],
+    refresh_expiration: true,
+    code: lua["free.lua"]
+  },
+  current_reservoir: {
+    keys: exports.allKeys,
+    headers: ["validate_keys", "validate_client", "process_tick"],
+    refresh_expiration: false,
+    code: lua["current_reservoir.lua"]
+  },
+  increment_reservoir: {
+    keys: exports.allKeys,
+    headers: ["validate_keys", "validate_client", "process_tick"],
+    refresh_expiration: true,
+    code: lua["increment_reservoir.lua"]
+  }
+};
+exports.names = Object.keys(templates);
+
+exports.keys = function (name, id) {
+  return templates[name].keys(id);
+};
+
+exports.payload = function (name) {
+  var template;
+  template = templates[name];
+  return Array.prototype.concat(headers.refs, template.headers.map(function (h) {
+    return headers[h];
+  }), template.refresh_expiration ? headers.refresh_expiration : "", template.code).join("\n");
+};
 
 /***/ }),
 /* 328 */
@@ -34419,7 +33681,19 @@ module.exports = resolveCommand;
 
 
 /***/ }),
-/* 337 */,
+/* 337 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+module.exports = hasNextPage
+
+const getPageLinks = __webpack_require__(560)
+
+function hasNextPage (link) {
+  return getPageLinks(link).next
+}
+
+
+/***/ }),
 /* 338 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -35497,7 +34771,7 @@ Bottleneck = function () {
   Bottleneck.BottleneckError = Bottleneck.prototype.BottleneckError = __webpack_require__(40);
   Bottleneck.Group = Bottleneck.prototype.Group = __webpack_require__(471);
   Bottleneck.RedisConnection = Bottleneck.prototype.RedisConnection = __webpack_require__(516);
-  Bottleneck.IORedisConnection = Bottleneck.prototype.IORedisConnection = __webpack_require__(103);
+  Bottleneck.IORedisConnection = Bottleneck.prototype.IORedisConnection = __webpack_require__(559);
   Bottleneck.Batcher = Bottleneck.prototype.Batcher = __webpack_require__(953);
   Bottleneck.prototype.jobDefaults = {
     priority: DEFAULT_PRIORITY,
@@ -36612,31 +35886,16 @@ function rmkidsSync (p, options) {
 
 /***/ }),
 /* 355 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-"use strict";
+module.exports = getPreviousPage
 
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-var express_1 = __importDefault(__webpack_require__(0));
-var path_1 = __importDefault(__webpack_require__(622));
-// Teach express to properly handle async errors
-// tslint:disable-next-line:no-var-requires
-__webpack_require__(661);
-var logging_1 = __webpack_require__(279);
-exports.createServer = function (args) {
-    var app = express_1.default();
-    app.use(logging_1.logRequest({ logger: args.logger }));
-    app.use('/probot/static/', express_1.default.static(path_1.default.join(__dirname, '..', 'static')));
-    app.use(args.webhook);
-    app.set('view engine', 'hbs');
-    app.set('views', path_1.default.join(__dirname, '..', 'views'));
-    app.get('/ping', function (req, res) { return res.end('PONG'); });
-    return app;
-};
-//# sourceMappingURL=server.js.map
+const getPage = __webpack_require__(944)
+
+function getPreviousPage (octokit, link, headers, callback) {
+  return getPage(octokit, link, 'prev', headers, callback)
+}
+
 
 /***/ }),
 /* 356 */
@@ -37071,128 +36330,194 @@ module.exports = noop;
 /* 360 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-module.exports = getPage
+var rng = __webpack_require__(545);
+var bytesToUuid = __webpack_require__(488);
 
-const HttpError = __webpack_require__(910)
-const getPageLinks = __webpack_require__(931)
-const deprecate = __webpack_require__(501)
+// **`v1()` - Generate time-based UUID**
+//
+// Inspired by https://github.com/LiosK/UUID.js
+// and http://docs.python.org/library/uuid.html
 
-function getPage (octokit, link, which, headers, callback) {
-  if (typeof headers === 'function') {
-    callback = headers
-    headers = null
-  }
+var _nodeId;
+var _clockseq;
 
-  if (callback) {
-    deprecate('callbacks will be removed in v16. Use async/await or Promises instead.')
-  }
+// Previous uuid creation time
+var _lastMSecs = 0;
+var _lastNSecs = 0;
 
-  const url = getPageLinks(link)[which]
+// See https://github.com/uuidjs/uuid for API details
+function v1(options, buf, offset) {
+  var i = buf && offset || 0;
+  var b = buf || [];
 
-  if (!url) {
-    const urlError = new HttpError(`No ${which} page found`, 404)
-    if (callback) {
-      return callback(urlError)
+  options = options || {};
+  var node = options.node || _nodeId;
+  var clockseq = options.clockseq !== undefined ? options.clockseq : _clockseq;
+
+  // node and clockseq need to be initialized to random values if they're not
+  // specified.  We do this lazily to minimize issues related to insufficient
+  // system entropy.  See #189
+  if (node == null || clockseq == null) {
+    var seedBytes = rng();
+    if (node == null) {
+      // Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
+      node = _nodeId = [
+        seedBytes[0] | 0x01,
+        seedBytes[1], seedBytes[2], seedBytes[3], seedBytes[4], seedBytes[5]
+      ];
     }
-    return Promise.reject(urlError)
+    if (clockseq == null) {
+      // Per 4.2.2, randomize (14 bit) clockseq
+      clockseq = _clockseq = (seedBytes[6] << 8 | seedBytes[7]) & 0x3fff;
+    }
   }
 
-  const requestOptions = {
-    url,
-    headers: applyAcceptHeader(link, headers)
+  // UUID timestamps are 100 nano-second units since the Gregorian epoch,
+  // (1582-10-15 00:00).  JSNumbers aren't precise enough for this, so
+  // time is handled internally as 'msecs' (integer milliseconds) and 'nsecs'
+  // (100-nanoseconds offset from msecs) since unix epoch, 1970-01-01 00:00.
+  var msecs = options.msecs !== undefined ? options.msecs : new Date().getTime();
+
+  // Per 4.2.1.2, use count of uuid's generated during the current clock
+  // cycle to simulate higher resolution clock
+  var nsecs = options.nsecs !== undefined ? options.nsecs : _lastNSecs + 1;
+
+  // Time since last uuid creation (in msecs)
+  var dt = (msecs - _lastMSecs) + (nsecs - _lastNSecs)/10000;
+
+  // Per 4.2.1.2, Bump clockseq on clock regression
+  if (dt < 0 && options.clockseq === undefined) {
+    clockseq = clockseq + 1 & 0x3fff;
   }
 
-  const promise = octokit.request(requestOptions)
-
-  if (callback) {
-    promise.then(callback.bind(null, null), callback)
-    return
+  // Reset nsecs if clock regresses (new clockseq) or we've moved onto a new
+  // time interval
+  if ((dt < 0 || msecs > _lastMSecs) && options.nsecs === undefined) {
+    nsecs = 0;
   }
 
-  return promise
+  // Per 4.2.1.2 Throw error if too many uuids are requested
+  if (nsecs >= 10000) {
+    throw new Error('uuid.v1(): Can\'t create more than 10M uuids/sec');
+  }
+
+  _lastMSecs = msecs;
+  _lastNSecs = nsecs;
+  _clockseq = clockseq;
+
+  // Per 4.1.4 - Convert from unix epoch to Gregorian epoch
+  msecs += 12219292800000;
+
+  // `time_low`
+  var tl = ((msecs & 0xfffffff) * 10000 + nsecs) % 0x100000000;
+  b[i++] = tl >>> 24 & 0xff;
+  b[i++] = tl >>> 16 & 0xff;
+  b[i++] = tl >>> 8 & 0xff;
+  b[i++] = tl & 0xff;
+
+  // `time_mid`
+  var tmh = (msecs / 0x100000000 * 10000) & 0xfffffff;
+  b[i++] = tmh >>> 8 & 0xff;
+  b[i++] = tmh & 0xff;
+
+  // `time_high_and_version`
+  b[i++] = tmh >>> 24 & 0xf | 0x10; // include version
+  b[i++] = tmh >>> 16 & 0xff;
+
+  // `clock_seq_hi_and_reserved` (Per 4.2.2 - include variant)
+  b[i++] = clockseq >>> 8 | 0x80;
+
+  // `clock_seq_low`
+  b[i++] = clockseq & 0xff;
+
+  // `node`
+  for (var n = 0; n < 6; ++n) {
+    b[i + n] = node[n];
+  }
+
+  return buf ? buf : bytesToUuid(b);
 }
 
-function applyAcceptHeader (res, headers) {
-  const previous = res.headers && res.headers['x-github-media-type']
-
-  if (!previous || (headers && headers.accept)) {
-    return headers
-  }
-  headers = headers || {}
-  headers.accept = 'application/vnd.' + previous
-    .replace('; param=', '.')
-    .replace('; format=', '+')
-
-  return headers
-}
+module.exports = v1;
 
 
 /***/ }),
-/* 361 */
+/* 361 */,
+/* 362 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-var register = __webpack_require__(793)
-var addHook = __webpack_require__(666)
-var removeHook = __webpack_require__(965)
+"use strict";
 
-// bind with array of arguments: https://stackoverflow.com/a/21792913
-var bind = Function.bind
-var bindable = bind.bind(bind)
 
-function bindApi (hook, state, name) {
-  var removeHookRef = bindable(removeHook, null).apply(null, name ? [state, null, name] : [state, null])
-  hook.api = { remove: removeHookRef }
-  hook.remove = removeHookRef
+const deprecate = __webpack_require__(730)
 
-  ;['before', 'error', 'after', 'wrap'].forEach(function (kind) {
-    var args = name ? [state, kind, name] : [state, kind]
-    hook[kind] = hook.api[kind] = bindable(addHook, null).apply(null, args)
-    hook.remove[kind] = hook.api.remove[kind] = bindable(removeHook, null).apply(null, args)
-  })
+const STATUS_CODES = {
+  304: 'Not Modified', // See PR #673 (https://github.com/octokit/rest.js/pull/673)
+  400: 'Bad Request',
+  404: 'Not Found',
+  500: 'Internal Server Error',
+  504: 'Gateway Timeout'
 }
 
-function HookSingular () {
-  var singularHookName = 'h'
-  var singularHookState = {
-    registry: {}
-  }
-  var singularHook = register.bind(null, singularHookState, singularHookName)
-  bindApi(singularHook, singularHookState, singularHookName)
-  return singularHook
-}
-
-function HookCollection () {
-  var state = {
-    registry: {}
+module.exports = class HttpError extends Error {
+  constructor (message, code, headers) {
+    super(message)
+    // Maintains proper stack trace for where our error was thrown (only available on V8)
+    /* istanbul ignore else */
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor)
+    }
+    this.name = 'HttpError'
+    this.code = code
+    this.status = STATUS_CODES[code]
+    this.headers = headers
   }
 
-  var hook = register.bind(null, state)
-  bindApi(hook, state)
-
-  return hook
-}
-
-var collectionHookDeprecationMessageDisplayed = false
-function Hook () {
-  if (!collectionHookDeprecationMessageDisplayed) {
-    console.warn('[before-after-hook]: "Hook()" repurposing warning, use "Hook.Collection()". Read more: https://git.io/upgrade-before-after-hook-to-1.4')
-    collectionHookDeprecationMessageDisplayed = true
+  toString () {
+    return this.message
   }
-  return HookCollection()
+
+  toJSON () {
+    deprecate('error.toJSON() – use `error.code`, `error.status`, `error.message` instead')
+    return {
+      code: this.code,
+      status: this.status,
+      message: this.message
+    }
+  }
 }
-
-Hook.Singular = HookSingular.bind()
-Hook.Collection = HookCollection.bind()
-
-module.exports = Hook
-// expose constructors as a named property for TypeScript
-module.exports.Hook = Hook
-module.exports.Singular = Hook.Singular
-module.exports.Collection = Hook.Collection
 
 
 /***/ }),
-/* 362 */
+/* 363 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var express_1 = __importDefault(__webpack_require__(0));
+var path_1 = __importDefault(__webpack_require__(622));
+// Teach express to properly handle async errors
+// tslint:disable-next-line:no-var-requires
+__webpack_require__(661);
+var logging_1 = __webpack_require__(279);
+exports.createServer = function (args) {
+    var app = express_1.default();
+    app.use(logging_1.logRequest({ logger: args.logger }));
+    app.use('/probot/static/', express_1.default.static(path_1.default.join(__dirname, '..', 'static')));
+    app.use(args.webhook);
+    app.set('view engine', 'hbs');
+    app.set('views', path_1.default.join(__dirname, '..', 'views'));
+    app.get('/ping', function (req, res) { return res.end('PONG'); });
+    return app;
+};
+//# sourceMappingURL=server.js.map
+
+/***/ }),
+/* 364 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -37201,568 +36526,26 @@ module.exports.Collection = Hook.Collection
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = isCurrency;
-
-var _merge = _interopRequireDefault(__webpack_require__(652));
+exports.default = rtrim;
 
 var _assertString = _interopRequireDefault(__webpack_require__(567));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function currencyRegex(options) {
-  var decimal_digits = "\\d{".concat(options.digits_after_decimal[0], "}");
-  options.digits_after_decimal.forEach(function (digit, index) {
-    if (index !== 0) decimal_digits = "".concat(decimal_digits, "|\\d{").concat(digit, "}");
-  });
-  var symbol = "(\\".concat(options.symbol.replace(/\./g, '\\.'), ")").concat(options.require_symbol ? '' : '?'),
-      negative = '-?',
-      whole_dollar_amount_without_sep = '[1-9]\\d*',
-      whole_dollar_amount_with_sep = "[1-9]\\d{0,2}(\\".concat(options.thousands_separator, "\\d{3})*"),
-      valid_whole_dollar_amounts = ['0', whole_dollar_amount_without_sep, whole_dollar_amount_with_sep],
-      whole_dollar_amount = "(".concat(valid_whole_dollar_amounts.join('|'), ")?"),
-      decimal_amount = "(\\".concat(options.decimal_separator, "(").concat(decimal_digits, "))").concat(options.require_decimal ? '' : '?');
-  var pattern = whole_dollar_amount + (options.allow_decimal || options.require_decimal ? decimal_amount : ''); // default is negative sign before symbol, but there are two other options (besides parens)
-
-  if (options.allow_negatives && !options.parens_for_negatives) {
-    if (options.negative_sign_after_digits) {
-      pattern += negative;
-    } else if (options.negative_sign_before_digits) {
-      pattern = negative + pattern;
-    }
-  } // South African Rand, for example, uses R 123 (space) and R-123 (no space)
-
-
-  if (options.allow_negative_sign_placeholder) {
-    pattern = "( (?!\\-))?".concat(pattern);
-  } else if (options.allow_space_after_symbol) {
-    pattern = " ?".concat(pattern);
-  } else if (options.allow_space_after_digits) {
-    pattern += '( (?!$))?';
-  }
-
-  if (options.symbol_after_digits) {
-    pattern += symbol;
-  } else {
-    pattern = symbol + pattern;
-  }
-
-  if (options.allow_negatives) {
-    if (options.parens_for_negatives) {
-      pattern = "(\\(".concat(pattern, "\\)|").concat(pattern, ")");
-    } else if (!(options.negative_sign_before_digits || options.negative_sign_after_digits)) {
-      pattern = negative + pattern;
-    }
-  } // ensure there's a dollar and/or decimal amount, and that
-  // it doesn't start with a space or a negative sign followed by a space
-
-
-  return new RegExp("^(?!-? )(?=.*\\d)".concat(pattern, "$"));
-}
-
-var default_currency_options = {
-  symbol: '$',
-  require_symbol: false,
-  allow_space_after_symbol: false,
-  symbol_after_digits: false,
-  allow_negatives: true,
-  parens_for_negatives: false,
-  negative_sign_before_digits: false,
-  negative_sign_after_digits: false,
-  allow_negative_sign_placeholder: false,
-  thousands_separator: ',',
-  decimal_separator: '.',
-  allow_decimal: true,
-  require_decimal: false,
-  digits_after_decimal: [2],
-  allow_space_after_digits: false
-};
-
-function isCurrency(str, options) {
+function rtrim(str, chars) {
   (0, _assertString.default)(str);
-  options = (0, _merge.default)(options, default_currency_options);
-  return currencyRegex(options).test(str);
+  var pattern = chars ? new RegExp("[".concat(chars, "]")) : /\s/;
+  var idx = str.length - 1;
+
+  for (; idx >= 0 && pattern.test(str[idx]); idx--) {
+    ;
+  }
+
+  return idx < str.length ? str.substr(0, idx + 1) : str;
 }
 
 module.exports = exports.default;
 module.exports.default = exports.default;
-
-/***/ }),
-/* 363 */
-/***/ (function(module) {
-
-(function() {
-  var base64map
-      = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/',
-
-  crypt = {
-    // Bit-wise rotation left
-    rotl: function(n, b) {
-      return (n << b) | (n >>> (32 - b));
-    },
-
-    // Bit-wise rotation right
-    rotr: function(n, b) {
-      return (n << (32 - b)) | (n >>> b);
-    },
-
-    // Swap big-endian to little-endian and vice versa
-    endian: function(n) {
-      // If number given, swap endian
-      if (n.constructor == Number) {
-        return crypt.rotl(n, 8) & 0x00FF00FF | crypt.rotl(n, 24) & 0xFF00FF00;
-      }
-
-      // Else, assume array and swap all items
-      for (var i = 0; i < n.length; i++)
-        n[i] = crypt.endian(n[i]);
-      return n;
-    },
-
-    // Generate an array of any length of random bytes
-    randomBytes: function(n) {
-      for (var bytes = []; n > 0; n--)
-        bytes.push(Math.floor(Math.random() * 256));
-      return bytes;
-    },
-
-    // Convert a byte array to big-endian 32-bit words
-    bytesToWords: function(bytes) {
-      for (var words = [], i = 0, b = 0; i < bytes.length; i++, b += 8)
-        words[b >>> 5] |= bytes[i] << (24 - b % 32);
-      return words;
-    },
-
-    // Convert big-endian 32-bit words to a byte array
-    wordsToBytes: function(words) {
-      for (var bytes = [], b = 0; b < words.length * 32; b += 8)
-        bytes.push((words[b >>> 5] >>> (24 - b % 32)) & 0xFF);
-      return bytes;
-    },
-
-    // Convert a byte array to a hex string
-    bytesToHex: function(bytes) {
-      for (var hex = [], i = 0; i < bytes.length; i++) {
-        hex.push((bytes[i] >>> 4).toString(16));
-        hex.push((bytes[i] & 0xF).toString(16));
-      }
-      return hex.join('');
-    },
-
-    // Convert a hex string to a byte array
-    hexToBytes: function(hex) {
-      for (var bytes = [], c = 0; c < hex.length; c += 2)
-        bytes.push(parseInt(hex.substr(c, 2), 16));
-      return bytes;
-    },
-
-    // Convert a byte array to a base-64 string
-    bytesToBase64: function(bytes) {
-      for (var base64 = [], i = 0; i < bytes.length; i += 3) {
-        var triplet = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
-        for (var j = 0; j < 4; j++)
-          if (i * 8 + j * 6 <= bytes.length * 8)
-            base64.push(base64map.charAt((triplet >>> 6 * (3 - j)) & 0x3F));
-          else
-            base64.push('=');
-      }
-      return base64.join('');
-    },
-
-    // Convert a base-64 string to a byte array
-    base64ToBytes: function(base64) {
-      // Remove non-base-64 characters
-      base64 = base64.replace(/[^A-Z0-9+\/]/ig, '');
-
-      for (var bytes = [], i = 0, imod4 = 0; i < base64.length;
-          imod4 = ++i % 4) {
-        if (imod4 == 0) continue;
-        bytes.push(((base64map.indexOf(base64.charAt(i - 1))
-            & (Math.pow(2, -2 * imod4 + 8) - 1)) << (imod4 * 2))
-            | (base64map.indexOf(base64.charAt(i)) >>> (6 - imod4 * 2)));
-      }
-      return bytes;
-    }
-  };
-
-  module.exports = crypt;
-})();
-
-
-/***/ }),
-/* 364 */
-/***/ (function(module) {
-
-module.exports = Yallist
-
-Yallist.Node = Node
-Yallist.create = Yallist
-
-function Yallist (list) {
-  var self = this
-  if (!(self instanceof Yallist)) {
-    self = new Yallist()
-  }
-
-  self.tail = null
-  self.head = null
-  self.length = 0
-
-  if (list && typeof list.forEach === 'function') {
-    list.forEach(function (item) {
-      self.push(item)
-    })
-  } else if (arguments.length > 0) {
-    for (var i = 0, l = arguments.length; i < l; i++) {
-      self.push(arguments[i])
-    }
-  }
-
-  return self
-}
-
-Yallist.prototype.removeNode = function (node) {
-  if (node.list !== this) {
-    throw new Error('removing node which does not belong to this list')
-  }
-
-  var next = node.next
-  var prev = node.prev
-
-  if (next) {
-    next.prev = prev
-  }
-
-  if (prev) {
-    prev.next = next
-  }
-
-  if (node === this.head) {
-    this.head = next
-  }
-  if (node === this.tail) {
-    this.tail = prev
-  }
-
-  node.list.length--
-  node.next = null
-  node.prev = null
-  node.list = null
-}
-
-Yallist.prototype.unshiftNode = function (node) {
-  if (node === this.head) {
-    return
-  }
-
-  if (node.list) {
-    node.list.removeNode(node)
-  }
-
-  var head = this.head
-  node.list = this
-  node.next = head
-  if (head) {
-    head.prev = node
-  }
-
-  this.head = node
-  if (!this.tail) {
-    this.tail = node
-  }
-  this.length++
-}
-
-Yallist.prototype.pushNode = function (node) {
-  if (node === this.tail) {
-    return
-  }
-
-  if (node.list) {
-    node.list.removeNode(node)
-  }
-
-  var tail = this.tail
-  node.list = this
-  node.prev = tail
-  if (tail) {
-    tail.next = node
-  }
-
-  this.tail = node
-  if (!this.head) {
-    this.head = node
-  }
-  this.length++
-}
-
-Yallist.prototype.push = function () {
-  for (var i = 0, l = arguments.length; i < l; i++) {
-    push(this, arguments[i])
-  }
-  return this.length
-}
-
-Yallist.prototype.unshift = function () {
-  for (var i = 0, l = arguments.length; i < l; i++) {
-    unshift(this, arguments[i])
-  }
-  return this.length
-}
-
-Yallist.prototype.pop = function () {
-  if (!this.tail) {
-    return undefined
-  }
-
-  var res = this.tail.value
-  this.tail = this.tail.prev
-  if (this.tail) {
-    this.tail.next = null
-  } else {
-    this.head = null
-  }
-  this.length--
-  return res
-}
-
-Yallist.prototype.shift = function () {
-  if (!this.head) {
-    return undefined
-  }
-
-  var res = this.head.value
-  this.head = this.head.next
-  if (this.head) {
-    this.head.prev = null
-  } else {
-    this.tail = null
-  }
-  this.length--
-  return res
-}
-
-Yallist.prototype.forEach = function (fn, thisp) {
-  thisp = thisp || this
-  for (var walker = this.head, i = 0; walker !== null; i++) {
-    fn.call(thisp, walker.value, i, this)
-    walker = walker.next
-  }
-}
-
-Yallist.prototype.forEachReverse = function (fn, thisp) {
-  thisp = thisp || this
-  for (var walker = this.tail, i = this.length - 1; walker !== null; i--) {
-    fn.call(thisp, walker.value, i, this)
-    walker = walker.prev
-  }
-}
-
-Yallist.prototype.get = function (n) {
-  for (var i = 0, walker = this.head; walker !== null && i < n; i++) {
-    // abort out of the list early if we hit a cycle
-    walker = walker.next
-  }
-  if (i === n && walker !== null) {
-    return walker.value
-  }
-}
-
-Yallist.prototype.getReverse = function (n) {
-  for (var i = 0, walker = this.tail; walker !== null && i < n; i++) {
-    // abort out of the list early if we hit a cycle
-    walker = walker.prev
-  }
-  if (i === n && walker !== null) {
-    return walker.value
-  }
-}
-
-Yallist.prototype.map = function (fn, thisp) {
-  thisp = thisp || this
-  var res = new Yallist()
-  for (var walker = this.head; walker !== null;) {
-    res.push(fn.call(thisp, walker.value, this))
-    walker = walker.next
-  }
-  return res
-}
-
-Yallist.prototype.mapReverse = function (fn, thisp) {
-  thisp = thisp || this
-  var res = new Yallist()
-  for (var walker = this.tail; walker !== null;) {
-    res.push(fn.call(thisp, walker.value, this))
-    walker = walker.prev
-  }
-  return res
-}
-
-Yallist.prototype.reduce = function (fn, initial) {
-  var acc
-  var walker = this.head
-  if (arguments.length > 1) {
-    acc = initial
-  } else if (this.head) {
-    walker = this.head.next
-    acc = this.head.value
-  } else {
-    throw new TypeError('Reduce of empty list with no initial value')
-  }
-
-  for (var i = 0; walker !== null; i++) {
-    acc = fn(acc, walker.value, i)
-    walker = walker.next
-  }
-
-  return acc
-}
-
-Yallist.prototype.reduceReverse = function (fn, initial) {
-  var acc
-  var walker = this.tail
-  if (arguments.length > 1) {
-    acc = initial
-  } else if (this.tail) {
-    walker = this.tail.prev
-    acc = this.tail.value
-  } else {
-    throw new TypeError('Reduce of empty list with no initial value')
-  }
-
-  for (var i = this.length - 1; walker !== null; i--) {
-    acc = fn(acc, walker.value, i)
-    walker = walker.prev
-  }
-
-  return acc
-}
-
-Yallist.prototype.toArray = function () {
-  var arr = new Array(this.length)
-  for (var i = 0, walker = this.head; walker !== null; i++) {
-    arr[i] = walker.value
-    walker = walker.next
-  }
-  return arr
-}
-
-Yallist.prototype.toArrayReverse = function () {
-  var arr = new Array(this.length)
-  for (var i = 0, walker = this.tail; walker !== null; i++) {
-    arr[i] = walker.value
-    walker = walker.prev
-  }
-  return arr
-}
-
-Yallist.prototype.slice = function (from, to) {
-  to = to || this.length
-  if (to < 0) {
-    to += this.length
-  }
-  from = from || 0
-  if (from < 0) {
-    from += this.length
-  }
-  var ret = new Yallist()
-  if (to < from || to < 0) {
-    return ret
-  }
-  if (from < 0) {
-    from = 0
-  }
-  if (to > this.length) {
-    to = this.length
-  }
-  for (var i = 0, walker = this.head; walker !== null && i < from; i++) {
-    walker = walker.next
-  }
-  for (; walker !== null && i < to; i++, walker = walker.next) {
-    ret.push(walker.value)
-  }
-  return ret
-}
-
-Yallist.prototype.sliceReverse = function (from, to) {
-  to = to || this.length
-  if (to < 0) {
-    to += this.length
-  }
-  from = from || 0
-  if (from < 0) {
-    from += this.length
-  }
-  var ret = new Yallist()
-  if (to < from || to < 0) {
-    return ret
-  }
-  if (from < 0) {
-    from = 0
-  }
-  if (to > this.length) {
-    to = this.length
-  }
-  for (var i = this.length, walker = this.tail; walker !== null && i > to; i--) {
-    walker = walker.prev
-  }
-  for (; walker !== null && i > from; i--, walker = walker.prev) {
-    ret.push(walker.value)
-  }
-  return ret
-}
-
-Yallist.prototype.reverse = function () {
-  var head = this.head
-  var tail = this.tail
-  for (var walker = head; walker !== null; walker = walker.prev) {
-    var p = walker.prev
-    walker.prev = walker.next
-    walker.next = p
-  }
-  this.head = tail
-  this.tail = head
-  return this
-}
-
-function push (self, item) {
-  self.tail = new Node(item, self.tail, null, self)
-  if (!self.head) {
-    self.head = self.tail
-  }
-  self.length++
-}
-
-function unshift (self, item) {
-  self.head = new Node(item, null, self.head, self)
-  if (!self.tail) {
-    self.tail = self.head
-  }
-  self.length++
-}
-
-function Node (value, prev, next, list) {
-  if (!(this instanceof Node)) {
-    return new Node(value, prev, next, list)
-  }
-
-  this.list = list
-  this.value = value
-
-  if (prev) {
-    prev.next = this
-    this.prev = prev
-  } else {
-    this.prev = null
-  }
-
-  if (next) {
-    next.prev = this
-    this.next = next
-  } else {
-    this.next = null
-  }
-}
-
 
 /***/ }),
 /* 365 */,
@@ -38259,7 +37042,7 @@ function mixinProperties (obj, proto) {
 /* 369 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-var JsonWebTokenError = __webpack_require__(662);
+var JsonWebTokenError = __webpack_require__(986);
 var NotBeforeError    = __webpack_require__(629);
 var TokenExpiredError = __webpack_require__(637);
 var decode            = __webpack_require__(854);
@@ -39219,14 +38002,14 @@ const format = __webpack_require__(835).format;
 const resolve = __webpack_require__(835).resolve;
 let methods = __webpack_require__(463);
 const Stream = __webpack_require__(413);
-const utils = __webpack_require__(720);
+const utils = __webpack_require__(757);
 const unzip = __webpack_require__(482).unzip;
-const extend = __webpack_require__(494);
+const extend = __webpack_require__(952);
 const mime = __webpack_require__(58);
 const https = __webpack_require__(583);
 const http = __webpack_require__(605);
 const fs = __webpack_require__(747);
-const qs = __webpack_require__(940);
+const qs = __webpack_require__(720);
 const zlib = __webpack_require__(761);
 const util = __webpack_require__(669);
 const pkg = __webpack_require__(50);
@@ -40855,7 +39638,7 @@ module.exports = stubFalse;
 /* 398 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-var async = __webpack_require__(621);
+var async = __webpack_require__(609);
 async.core = __webpack_require__(262);
 async.isCore = __webpack_require__(561);
 async.sync = __webpack_require__(938);
@@ -40865,60 +39648,60 @@ module.exports = async;
 
 /***/ }),
 /* 399 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module) {
 
-module.exports = getRequestAgent
+// This is not the set of all possible signals.
+//
+// It IS, however, the set of all signals that trigger
+// an exit on either Linux or BSD systems.  Linux is a
+// superset of the signal names supported on BSD, and
+// the unknown signals just fail to register, so we can
+// catch that easily enough.
+//
+// Don't bother with SIGKILL.  It's uncatchable, which
+// means that we can't fire any callbacks anyway.
+//
+// If a user does happen to register a handler on a non-
+// fatal signal like SIGWINCH or something, and then
+// exit, it'll end up firing `process.emit('exit')`, so
+// the handler will be fired anyway.
+//
+// SIGBUS, SIGFPE, SIGSEGV and SIGILL, when not raised
+// artificially, inherently leave the process in a
+// state from which it is not safe to try and enter JS
+// listeners.
+module.exports = [
+  'SIGABRT',
+  'SIGALRM',
+  'SIGHUP',
+  'SIGINT',
+  'SIGTERM'
+]
 
-const urlParse = __webpack_require__(835).parse
+if (process.platform !== 'win32') {
+  module.exports.push(
+    'SIGVTALRM',
+    'SIGXCPU',
+    'SIGXFSZ',
+    'SIGUSR2',
+    'SIGTRAP',
+    'SIGSYS',
+    'SIGQUIT',
+    'SIGIOT'
+    // should detect profiler and enable/disable accordingly.
+    // see #21
+    // 'SIGPROF'
+  )
+}
 
-const HttpAgent = __webpack_require__(605).Agent
-const HttpsAgent = __webpack_require__(583).Agent
-const HttpProxyAgent = __webpack_require__(499)
-const HttpsProxyAgent = __webpack_require__(171)
-const merge = __webpack_require__(9)
-const omit = __webpack_require__(792)
-const pick = __webpack_require__(449)
-
-const deprecate = __webpack_require__(501)
-
-function getRequestAgent (baseUrl, options) {
-  if (options.agent) {
-    return options.agent
-  }
-
-  const agentOptionNames = ['ca', 'proxy', 'rejectUnauthorized', 'family'].filter(key => key in options)
-
-  if (agentOptionNames.length === 0) {
-    return
-  }
-  agentOptionNames.forEach(option => {
-    deprecate(`options.${option} (use "options.agent" instead)`)
-  })
-
-  const agentOptions = pick(options, agentOptionNames)
-
-  const protocol = urlParse(baseUrl).protocol.replace(':', '')
-
-  /* istanbul ignore if */
-  if ('proxy' in options) {
-    const proxyAgentOptions = merge(
-      urlParse(agentOptions.proxy),
-      omit(agentOptions, 'proxy')
-    )
-
-    if (protocol === 'http') {
-      return new HttpProxyAgent(proxyAgentOptions)
-    }
-
-    return new HttpsProxyAgent(proxyAgentOptions)
-  }
-
-  /* istanbul ignore if */
-  if (protocol === 'http') {
-    return new HttpAgent(agentOptions)
-  }
-
-  return new HttpsAgent(agentOptions)
+if (process.platform === 'linux') {
+  module.exports.push(
+    'SIGIO',
+    'SIGPOLL',
+    'SIGPWR',
+    'SIGSTKFLT',
+    'SIGUNUSED'
+  )
 }
 
 
@@ -41018,27 +39801,7 @@ function _default(str, locale) {
 }
 
 /***/ }),
-/* 401 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-module.exports = getUserAgentNode
-
-const osName = __webpack_require__(990)
-
-function getUserAgentNode () {
-  try {
-    return `Node.js/${process.version.substr(1)} (${osName()}; ${process.arch})`
-  } catch (error) {
-    if (/wmic os get Caption/.test(error.message)) {
-      return 'Windows <version undetectable>'
-    }
-
-    throw error
-  }
-}
-
-
-/***/ }),
+/* 401 */,
 /* 402 */,
 /* 403 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
@@ -41158,17 +39921,27 @@ JSONParser.prototype.end = function() {
 /***/ }),
 /* 405 */,
 /* 406 */
-/***/ (function(module) {
+/***/ (function(module, exports, __webpack_require__) {
 
-module.exports = {
-  agent: undefined, // https://nodejs.org/api/https.html#https_class_https_agent
-  headers: {
-    accept: 'application/vnd.github.v3+json'
-  },
-  timeout: 0,
-  baseUrl: 'https://api.github.com'
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = whitelist;
+
+var _assertString = _interopRequireDefault(__webpack_require__(567));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function whitelist(str, chars) {
+  (0, _assertString.default)(str);
+  return str.replace(new RegExp("[^".concat(chars, "]+"), 'g'), '');
 }
 
+module.exports = exports.default;
+module.exports.default = exports.default;
 
 /***/ }),
 /* 407 */
@@ -41302,92 +40075,7 @@ function loadModule(moduleName) {
 
 
 /***/ }),
-/* 408 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = restEndpoint
-
-const defaultsDeep = __webpack_require__(318)
-const intersection = __webpack_require__(900)
-const mapKeys = __webpack_require__(882)
-const omit = __webpack_require__(792)
-const urlTemplate = __webpack_require__(689)
-const getUserAgent = __webpack_require__(401)
-
-const addQueryParameters = __webpack_require__(839)
-const deprecate = __webpack_require__(501)
-const extractUrlVariableNames = __webpack_require__(484)
-const pkg = __webpack_require__(640)
-
-const DEFAULTS = module.exports.DEFAULTS = __webpack_require__(635)
-const NON_PARAMETERS = [
-  'request',
-  'baseUrl'
-]
-
-function restEndpoint (options) {
-  // lowercase header names (#760)
-  options.headers = mapKeys(options.headers, (value, key) => key.toLowerCase())
-
-  let userAgent = `octokit.js/${pkg.version} ${getUserAgent()}`
-  if (options.headers['user-agent']) {
-    userAgent = `${options.headers['user-agent']} ${userAgent}`
-  }
-  options.headers['user-agent'] = userAgent
-
-  options = defaultsDeep({}, options, DEFAULTS)
-
-  let method = options.method.toLowerCase()
-  let baseUrl = options.baseUrl
-  let url = options.url
-  let body = options.body
-  let headers = options.headers
-  let remainingOptions = omit(options, ['method', 'baseUrl', 'url', 'headers'])
-
-  // replace :varname with {varname} to make it RFC 6570 compatible
-  url = url.replace(/:([a-z]\w+)/g, '{+$1}')
-
-  // extract variable names from URL to calculate remaining variables later
-  const urlVariableNames = extractUrlVariableNames(url)
-
-  url = urlTemplate.parse(url).expand(remainingOptions)
-
-  if (!/^http/.test(url)) {
-    url = (baseUrl) + url
-  }
-
-  const requestOptions = remainingOptions.request
-  remainingOptions = omit(remainingOptions, intersection(Object.keys(options), urlVariableNames).concat(NON_PARAMETERS))
-
-  if (method === 'get' || method === 'head') {
-    url = addQueryParameters(url, remainingOptions)
-  } else {
-    if ('input' in remainingOptions) {
-      deprecate('"input" option has been renamed to "data"')
-      remainingOptions.data = remainingOptions.input
-      delete remainingOptions.input
-    }
-
-    if ('data' in remainingOptions) {
-      body = remainingOptions.data
-    } else {
-      body = Object.keys(remainingOptions).length ? remainingOptions : undefined
-    }
-  }
-
-  return Object.assign(requestOptions, {
-    method,
-    url,
-    headers,
-    body
-  })
-}
-
-
-/***/ }),
+/* 408 */,
 /* 409 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -41894,7 +40582,24 @@ function typeChecker (type) {
 module.exports = require("stream");
 
 /***/ }),
-/* 414 */,
+/* 414 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+module.exports = authenticationPlugin
+
+const authenticate = __webpack_require__(955)
+const beforeRequest = __webpack_require__(311)
+
+function authenticationPlugin (octokit) {
+  const state = {
+    auth: false
+  }
+  octokit.authenticate = authenticate.bind(null, state)
+  octokit.hook.before('request', beforeRequest.bind(null, state))
+}
+
+
+/***/ }),
 /* 415 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -41928,7 +40633,69 @@ module.exports = isTypedArray;
 
 
 /***/ }),
-/* 416 */,
+/* 416 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+var arrayMap = __webpack_require__(126),
+    baseClone = __webpack_require__(695),
+    baseUnset = __webpack_require__(237),
+    castPath = __webpack_require__(289),
+    copyObject = __webpack_require__(479),
+    customOmitClone = __webpack_require__(445),
+    flatRest = __webpack_require__(76),
+    getAllKeysIn = __webpack_require__(611);
+
+/** Used to compose bitmasks for cloning. */
+var CLONE_DEEP_FLAG = 1,
+    CLONE_FLAT_FLAG = 2,
+    CLONE_SYMBOLS_FLAG = 4;
+
+/**
+ * The opposite of `_.pick`; this method creates an object composed of the
+ * own and inherited enumerable property paths of `object` that are not omitted.
+ *
+ * **Note:** This method is considerably slower than `_.pick`.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Object
+ * @param {Object} object The source object.
+ * @param {...(string|string[])} [paths] The property paths to omit.
+ * @returns {Object} Returns the new object.
+ * @example
+ *
+ * var object = { 'a': 1, 'b': '2', 'c': 3 };
+ *
+ * _.omit(object, ['a', 'c']);
+ * // => { 'b': '2' }
+ */
+var omit = flatRest(function(object, paths) {
+  var result = {};
+  if (object == null) {
+    return result;
+  }
+  var isDeep = false;
+  paths = arrayMap(paths, function(path) {
+    path = castPath(path, object);
+    isDeep || (isDeep = path.length > 1);
+    return path;
+  });
+  copyObject(object, getAllKeysIn(object), result);
+  if (isDeep) {
+    result = baseClone(result, CLONE_DEEP_FLAG | CLONE_FLAT_FLAG | CLONE_SYMBOLS_FLAG, customOmitClone);
+  }
+  var length = paths.length;
+  while (length--) {
+    baseUnset(result, paths[length]);
+  }
+  return result;
+});
+
+module.exports = omit;
+
+
+/***/ }),
 /* 417 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -42661,57 +41428,153 @@ formatters.j = function (v) {
 
 /***/ }),
 /* 432 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module) {
 
-module.exports = authenticationBeforeRequest
+"use strict";
 
-const btoa = __webpack_require__(627)
-const uniq = __webpack_require__(513)
-
-const deprecate = __webpack_require__(501)
-
-function authenticationBeforeRequest (state, options) {
-  if (!state.auth.type) {
-    return
-  }
-
-  if (state.auth.type === 'basic') {
-    const hash = btoa(`${state.auth.username}:${state.auth.password}`)
-    options.headers['authorization'] = `Basic ${hash}`
-    return
-  }
-
-  if (state.auth.type === 'token') {
-    options.headers['authorization'] = `token ${state.auth.token}`
-    return
-  }
-
-  // deprecate state.auth.type === 'integration', rename to 'app'
-  if (state.auth.type === 'integration') {
-    deprecate('authentication type "integration" is deprecated. Use "app" instead.')
-    state.auth.type = 'app'
-  }
-
-  if (state.auth.type === 'app') {
-    options.headers['authorization'] = `Bearer ${state.auth.token}`
-    const acceptHeaders = options.headers['accept'].split(',')
-      .concat('application/vnd.github.machine-man-preview+json')
-    options.headers['accept'] = uniq(acceptHeaders).filter(Boolean).join(',')
-    return
-  }
-
-  options.url += options.url.indexOf('?') === -1 ? '?' : '&'
-
-  if (state.auth.token) {
-    options.url += `access_token=${encodeURIComponent(state.auth.token)}`
-    return
-  }
-
-  const key = encodeURIComponent(state.auth.key)
-  const secret = encodeURIComponent(state.auth.secret)
-  options.url += `client_id=${key}&client_secret=${secret}`
-}
-
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+var _this = this;
+module.exports = function (app) { return __awaiter(_this, void 0, void 0, function () {
+    function refresh() {
+        return __awaiter(this, void 0, void 0, function () {
+            var installations, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0: return [4 /*yield*/, getInstallations()];
+                    case 1:
+                        installations = _b.sent();
+                        stats.installations = installations.length;
+                        _a = stats;
+                        return [4 /*yield*/, popularInstallations(installations)];
+                    case 2:
+                        _a.popular = _b.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }
+    function getInstallations() {
+        return __awaiter(this, void 0, void 0, function () {
+            var github, req;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, app.auth()];
+                    case 1:
+                        github = _a.sent();
+                        req = github.apps.listInstallations({ per_page: 100 });
+                        return [2 /*return*/, github.paginate(req, function (response) {
+                                return response.data;
+                            })];
+                }
+            });
+        });
+    }
+    function popularInstallations(installations) {
+        return __awaiter(this, void 0, void 0, function () {
+            var popular;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, Promise.all(installations.map(function (installation) { return __awaiter(_this, void 0, void 0, function () {
+                            var account, github, req, repositories;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        account = installation.account;
+                                        if (ignoredAccounts.includes(account.login.toLowerCase())) {
+                                            account.stars = 0;
+                                            app.log.debug({ installation: installation }, 'Installation is ignored');
+                                            return [2 /*return*/, account];
+                                        }
+                                        return [4 /*yield*/, app.auth(installation.id)];
+                                    case 1:
+                                        github = _a.sent();
+                                        req = github.apps.listRepos({ per_page: 100 });
+                                        return [4 /*yield*/, github.paginate(req, function (response) {
+                                                return response.data.repositories.filter(function (repository) { return !repository.private; });
+                                            })];
+                                    case 2:
+                                        repositories = _a.sent();
+                                        account.stars = repositories.reduce(function (stars, repository) {
+                                            return stars + repository.stargazers_count;
+                                        }, 0);
+                                        return [2 /*return*/, account];
+                                }
+                            });
+                        }); }))];
+                    case 1:
+                        popular = _a.sent();
+                        popular = popular.filter(function (installation) { return installation.stars > 0; });
+                        return [2 /*return*/, popular.sort(function (a, b) { return b.stars - a.stars; }).slice(0, 10)];
+                }
+            });
+        });
+    }
+    var REFRESH_INTERVAL, stats, initializing, ignoredAccounts;
+    var _this = this;
+    return __generator(this, function (_a) {
+        if (process.env.DISABLE_STATS) {
+            return [2 /*return*/];
+        }
+        REFRESH_INTERVAL = 60 * 60 * 1000;
+        stats = { installations: 0, popular: [{}] };
+        initializing = refresh();
+        // Refresh the stats on an interval
+        setInterval(refresh, REFRESH_INTERVAL);
+        ignoredAccounts = (process.env.IGNORED_ACCOUNTS || '').toLowerCase().split(',');
+        // Setup /probot/stats endpoint to return cached stats
+        app.router.get('/probot/stats', function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: 
+                    // ensure stats are loaded
+                    return [4 /*yield*/, initializing];
+                    case 1:
+                        // ensure stats are loaded
+                        _a.sent();
+                        res.json(stats);
+                        return [2 /*return*/];
+                }
+            });
+        }); });
+        return [2 /*return*/];
+    });
+}); };
+//# sourceMappingURL=stats.js.map
 
 /***/ }),
 /* 433 */
@@ -42737,80 +41600,48 @@ module.exports = new Type('tag:yaml.org,2002:merge', {
 /* 435 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-module.exports = parseOptions
+var iterate    = __webpack_require__(172)
+  , initState  = __webpack_require__(801)
+  , terminator = __webpack_require__(748)
+  ;
 
-const defaults = __webpack_require__(438)
-const pick = __webpack_require__(449)
+// Public API
+module.exports = parallel;
 
-const deprecate = __webpack_require__(501)
-const getRequestAgent = __webpack_require__(399)
-const DEFAULTS = __webpack_require__(406)
-const OPTION_NAMES = [
-  'timeout',
-  'baseUrl',
-  'agent',
-  'headers'
-]
+/**
+ * Runs iterator over provided array elements in parallel
+ *
+ * @param   {array|object} list - array or object (named list) to iterate over
+ * @param   {function} iterator - iterator to run
+ * @param   {function} callback - invoked when all elements processed
+ * @returns {function} - jobs terminator
+ */
+function parallel(list, iterator, callback)
+{
+  var state = initState(list);
 
-function parseOptions (userOptions) {
-  if (!userOptions) {
-    userOptions = {}
+  while (state.index < (state['keyedList'] || list).length)
+  {
+    iterate(list, iterator, state, function(error, result)
+    {
+      if (error)
+      {
+        callback(error, result);
+        return;
+      }
+
+      // looks like it's the last one
+      if (Object.keys(state.jobs).length === 0)
+      {
+        callback(null, state.results);
+        return;
+      }
+    });
+
+    state.index++;
   }
 
-  if ('followRedirects' in userOptions) {
-    deprecate('followRedirects option is no longer supported. All redirects are followed correctly')
-  }
-
-  if ('protocol' in userOptions) {
-    deprecate('protocol option is no longer supported')
-  }
-
-  if ('host' in userOptions) {
-    deprecate('host option is no longer supported')
-  }
-
-  if ('port' in userOptions) {
-    deprecate('port option is no longer supported')
-  }
-
-  if ('pathPrefix' in userOptions) {
-    deprecate('pathPrefix option is no longer supported')
-  }
-
-  if ('Promise' in userOptions) {
-    deprecate('Promise option is no longer supported. The native Promise API is used')
-  }
-
-  const options = defaults(pick(userOptions, OPTION_NAMES), DEFAULTS)
-
-  const clientDefaults = {
-    baseUrl: options.baseUrl,
-    headers: options.headers,
-    request: {
-      timeout: options.timeout
-    }
-  }
-  if (userOptions.protocol) {
-    clientDefaults.baseUrl = `${userOptions.protocol}://${userOptions.host}`
-
-    /* istanbul ignore else */
-    if (userOptions.port) {
-      clientDefaults.baseUrl += `:${userOptions.port}`
-    }
-
-    // Check if a prefix is passed in the options and strip any leading or trailing slashes from it.
-    /* istanbul ignore else */
-    if (userOptions.pathPrefix) {
-      clientDefaults.baseUrl += '/' + userOptions.pathPrefix.replace(/(^[/]+|[/]+$)/g, '')
-    }
-  }
-  /* istanbul ignore else */
-
-  if (!process.browser) {
-    clientDefaults.request.agent = getRequestAgent(clientDefaults.baseUrl, userOptions)
-  }
-
-  return clientDefaults
+  return terminator.bind(state, callback);
 }
 
 
@@ -44611,7 +43442,35 @@ module.exports = getMatchData;
 
 
 /***/ }),
-/* 455 */,
+/* 455 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = isISO31661Alpha2;
+
+var _assertString = _interopRequireDefault(__webpack_require__(567));
+
+var _includes = _interopRequireDefault(__webpack_require__(872));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// from https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+var validISO31661Alpha2CountriesCodes = ['AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AO', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AW', 'AX', 'AZ', 'BA', 'BB', 'BD', 'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BL', 'BM', 'BN', 'BO', 'BQ', 'BR', 'BS', 'BT', 'BV', 'BW', 'BY', 'BZ', 'CA', 'CC', 'CD', 'CF', 'CG', 'CH', 'CI', 'CK', 'CL', 'CM', 'CN', 'CO', 'CR', 'CU', 'CV', 'CW', 'CX', 'CY', 'CZ', 'DE', 'DJ', 'DK', 'DM', 'DO', 'DZ', 'EC', 'EE', 'EG', 'EH', 'ER', 'ES', 'ET', 'FI', 'FJ', 'FK', 'FM', 'FO', 'FR', 'GA', 'GB', 'GD', 'GE', 'GF', 'GG', 'GH', 'GI', 'GL', 'GM', 'GN', 'GP', 'GQ', 'GR', 'GS', 'GT', 'GU', 'GW', 'GY', 'HK', 'HM', 'HN', 'HR', 'HT', 'HU', 'ID', 'IE', 'IL', 'IM', 'IN', 'IO', 'IQ', 'IR', 'IS', 'IT', 'JE', 'JM', 'JO', 'JP', 'KE', 'KG', 'KH', 'KI', 'KM', 'KN', 'KP', 'KR', 'KW', 'KY', 'KZ', 'LA', 'LB', 'LC', 'LI', 'LK', 'LR', 'LS', 'LT', 'LU', 'LV', 'LY', 'MA', 'MC', 'MD', 'ME', 'MF', 'MG', 'MH', 'MK', 'ML', 'MM', 'MN', 'MO', 'MP', 'MQ', 'MR', 'MS', 'MT', 'MU', 'MV', 'MW', 'MX', 'MY', 'MZ', 'NA', 'NC', 'NE', 'NF', 'NG', 'NI', 'NL', 'NO', 'NP', 'NR', 'NU', 'NZ', 'OM', 'PA', 'PE', 'PF', 'PG', 'PH', 'PK', 'PL', 'PM', 'PN', 'PR', 'PS', 'PT', 'PW', 'PY', 'QA', 'RE', 'RO', 'RS', 'RU', 'RW', 'SA', 'SB', 'SC', 'SD', 'SE', 'SG', 'SH', 'SI', 'SJ', 'SK', 'SL', 'SM', 'SN', 'SO', 'SR', 'SS', 'ST', 'SV', 'SX', 'SY', 'SZ', 'TC', 'TD', 'TF', 'TG', 'TH', 'TJ', 'TK', 'TL', 'TM', 'TN', 'TO', 'TR', 'TT', 'TV', 'TW', 'TZ', 'UA', 'UG', 'UM', 'US', 'UY', 'UZ', 'VA', 'VC', 'VE', 'VG', 'VI', 'VN', 'VU', 'WF', 'WS', 'YE', 'YT', 'ZA', 'ZM', 'ZW'];
+
+function isISO31661Alpha2(str) {
+  (0, _assertString.default)(str);
+  return (0, _includes.default)(validISO31661Alpha2CountriesCodes, str.toUpperCase());
+}
+
+module.exports = exports.default;
+module.exports.default = exports.default;
+
+/***/ }),
 /* 456 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -45541,27 +44400,38 @@ function timingSafeEqual (signatureBuffer, verificationBuffer) {
 
 /***/ }),
 /* 470 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-"use strict";
+var rng = __webpack_require__(662);
+var bytesToUuid = __webpack_require__(864);
 
+function v4(options, buf, offset) {
+  var i = buf && offset || 0;
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = unescape;
+  if (typeof(options) == 'string') {
+    buf = options === 'binary' ? new Array(16) : null;
+    options = null;
+  }
+  options = options || {};
 
-var _assertString = _interopRequireDefault(__webpack_require__(567));
+  var rnds = options.random || (options.rng || rng)();
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+  // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
+  rnds[6] = (rnds[6] & 0x0f) | 0x40;
+  rnds[8] = (rnds[8] & 0x3f) | 0x80;
 
-function unescape(str) {
-  (0, _assertString.default)(str);
-  return str.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#x2F;/g, '/').replace(/&#x5C;/g, '\\').replace(/&#96;/g, '`');
+  // Copy bytes to buffer, if provided
+  if (buf) {
+    for (var ii = 0; ii < 16; ++ii) {
+      buf[i + ii] = rnds[ii];
+    }
+  }
+
+  return buf || bytesToUuid(rnds);
 }
 
-module.exports = exports.default;
-module.exports.default = exports.default;
+module.exports = v4;
+
 
 /***/ }),
 /* 471 */
@@ -45586,8 +44456,8 @@ var Events, Group, IORedisConnection, RedisConnection, Scripts, parser;
 parser = __webpack_require__(188);
 Events = __webpack_require__(317);
 RedisConnection = __webpack_require__(516);
-IORedisConnection = __webpack_require__(103);
-Scripts = __webpack_require__(489);
+IORedisConnection = __webpack_require__(559);
+Scripts = __webpack_require__(327);
 
 Group = function () {
   class Group {
@@ -48581,25 +47451,120 @@ if (typeof Object.create === 'function') {
 
 /***/ }),
 /* 484 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module) {
 
-module.exports = extractUrlVariableName
+var hasOwnProperty = Object.prototype.hasOwnProperty
 
-const flatten = __webpack_require__(158)
+module.exports = PseudoMap
 
-const urlVariableRegex = /\{[^}]+\}/g
-function extractUrlVariableName (url) {
-  const matches = url.match(urlVariableRegex)
+function PseudoMap (set) {
+  if (!(this instanceof PseudoMap)) // whyyyyyyy
+    throw new TypeError("Constructor PseudoMap requires 'new'")
 
-  if (!matches) {
-    return []
+  this.clear()
+
+  if (set) {
+    if ((set instanceof PseudoMap) ||
+        (typeof Map === 'function' && set instanceof Map))
+      set.forEach(function (value, key) {
+        this.set(key, value)
+      }, this)
+    else if (Array.isArray(set))
+      set.forEach(function (kv) {
+        this.set(kv[0], kv[1])
+      }, this)
+    else
+      throw new TypeError('invalid argument')
   }
-
-  return flatten(matches.map(removeNonChars))
 }
 
-function removeNonChars (variableName) {
-  return variableName.replace(/^\W+|\W+$/g, '').split(/,/)
+PseudoMap.prototype.forEach = function (fn, thisp) {
+  thisp = thisp || this
+  Object.keys(this._data).forEach(function (k) {
+    if (k !== 'size')
+      fn.call(thisp, this._data[k].value, this._data[k].key)
+  }, this)
+}
+
+PseudoMap.prototype.has = function (k) {
+  return !!find(this._data, k)
+}
+
+PseudoMap.prototype.get = function (k) {
+  var res = find(this._data, k)
+  return res && res.value
+}
+
+PseudoMap.prototype.set = function (k, v) {
+  set(this._data, k, v)
+}
+
+PseudoMap.prototype.delete = function (k) {
+  var res = find(this._data, k)
+  if (res) {
+    delete this._data[res._index]
+    this._data.size--
+  }
+}
+
+PseudoMap.prototype.clear = function () {
+  var data = Object.create(null)
+  data.size = 0
+
+  Object.defineProperty(this, '_data', {
+    value: data,
+    enumerable: false,
+    configurable: true,
+    writable: false
+  })
+}
+
+Object.defineProperty(PseudoMap.prototype, 'size', {
+  get: function () {
+    return this._data.size
+  },
+  set: function (n) {},
+  enumerable: true,
+  configurable: true
+})
+
+PseudoMap.prototype.values =
+PseudoMap.prototype.keys =
+PseudoMap.prototype.entries = function () {
+  throw new Error('iterators are not implemented in this version')
+}
+
+// Either identical, or both NaN
+function same (a, b) {
+  return a === b || a !== a && b !== b
+}
+
+function Entry (k, v, i) {
+  this.key = k
+  this.value = v
+  this._index = i
+}
+
+function find (data, k) {
+  for (var i = 0, s = '_' + k, key = s;
+       hasOwnProperty.call(data, key);
+       key = s + i++) {
+    if (same(data[key].key, k))
+      return data[key]
+  }
+}
+
+function set (data, k, v) {
+  for (var i = 0, s = '_' + k, key = s;
+       hasOwnProperty.call(data, key);
+       key = s + i++) {
+    if (same(data[key].key, k)) {
+      data[key].value = v
+      return
+    }
+  }
+  data.size++
+  data[key] = new Entry(k, v, key)
 }
 
 
@@ -48667,87 +47632,29 @@ module.exports = baseFindIndex;
 
 /***/ }),
 /* 487 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
-
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const os = __importStar(__webpack_require__(87));
 /**
- * Commands
+ * Copies the values of `source` to `array`.
  *
- * Command Format:
- *   ::name key=value,key=value::message
- *
- * Examples:
- *   ::warning::This is the message
- *   ::set-env name=MY_VAR::some value
+ * @private
+ * @param {Array} source The array to copy values from.
+ * @param {Array} [array=[]] The array to copy values to.
+ * @returns {Array} Returns `array`.
  */
-function issueCommand(command, properties, message) {
-    const cmd = new Command(command, properties, message);
-    process.stdout.write(cmd.toString() + os.EOL);
+function copyArray(source, array) {
+  var index = -1,
+      length = source.length;
+
+  array || (array = Array(length));
+  while (++index < length) {
+    array[index] = source[index];
+  }
+  return array;
 }
-exports.issueCommand = issueCommand;
-function issue(name, message = '') {
-    issueCommand(name, {}, message);
-}
-exports.issue = issue;
-const CMD_STRING = '::';
-class Command {
-    constructor(command, properties, message) {
-        if (!command) {
-            command = 'missing.command';
-        }
-        this.command = command;
-        this.properties = properties;
-        this.message = message;
-    }
-    toString() {
-        let cmdStr = CMD_STRING + this.command;
-        if (this.properties && Object.keys(this.properties).length > 0) {
-            cmdStr += ' ';
-            let first = true;
-            for (const key in this.properties) {
-                if (this.properties.hasOwnProperty(key)) {
-                    const val = this.properties[key];
-                    if (val) {
-                        if (first) {
-                            first = false;
-                        }
-                        else {
-                            cmdStr += ',';
-                        }
-                        cmdStr += `${key}=${escapeProperty(val)}`;
-                    }
-                }
-            }
-        }
-        cmdStr += `${CMD_STRING}${escapeData(this.message)}`;
-        return cmdStr;
-    }
-}
-function escapeData(s) {
-    return (s || '')
-        .replace(/%/g, '%25')
-        .replace(/\r/g, '%0D')
-        .replace(/\n/g, '%0A');
-}
-function escapeProperty(s) {
-    return (s || '')
-        .replace(/%/g, '%25')
-        .replace(/\r/g, '%0D')
-        .replace(/\n/g, '%0A')
-        .replace(/:/g, '%3A')
-        .replace(/,/g, '%2C');
-}
-//# sourceMappingURL=command.js.map
+
+module.exports = copyArray;
+
 
 /***/ }),
 /* 488 */
@@ -48782,174 +47689,7 @@ module.exports = bytesToUuid;
 
 
 /***/ }),
-/* 489 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-
-var headers, lua, templates;
-lua = __webpack_require__(144);
-headers = {
-  refs: lua["refs.lua"],
-  validate_keys: lua["validate_keys.lua"],
-  validate_client: lua["validate_client.lua"],
-  refresh_expiration: lua["refresh_expiration.lua"],
-  process_tick: lua["process_tick.lua"],
-  conditions_check: lua["conditions_check.lua"],
-  get_time: lua["get_time.lua"]
-};
-
-exports.allKeys = function (id) {
-  return [
-  /*
-  HASH
-  */
-  `b_${id}_settings`,
-  /*
-  HASH
-  job index -> weight
-  */
-  `b_${id}_job_weights`,
-  /*
-  ZSET
-  job index -> expiration
-  */
-  `b_${id}_job_expirations`,
-  /*
-  HASH
-  job index -> client
-  */
-  `b_${id}_job_clients`,
-  /*
-  ZSET
-  client -> sum running
-  */
-  `b_${id}_client_running`,
-  /*
-  HASH
-  client -> num queued
-  */
-  `b_${id}_client_num_queued`,
-  /*
-  ZSET
-  client -> last job registered
-  */
-  `b_${id}_client_last_registered`,
-  /*
-  ZSET
-  client -> last seen
-  */
-  `b_${id}_client_last_seen`];
-};
-
-templates = {
-  init: {
-    keys: exports.allKeys,
-    headers: ["process_tick"],
-    refresh_expiration: true,
-    code: lua["init.lua"]
-  },
-  group_check: {
-    keys: exports.allKeys,
-    headers: [],
-    refresh_expiration: false,
-    code: lua["group_check.lua"]
-  },
-  register_client: {
-    keys: exports.allKeys,
-    headers: ["validate_keys"],
-    refresh_expiration: false,
-    code: lua["register_client.lua"]
-  },
-  blacklist_client: {
-    keys: exports.allKeys,
-    headers: ["validate_keys", "validate_client"],
-    refresh_expiration: false,
-    code: lua["blacklist_client.lua"]
-  },
-  heartbeat: {
-    keys: exports.allKeys,
-    headers: ["validate_keys", "validate_client", "process_tick"],
-    refresh_expiration: false,
-    code: lua["heartbeat.lua"]
-  },
-  update_settings: {
-    keys: exports.allKeys,
-    headers: ["validate_keys", "validate_client", "process_tick"],
-    refresh_expiration: true,
-    code: lua["update_settings.lua"]
-  },
-  running: {
-    keys: exports.allKeys,
-    headers: ["validate_keys", "validate_client", "process_tick"],
-    refresh_expiration: false,
-    code: lua["running.lua"]
-  },
-  queued: {
-    keys: exports.allKeys,
-    headers: ["validate_keys", "validate_client"],
-    refresh_expiration: false,
-    code: lua["queued.lua"]
-  },
-  done: {
-    keys: exports.allKeys,
-    headers: ["validate_keys", "validate_client", "process_tick"],
-    refresh_expiration: false,
-    code: lua["done.lua"]
-  },
-  check: {
-    keys: exports.allKeys,
-    headers: ["validate_keys", "validate_client", "process_tick", "conditions_check"],
-    refresh_expiration: false,
-    code: lua["check.lua"]
-  },
-  submit: {
-    keys: exports.allKeys,
-    headers: ["validate_keys", "validate_client", "process_tick", "conditions_check"],
-    refresh_expiration: true,
-    code: lua["submit.lua"]
-  },
-  register: {
-    keys: exports.allKeys,
-    headers: ["validate_keys", "validate_client", "process_tick", "conditions_check"],
-    refresh_expiration: true,
-    code: lua["register.lua"]
-  },
-  free: {
-    keys: exports.allKeys,
-    headers: ["validate_keys", "validate_client", "process_tick"],
-    refresh_expiration: true,
-    code: lua["free.lua"]
-  },
-  current_reservoir: {
-    keys: exports.allKeys,
-    headers: ["validate_keys", "validate_client", "process_tick"],
-    refresh_expiration: false,
-    code: lua["current_reservoir.lua"]
-  },
-  increment_reservoir: {
-    keys: exports.allKeys,
-    headers: ["validate_keys", "validate_client", "process_tick"],
-    refresh_expiration: true,
-    code: lua["increment_reservoir.lua"]
-  }
-};
-exports.names = Object.keys(templates);
-
-exports.keys = function (name, id) {
-  return templates[name].keys(id);
-};
-
-exports.payload = function (name) {
-  var template;
-  template = templates[name];
-  return Array.prototype.concat(headers.refs, template.headers.map(function (h) {
-    return headers[h];
-  }), template.refresh_expiration ? headers.refresh_expiration : "", template.code).join("\n");
-};
-
-/***/ }),
+/* 489 */,
 /* 490 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -49284,126 +48024,126 @@ Agent.prototype.freeSocket = function freeSocket(socket, opts) {
 
 /***/ }),
 /* 494 */
-/***/ (function(module) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
 "use strict";
 
 
-var hasOwn = Object.prototype.hasOwnProperty;
-var toStr = Object.prototype.toString;
-var defineProperty = Object.defineProperty;
-var gOPD = Object.getOwnPropertyDescriptor;
+module.exports = validate
 
-var isArray = function isArray(arr) {
-	if (typeof Array.isArray === 'function') {
-		return Array.isArray(arr);
-	}
+const set = __webpack_require__(624)
+const get = __webpack_require__(736)
+const HttpError = __webpack_require__(362)
+const deprecate = __webpack_require__(730)
 
-	return toStr.call(arr) === '[object Array]';
-};
+function validate (endpointParams, options) {
+  // Alias are handled before validation, as validation rules
+  // ar set the aliased parameter. The `mapTo` property is the other way
+  // around, the final parameter name is the mapTo value, but validation
+  // rules are on parameter with the mapTo property
+  Object.keys(options).forEach(optionName => {
+    if (!endpointParams[optionName] || !endpointParams[optionName].alias) {
+      return
+    }
 
-var isPlainObject = function isPlainObject(obj) {
-	if (!obj || toStr.call(obj) !== '[object Object]') {
-		return false;
-	}
+    set(options, endpointParams[optionName].alias, options[optionName])
+    delete options[optionName]
 
-	var hasOwnConstructor = hasOwn.call(obj, 'constructor');
-	var hasIsPrototypeOf = obj.constructor && obj.constructor.prototype && hasOwn.call(obj.constructor.prototype, 'isPrototypeOf');
-	// Not own constructor property must be Object
-	if (obj.constructor && !hasOwnConstructor && !hasIsPrototypeOf) {
-		return false;
-	}
+    // right now all parameters with an alias property also have a deprecated
+    // property, but that might change in future, so we wrap it in the if block,
+    // but ignore if for coverage
+    /* istanbul ignore else */
+    if (endpointParams[optionName].deprecated) {
+      deprecate(`"${optionName}" parameter has been renamed to "${endpointParams[optionName].alias}"`)
+    }
+  })
 
-	// Own properties are enumerated firstly, so to speed up,
-	// if last one is own, then all properties are own.
-	var key;
-	for (key in obj) { /**/ }
+  Object.keys(endpointParams).forEach(parameterName => {
+    const parameter = get(endpointParams, parameterName)
+    const expectedType = parameter.type
+    let parentParameterName
+    let parentValue
+    let parentParamIsPresent = true
+    let parentParameterIsArray = false
 
-	return typeof key === 'undefined' || hasOwn.call(obj, key);
-};
+    if (/\./.test(parameterName)) {
+      parentParameterName = parameterName.replace(/\.[^.]+$/, '')
+      parentParameterIsArray = parentParameterName.slice(-2) === '[]'
+      if (parentParameterIsArray) {
+        parentParameterName = parentParameterName.slice(0, -2)
+      }
+      parentValue = get(options, parentParameterName)
+      parentParamIsPresent = parentParameterName === 'headers' || (typeof parentValue === 'object' && parentValue !== null)
+    }
 
-// If name is '__proto__', and Object.defineProperty is available, define __proto__ as an own property on target
-var setProperty = function setProperty(target, options) {
-	if (defineProperty && options.name === '__proto__') {
-		defineProperty(target, options.name, {
-			enumerable: true,
-			configurable: true,
-			value: options.newValue,
-			writable: true
-		});
-	} else {
-		target[options.name] = options.newValue;
-	}
-};
+    let values = parentParameterIsArray
+      ? (get(options, parentParameterName) || []).map(value => value[parameterName.split(/\./).pop()])
+      : [get(options, parameterName)]
 
-// Return undefined instead of __proto__ if '__proto__' is not an own property
-var getProperty = function getProperty(obj, name) {
-	if (name === '__proto__') {
-		if (!hasOwn.call(obj, name)) {
-			return void 0;
-		} else if (gOPD) {
-			// In early versions of node, obj['__proto__'] is buggy when obj has
-			// __proto__ as an own property. Object.getOwnPropertyDescriptor() works.
-			return gOPD(obj, name).value;
-		}
-	}
+    values.forEach((value, i) => {
+      const valueIsPresent = typeof value !== 'undefined'
+      const valueIsNull = value === null
+      const currentParameterName = parentParameterIsArray
+        ? parameterName.replace(/\[\]/, `[${i}]`)
+        : parameterName
 
-	return obj[name];
-};
+      if (!parameter.required && !valueIsPresent) {
+        return
+      }
 
-module.exports = function extend() {
-	var options, name, src, copy, copyIsArray, clone;
-	var target = arguments[0];
-	var i = 1;
-	var length = arguments.length;
-	var deep = false;
+      // if the parent parameter is of type object but allows null
+      // then the child parameters can be ignored
+      if (!parentParamIsPresent) {
+        return
+      }
 
-	// Handle a deep copy situation
-	if (typeof target === 'boolean') {
-		deep = target;
-		target = arguments[1] || {};
-		// skip the boolean and the target
-		i = 2;
-	}
-	if (target == null || (typeof target !== 'object' && typeof target !== 'function')) {
-		target = {};
-	}
+      if (parameter.allowNull && valueIsNull) {
+        return
+      }
 
-	for (; i < length; ++i) {
-		options = arguments[i];
-		// Only deal with non-null/undefined values
-		if (options != null) {
-			// Extend the base object
-			for (name in options) {
-				src = getProperty(target, name);
-				copy = getProperty(options, name);
+      if (!parameter.allowNull && valueIsNull) {
+        throw new HttpError(`'${currentParameterName}' cannot be null`, 400)
+      }
 
-				// Prevent never-ending loop
-				if (target !== copy) {
-					// Recurse if we're merging plain objects or arrays
-					if (deep && copy && (isPlainObject(copy) || (copyIsArray = isArray(copy)))) {
-						if (copyIsArray) {
-							copyIsArray = false;
-							clone = src && isArray(src) ? src : [];
-						} else {
-							clone = src && isPlainObject(src) ? src : {};
-						}
+      if (parameter.required && !valueIsPresent) {
+        throw new HttpError(`Empty value for parameter '${currentParameterName}': ${JSON.stringify(value)}`, 400)
+      }
 
-						// Never move original objects, clone them
-						setProperty(target, { name: name, newValue: extend(deep, clone, copy) });
+      // parse to integer before checking for enum
+      // so that string "1" will match enum with number 1
+      if (expectedType === 'integer') {
+        const unparsedValue = value
+        value = parseInt(value, 10)
+        if (isNaN(value)) {
+          throw new HttpError(`Invalid value for parameter '${currentParameterName}': ${JSON.stringify(unparsedValue)} is NaN`, 400)
+        }
+      }
 
-					// Don't bring in undefined values
-					} else if (typeof copy !== 'undefined') {
-						setProperty(target, { name: name, newValue: copy });
-					}
-				}
-			}
-		}
-	}
+      if (parameter.enum && parameter.enum.indexOf(value) === -1) {
+        throw new HttpError(`Invalid value for parameter '${currentParameterName}': ${JSON.stringify(value)}`, 400)
+      }
 
-	// Return the modified object
-	return target;
-};
+      if (parameter.validation) {
+        const regex = new RegExp(parameter.validation)
+        if (!regex.test(value)) {
+          throw new HttpError(`Invalid value for parameter '${currentParameterName}': ${JSON.stringify(value)}`, 400)
+        }
+      }
+
+      if (expectedType === 'object' && typeof value === 'string') {
+        try {
+          value = JSON.parse(value)
+        } catch (exception) {
+          throw new HttpError(`JSON parse error of value for parameter '${currentParameterName}': ${JSON.stringify(value)}`, 400)
+        }
+      }
+
+      set(options, parameter.mapTo || currentParameterName, value)
+    })
+  })
+
+  return options
+}
 
 
 /***/ }),
@@ -50460,104 +49200,39 @@ function merge(dest, src, redefine) {
 
 /***/ }),
 /* 501 */
-/***/ (function(module) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-module.exports = deprecate
+"use strict";
 
-const loggedMessages = {}
-
-function deprecate (message) {
-  if (loggedMessages[message]) {
-    return
-  }
-
-  console.warn(`DEPRECATED (@octokit/rest): ${message}`)
-  loggedMessages[message] = 1
-}
-
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+var bunyan_sentry_stream_1 = __importDefault(__webpack_require__(506));
+var raven_1 = __importDefault(__webpack_require__(602));
+module.exports = function (app) {
+    // If sentry is configured, report all logged errors
+    if (process.env.SENTRY_DSN) {
+        app.log.debug(process.env.SENTRY_DSN, 'Errors will be reported to Sentry');
+        raven_1.default.disableConsoleAlerts();
+        raven_1.default.config(process.env.SENTRY_DSN, {
+            autoBreadcrumbs: true
+        }).install();
+        app.log.target.addStream(bunyan_sentry_stream_1.default(raven_1.default));
+    }
+};
+//# sourceMappingURL=sentry.js.map
 
 /***/ }),
 /* 502 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-/*global module*/
-var Buffer = __webpack_require__(960).Buffer;
-var DataStream = __webpack_require__(173);
-var jwa = __webpack_require__(654);
-var Stream = __webpack_require__(413);
-var toString = __webpack_require__(870);
-var util = __webpack_require__(669);
+module.exports = getFirstPage
 
-function base64url(string, encoding) {
-  return Buffer
-    .from(string, encoding)
-    .toString('base64')
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
+const getPage = __webpack_require__(944)
+
+function getFirstPage (octokit, link, headers, callback) {
+  return getPage(octokit, link, 'first', headers, callback)
 }
-
-function jwsSecuredInput(header, payload, encoding) {
-  encoding = encoding || 'utf8';
-  var encodedHeader = base64url(toString(header), 'binary');
-  var encodedPayload = base64url(toString(payload), encoding);
-  return util.format('%s.%s', encodedHeader, encodedPayload);
-}
-
-function jwsSign(opts) {
-  var header = opts.header;
-  var payload = opts.payload;
-  var secretOrKey = opts.secret || opts.privateKey;
-  var encoding = opts.encoding;
-  var algo = jwa(header.alg);
-  var securedInput = jwsSecuredInput(header, payload, encoding);
-  var signature = algo.sign(securedInput, secretOrKey);
-  return util.format('%s.%s', securedInput, signature);
-}
-
-function SignStream(opts) {
-  var secret = opts.secret||opts.privateKey||opts.key;
-  var secretStream = new DataStream(secret);
-  this.readable = true;
-  this.header = opts.header;
-  this.encoding = opts.encoding;
-  this.secret = this.privateKey = this.key = secretStream;
-  this.payload = new DataStream(opts.payload);
-  this.secret.once('close', function () {
-    if (!this.payload.writable && this.readable)
-      this.sign();
-  }.bind(this));
-
-  this.payload.once('close', function () {
-    if (!this.secret.writable && this.readable)
-      this.sign();
-  }.bind(this));
-}
-util.inherits(SignStream, Stream);
-
-SignStream.prototype.sign = function sign() {
-  try {
-    var signature = jwsSign({
-      header: this.header,
-      payload: this.payload.buffer,
-      secret: this.secret.buffer,
-      encoding: this.encoding
-    });
-    this.emit('done', signature);
-    this.emit('data', signature);
-    this.emit('end');
-    this.readable = false;
-    return signature;
-  } catch (e) {
-    this.readable = false;
-    this.emit('error', e);
-    this.emit('close');
-  }
-};
-
-SignStream.sign = jwsSign;
-
-module.exports = SignStream;
 
 
 /***/ }),
@@ -51485,7 +50160,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 var Events, RedisConnection, Scripts, parser;
 parser = __webpack_require__(188);
 Events = __webpack_require__(317);
-Scripts = __webpack_require__(489);
+Scripts = __webpack_require__(327);
 
 RedisConnection = function () {
   class RedisConnection {
@@ -53392,84 +52067,9 @@ module.exports = function () {
 
 /***/ }),
 /* 520 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module) {
 
-var async = __webpack_require__(395)
-  , abort = __webpack_require__(554)
-  ;
-
-// API
-module.exports = iterate;
-
-/**
- * Iterates over each job object
- *
- * @param {array|object} list - array or object (named list) to iterate over
- * @param {function} iterator - iterator to run
- * @param {object} state - current job status
- * @param {function} callback - invoked when all elements processed
- */
-function iterate(list, iterator, state, callback)
-{
-  // store current index
-  var key = state['keyedList'] ? state['keyedList'][state.index] : state.index;
-
-  state.jobs[key] = runJob(iterator, key, list[key], function(error, output)
-  {
-    // don't repeat yourself
-    // skip secondary callbacks
-    if (!(key in state.jobs))
-    {
-      return;
-    }
-
-    // clean up jobs
-    delete state.jobs[key];
-
-    if (error)
-    {
-      // don't process rest of the results
-      // stop still active jobs
-      // and reset the list
-      abort(state);
-    }
-    else
-    {
-      state.results[key] = output;
-    }
-
-    // return salvaged results
-    callback(error, state.results);
-  });
-}
-
-/**
- * Runs iterator over provided job element
- *
- * @param   {function} iterator - iterator to invoke
- * @param   {string|number} key - key/index of the element in the list of jobs
- * @param   {mixed} item - job description
- * @param   {function} callback - invoked after iterator is done with the job
- * @returns {function|mixed} - job abort function or something else
- */
-function runJob(iterator, key, item, callback)
-{
-  var aborter;
-
-  // allow shortcut if iterator expects only two arguments
-  if (iterator.length == 2)
-  {
-    aborter = iterator(item, async(callback));
-  }
-  // otherwise go with full three arguments
-  else
-  {
-    aborter = iterator(item, key, async(callback));
-  }
-
-  return aborter;
-}
-
+module.exports = {"activity":{"checkNotificationThreadSubscription":{"alias":"activity.getThreadSubscription","deprecated":"`activity.checkNotificationThreadSubscription()` is deprecated, use `activity.getThreadSubscription()`"},"checkStarringRepo":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/user/starred/:owner/:repo"},"deleteNotificationThreadSubscription":{"alias":"activity.deleteThreadSubscription","deprecated":"`activity.deleteNotificationThreadSubscription()` is deprecated, use `activity.deleteThreadSubscription()`"},"deleteRepoSubscription":{"method":"DELETE","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/subscription"},"deleteThreadSubscription":{"method":"DELETE","params":{"id":{"alias":"thread_id","deprecated":true},"thread_id":{"required":true,"type":"integer"}},"url":"/notifications/threads/:thread_id/subscription"},"getEvents":{"alias":"activity.listPublicEvents","deprecated":"`activity.getEvents()` is deprecated, use `activity.listPublicEvents()`"},"getEventsForOrg":{"alias":"activity.listPublicEventsForOrg","deprecated":"`activity.getEventsForOrg()` is deprecated, use `activity.listPublicEventsForOrg()`"},"getEventsForRepo":{"alias":"activity.listRepoEvents","deprecated":"`activity.getEventsForRepo()` is deprecated, use `activity.listRepoEvents()`"},"getEventsForRepoIssues":{"alias":"issues.listEventsForRepo","deprecated":"`activity.getEventsForRepoIssues()` is deprecated, use `issues.listEventsForRepo`","params":{}},"getEventsForRepoNetwork":{"alias":"activity.listPublicEventsForRepoNetwork","deprecated":"`activity.getEventsForRepoNetwork()` is deprecated, use `activity.listPublicEventsForRepoNetwork()`"},"getEventsForUser":{"alias":"activity.listEventsForUser","deprecated":"`activity.getEventsForUser()` is deprecated, use `activity.listEventsForUser()`"},"getEventsForUserOrg":{"alias":"activity.listEventsForOrg","deprecated":"`activity.getEventsForUserOrg()` is deprecated, use `activity.listEventsForOrg()`"},"getEventsForUserPublic":{"alias":"activity.listPublicEventsForUser","deprecated":"`activity.getEventsForUserPublic()` is deprecated, use `activity.listPublicEventsForUser()`"},"getEventsReceived":{"alias":"activity.listReceivedEventsForUser","deprecated":"`activity.getEventsReceived()` is deprecated, use `activity.listReceivedEventsForUser()`"},"getEventsReceivedPublic":{"alias":"activity.listReceivedPublicEventsForUser","deprecated":"`activity.getEventsReceivedPublic()` is deprecated, use `activity.listReceivedPublicEventsForUser()`"},"getFeeds":{"alias":"activity.listFeeds","deprecated":"`activity.getFeeds()` is deprecated, use `activity.listFeeds()`"},"getNotificationThread":{"alias":"activity.getThread","deprecated":"`activity.getNotificationThread()` is deprecated, use `activity.getThread()`"},"getNotifications":{"alias":"activity.listNotifications","deprecated":"`activity.getNotifications()` is deprecated, use `activity.listNotifications()`"},"getNotificationsForUser":{"alias":"activity.listNotificationsForRepo","deprecated":"`activity.getNotificationsForUser()` is deprecated, use `activity.listNotificationsForRepo()`"},"getRepoSubscription":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/subscription"},"getStargazersForRepo":{"alias":"activity.listStargazersForRepo","deprecated":"`activity.getStargazersForRepo()` is deprecated, use `activity.listStargazersForRepo()`"},"getStarredRepos":{"alias":"activity.listReposStarredByAuthenticatedUser","deprecated":"`activity.getStarredRepos()` is deprecated, use `activity.listReposStarredByAuthenticatedUser()`"},"getStarredReposForUser":{"alias":"activity.listReposStarredByUser","deprecated":"`activity.getStarredReposForUser()` is deprecated, use `activity.listReposStarredByUser()`"},"getThread":{"method":"GET","params":{"id":{"alias":"thread_id","deprecated":true},"thread_id":{"required":true,"type":"integer"}},"url":"/notifications/threads/:thread_id"},"getThreadSubscription":{"method":"GET","params":{"id":{"alias":"thread_id","deprecated":true},"thread_id":{"required":true,"type":"integer"}},"url":"/notifications/threads/:thread_id/subscription"},"getWatchedRepos":{"alias":"activity.listWatchedReposForAuthenticatedUser","deprecated":"`activity.getWatchedRepos()` is deprecated, use `activity.listWatchedReposForAuthenticatedUser()`"},"getWatchedReposForUser":{"alias":"activity.listReposWatchedByUser","deprecated":"`activity.getWatchedReposForUser()` is deprecated, use `activity.listReposWatchedByUser()`"},"getWatchersForRepo":{"alias":"activity.listWatchersForRepo","deprecated":"`activity.getWatchersForRepo()` is deprecated, use `activity.listWatchersForRepo()`"},"listEventsForOrg":{"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/events/orgs/:org"},"listEventsForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/events"},"listFeeds":{"method":"GET","params":{},"url":"/feeds"},"listNotifications":{"method":"GET","params":{"all":{"type":"boolean"},"before":{"type":"string"},"page":{"type":"integer"},"participating":{"type":"boolean"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/notifications"},"listNotificationsForRepo":{"method":"GET","params":{"all":{"type":"boolean"},"before":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"participating":{"type":"boolean"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"since":{"type":"string"}},"url":"/repos/:owner/:repo/notifications"},"listPublicEvents":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/events"},"listPublicEventsForOrg":{"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/events"},"listPublicEventsForRepoNetwork":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/networks/:owner/:repo/events"},"listPublicEventsForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/events/public"},"listReceivedEventsForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/received_events"},"listReceivedPublicEventsForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/received_events/public"},"listRepoEvents":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/events"},"listReposStarredByAuthenticatedUser":{"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/user/starred"},"listReposStarredByUser":{"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"sort":{"enum":["created","updated"],"type":"string"},"username":{"required":true,"type":"string"}},"url":"/users/:username/starred"},"listReposWatchedByUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/subscriptions"},"listStargazersForRepo":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/stargazers"},"listWatchedReposForAuthenticatedUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/subscriptions"},"listWatchersForRepo":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/subscribers"},"markAsRead":{"method":"PUT","params":{"last_read_at":{"type":"string"}},"url":"/notifications"},"markNotificationThreadAsRead":{"alias":"activity.markThreadAsRead","deprecated":"`activity.markNotificationThreadAsRead()` is deprecated, use `activity.markThreadAsRead()`"},"markNotificationsAsRead":{"alias":"activity.markAsRead","deprecated":"`activity.markNotificationsAsRead()` is deprecated, use `activity.markAsRead()`"},"markNotificationsAsReadForRepo":{"method":"PUT","params":{"last_read_at":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/notifications"},"markThreadAsRead":{"method":"PATCH","params":{"id":{"alias":"thread_id","deprecated":true},"thread_id":{"required":true,"type":"integer"}},"url":"/notifications/threads/:thread_id"},"setNotificationThreadSubscription":{"alias":"activity.setThreadSubscription","deprecated":"`activity.setNotificationThreadSubscription()` is deprecated, use `activity.setThreadSubscription()`"},"setRepoSubscription":{"method":"PUT","params":{"ignored":{"type":"boolean"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"subscribed":{"type":"boolean"}},"url":"/repos/:owner/:repo/subscription"},"setThreadSubscription":{"method":"PUT","params":{"id":{"alias":"thread_id","deprecated":true},"ignored":{"type":"boolean"},"thread_id":{"required":true,"type":"integer"}},"url":"/notifications/threads/:thread_id/subscription"},"starRepo":{"method":"PUT","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/user/starred/:owner/:repo"},"unstarRepo":{"method":"DELETE","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/user/starred/:owner/:repo"},"unwatchRepo":{"alias":"activity.deleteRepoSubscription","deprecated":"`activity.unwatchRepo()` is deprecated, use `activity.deleteRepoSubscription()`"}},"apps":{"addRepoToInstallation":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"PUT","params":{"installation_id":{"required":true,"type":"integer"},"repository_id":{"required":true,"type":"integer"}},"url":"/user/installations/:installation_id/repositories/:repository_id"},"checkAccountIsAssociatedWithAny":{"method":"GET","params":{"account_id":{"required":true,"type":"integer"},"id":{"alias":"account_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/marketplace_listing/accounts/:account_id"},"checkAccountIsAssociatedWithAnyStubbed":{"method":"GET","params":{"account_id":{"required":true,"type":"integer"},"id":{"alias":"account_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/marketplace_listing/stubbed/accounts/:account_id"},"checkMarketplaceListingAccount":{"alias":"apps.checkAccountIsAssociatedWithAny","deprecated":"`apps.checkMarketplaceListingAccount()` is deprecated, use `apps.checkAccountIsAssociatedWithAny()`"},"checkMarketplaceListingStubbedAccount":{"alias":"apps.checkAccountIsAssociatedWithAnyStubbed","deprecated":"`apps.checkMarketplaceListingStubbedAccount()` is deprecated, use `apps.checkAccountIsAssociatedWithAnyStubbed()`"},"createFromManifest":{"headers":{"accept":"application/vnd.github.fury-preview+json,application/vnd.github.machine-man-preview+json"},"method":"POST","params":{"code":{"required":true,"type":"string"}},"url":"/app-manifests/:code/conversions"},"createInstallationToken":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"POST","params":{"installation_id":{"required":true,"type":"integer"}},"url":"/app/installations/:installation_id/access_tokens"},"findOrgInstallation":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"org":{"required":true,"type":"string"}},"url":"/orgs/:org/installation"},"findRepoInstallation":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/installation"},"findUserInstallation":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"username":{"required":true,"type":"string"}},"url":"/users/:username/installation"},"get":{"alias":"apps.getAuthenticated","deprecated":"`apps.get()` is deprecated, use `apps.getAuthenticated()`"},"getAuthenticated":{"method":"GET","params":{},"url":"/app"},"getBySlug":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"app_slug":{"required":true,"type":"string"}},"url":"/apps/:app_slug"},"getForSlug":{"alias":"apps.getBySlug","deprecated":"`apps.getForSlug()` is deprecated, use `apps.getBySlug()`"},"getInstallation":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"installation_id":{"required":true,"type":"integer"}},"url":"/app/installations/:installation_id"},"getInstallationRepositories":{"alias":"apps.listRepos","deprecated":"`apps.getInstallationRepositories()` is deprecated, use `apps.listRepos()`"},"getInstallations":{"alias":"apps.listInstallations","deprecated":"`apps.getInstallations()` is deprecated, use `apps.listInstallations()`"},"getMarketplaceListingPlanAccounts":{"alias":"apps.listAccountsUserOrOrgOnPlan","deprecated":"`apps.getMarketplaceListingPlanAccounts()` is deprecated, use `apps.listAccountsUserOrOrgOnPlan()`"},"getMarketplaceListingPlans":{"alias":"apps.listPlans","deprecated":"`apps.getMarketplaceListingPlans()` is deprecated, use `apps.listPlans()`"},"getMarketplaceListingStubbedPlanAccounts":{"alias":"apps.listAccountsUserOrOrgOnPlanStubbed","deprecated":"`apps.getMarketplaceListingStubbedPlanAccounts()` is deprecated, use `apps.listAccountsUserOrOrgOnPlanStubbed()`"},"getMarketplaceListingStubbedPlans":{"alias":"apps.listPlansStubbed","deprecated":"`apps.getMarketplaceListingStubbedPlans()` is deprecated, use `apps.listPlansStubbed()`"},"listAccountsUserOrOrgOnPlan":{"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"id":{"alias":"plan_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"plan_id":{"required":true,"type":"integer"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/marketplace_listing/plans/:plan_id/accounts"},"listAccountsUserOrOrgOnPlanStubbed":{"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"id":{"alias":"plan_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"plan_id":{"required":true,"type":"integer"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/marketplace_listing/stubbed/plans/:plan_id/accounts"},"listInstallationReposForAuthenticatedUser":{"method":"GET","params":{"installation_id":{"required":true,"type":"integer"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/installations/:installation_id/repositories"},"listInstallations":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/app/installations"},"listInstallationsForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/installations"},"listMarketplacePurchasesForAuthenticatedUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/marketplace_purchases"},"listMarketplacePurchasesForAuthenticatedUserStubbed":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/marketplace_purchases/stubbed"},"listPlans":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/marketplace_listing/plans"},"listPlansStubbed":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/marketplace_listing/stubbed/plans"},"listRepos":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/installation/repositories"},"removeRepoFromInstallation":{"headers":{"accept":"application/vnd.github.machine-man-preview+json"},"method":"DELETE","params":{"installation_id":{"required":true,"type":"integer"},"repository_id":{"required":true,"type":"integer"}},"url":"/user/installations/:installation_id/repositories/:repository_id"}},"authorization":{"check":{"alias":"authorization.checkAuthorization","deprecated":"`authorization.check()` is deprecated, use `authorization.checkAuthorization()`"},"checkAuthorization":{"method":"GET","params":{"access_token":{"required":true,"type":"string"},"client_id":{"required":true,"type":"string"}},"url":"/applications/:client_id/tokens/:access_token"},"create":{"alias":"authorization.createAuthorization","deprecated":"`authorization.create()` is deprecated, use `authorization.createAuthorization()`"},"createAuthorization":{"method":"POST","params":{"client_id":{"type":"string"},"client_secret":{"type":"string"},"fingerprint":{"type":"string"},"note":{"required":true,"type":"string"},"note_url":{"type":"string"},"scopes":{"type":"string[]"}},"url":"/authorizations"},"delete":{"alias":"authorization.deleteAuthorization","deprecated":"`authorization.delete()` is deprecated, use `authorization.deleteAuthorization()`"},"deleteAuthorization":{"method":"DELETE","params":{"authorization_id":{"required":true,"type":"integer"},"id":{"alias":"authorization_id","deprecated":true}},"url":"/authorizations/:authorization_id"},"deleteGrant":{"method":"DELETE","params":{"grant_id":{"required":true,"type":"integer"},"id":{"alias":"grant_id","deprecated":true}},"url":"/applications/grants/:grant_id"},"get":{"alias":"authorization.getAuthorization","deprecated":"`authorization.get()` is deprecated, use `authorization.getAuthorization()`"},"getAll":{"alias":"authorization.listAuthorizations","deprecated":"`authorization.getAll()` is deprecated, use `authorization.listAuthorizations()`"},"getAuthorization":{"method":"GET","params":{"authorization_id":{"required":true,"type":"integer"},"id":{"alias":"authorization_id","deprecated":true}},"url":"/authorizations/:authorization_id"},"getGrant":{"method":"GET","params":{"grant_id":{"required":true,"type":"integer"},"id":{"alias":"grant_id","deprecated":true}},"url":"/applications/grants/:grant_id"},"getGrants":{"alias":"authorization.listGrants","deprecated":"`authorization.getGrants()` is deprecated, use `authorization.listGrants()`"},"getOrCreateAuthorizationForApp":{"method":"PUT","params":{"client_id":{"required":true,"type":"string"},"client_secret":{"required":true,"type":"string"},"fingerprint":{"type":"string"},"note":{"type":"string"},"note_url":{"type":"string"},"scopes":{"type":"string[]"}},"url":"/authorizations/clients/:client_id"},"getOrCreateAuthorizationForAppAndFingerprint":{"alias":"authorization.getOrCreateAuthorizationForAppFingerprint","deprecated":"`authorization.getOrCreateAuthorizationForAppAndFingerprint()` is deprecated, use `authorization.getOrCreateAuthorizationForAppFingerprint()`"},"getOrCreateAuthorizationForAppFingerprint":{"method":"PUT","params":{"client_id":{"required":true,"type":"string"},"client_secret":{"required":true,"type":"string"},"fingerprint":{"required":true,"type":"string"},"note":{"type":"string"},"note_url":{"type":"string"},"scopes":{"type":"string[]"}},"url":"/authorizations/clients/:client_id/:fingerprint"},"listAuthorizations":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/authorizations"},"listGrants":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/applications/grants"},"reset":{"alias":"authorization.resetAuthorization","deprecated":"`authorization.reset()` is deprecated, use `authorization.resetAuthorization()`"},"resetAuthorization":{"method":"POST","params":{"access_token":{"required":true,"type":"string"},"client_id":{"required":true,"type":"string"}},"url":"/applications/:client_id/tokens/:access_token"},"revoke":{"alias":"authorization.revokeAuthorizationForApplication","deprecated":"`authorization.revoke()` is deprecated, use `authorization.revokeAuthorizationForApplication()`"},"revokeAuthorizationForApplication":{"method":"DELETE","params":{"access_token":{"required":true,"type":"string"},"client_id":{"required":true,"type":"string"}},"url":"/applications/:client_id/tokens/:access_token"},"revokeGrant":{"alias":"authorization.revokeGrantForApplication","deprecated":"`authorization.revokeGrant()` is deprecated, use `authorization.revokeGrantForApplication()`"},"revokeGrantForApplication":{"method":"DELETE","params":{"access_token":{"required":true,"type":"string"},"client_id":{"required":true,"type":"string"}},"url":"/applications/:client_id/grants/:access_token"},"update":{"alias":"authorization.updateAuthorization","deprecated":"`authorization.update()` is deprecated, use `authorization.updateAuthorization()`"},"updateAuthorization":{"method":"PATCH","params":{"add_scopes":{"type":"string[]"},"authorization_id":{"required":true,"type":"integer"},"fingerprint":{"type":"string"},"id":{"alias":"authorization_id","deprecated":true},"note":{"type":"string"},"note_url":{"type":"string"},"remove_scopes":{"type":"string[]"},"scopes":{"type":"string[]"}},"url":"/authorizations/:authorization_id"}},"checks":{"create":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"POST","params":{"actions":{"type":"object[]"},"actions[].description":{"required":true,"type":"string"},"actions[].identifier":{"required":true,"type":"string"},"actions[].label":{"required":true,"type":"string"},"completed_at":{"type":"string"},"conclusion":{"enum":["success","failure","neutral","cancelled","timed_out","action_required"],"type":"string"},"details_url":{"type":"string"},"external_id":{"type":"string"},"head_sha":{"required":true,"type":"string"},"name":{"required":true,"type":"string"},"output":{"type":"object"},"output.annotations":{"type":"object[]"},"output.annotations[].annotation_level":{"enum":["notice","warning","failure"],"required":true,"type":"string"},"output.annotations[].end_column":{"type":"integer"},"output.annotations[].end_line":{"required":true,"type":"integer"},"output.annotations[].filename":{"alias":"output.annotations[].path","deprecated":true},"output.annotations[].message":{"required":true,"type":"string"},"output.annotations[].path":{"required":true,"type":"string"},"output.annotations[].raw_details":{"type":"string"},"output.annotations[].start_column":{"type":"integer"},"output.annotations[].start_line":{"required":true,"type":"integer"},"output.annotations[].title":{"type":"string"},"output.annotations[].warning_level":{"alias":"output.annotations[].annotation_level","deprecated":true},"output.images":{"type":"object[]"},"output.images[].alt":{"required":true,"type":"string"},"output.images[].caption":{"type":"string"},"output.images[].image_url":{"required":true,"type":"string"},"output.summary":{"required":true,"type":"string"},"output.text":{"type":"string"},"output.title":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"started_at":{"type":"string"},"status":{"enum":["queued","in_progress","completed"],"type":"string"}},"url":"/repos/:owner/:repo/check-runs"},"createSuite":{"headers":{"accept":"application/vnd.github.antiope-preview+json"},"method":"POST","params":{"head_sha":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-suites"},"get":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"check_run_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-runs/:check_run_id"},"getSuite":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"check_suite_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-suites/:check_suite_id"},"listAnnotations":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"check_run_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-runs/:check_run_id/annotations"},"listForRef":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"check_name":{"type":"string"},"filter":{"enum":["latest","all"],"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"status":{"enum":["queued","in_progress","completed"],"type":"string"}},"url":"/repos/:owner/:repo/commits/:ref/check-runs"},"listForSuite":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"check_name":{"type":"string"},"check_suite_id":{"required":true,"type":"integer"},"filter":{"enum":["latest","all"],"type":"string"},"id":{"alias":"check_suite_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"status":{"enum":["queued","in_progress","completed"],"type":"string"}},"url":"/repos/:owner/:repo/check-suites/:check_suite_id/check-runs"},"listSuitesForRef":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"GET","params":{"app_id":{"type":"integer"},"check_name":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:ref/check-suites"},"requestSuites":{"deprecated":"use `rerequestSuite` instead","headers":{"accept":"application/vnd.github.antiope-preview+json"},"method":"POST","params":{"head_sha":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-suite-requests"},"rerequestSuite":{"headers":{"accept":"application/vnd.github.antiope-preview+json"},"method":"POST","params":{"check_suite_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-suites/:check_suite_id/rerequest"},"setSuitesPreferences":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"PATCH","params":{"auto_trigger_checks":{"type":"object[]"},"auto_trigger_checks[].app_id":{"required":true,"type":"integer"},"auto_trigger_checks[].setting":{"required":true,"type":"boolean"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/check-suites/preferences"},"update":{"headers":{"accept":"application/vnd.github.antiope-preview+json,application/vnd.github.machine-man-preview+json"},"method":"PATCH","params":{"actions":{"type":"object[]"},"actions[].description":{"required":true,"type":"string"},"actions[].identifier":{"required":true,"type":"string"},"actions[].label":{"required":true,"type":"string"},"check_run_id":{"required":true,"type":"integer"},"completed_at":{"type":"string"},"conclusion":{"enum":["success","failure","neutral","cancelled","timed_out","action_required"],"type":"string"},"details_url":{"type":"string"},"external_id":{"type":"string"},"name":{"type":"string"},"output":{"type":"object"},"output.annotations":{"type":"object[]"},"output.annotations[].annotation_level":{"enum":["notice","warning","failure"],"required":true,"type":"string"},"output.annotations[].end_column":{"type":"integer"},"output.annotations[].end_line":{"required":true,"type":"integer"},"output.annotations[].filename":{"alias":"output.annotations[].path","deprecated":true},"output.annotations[].message":{"required":true,"type":"string"},"output.annotations[].path":{"required":true,"type":"string"},"output.annotations[].raw_details":{"type":"string"},"output.annotations[].start_column":{"type":"integer"},"output.annotations[].start_line":{"required":true,"type":"integer"},"output.annotations[].title":{"type":"string"},"output.annotations[].warning_level":{"alias":"output.annotations[].annotation_level","deprecated":true},"output.images":{"type":"object[]"},"output.images[].alt":{"required":true,"type":"string"},"output.images[].caption":{"type":"string"},"output.images[].image_url":{"required":true,"type":"string"},"output.summary":{"required":true,"type":"string"},"output.text":{"type":"string"},"output.title":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"started_at":{"type":"string"},"status":{"enum":["queued","in_progress","completed"],"type":"string"}},"url":"/repos/:owner/:repo/check-runs/:check_run_id"}},"codesOfConduct":{"getConductCode":{"headers":{"accept":"application/vnd.github.scarlet-witch-preview+json"},"method":"GET","params":{"key":{"required":true,"type":"string"}},"url":"/codes_of_conduct/:key"},"getForRepo":{"headers":{"accept":"application/vnd.github.scarlet-witch-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/community/code_of_conduct"},"listConductCodes":{"headers":{"accept":"application/vnd.github.scarlet-witch-preview+json"},"method":"GET","params":{},"url":"/codes_of_conduct"}},"emojis":{"get":{"method":"GET","params":{},"url":"/emojis"}},"enterprise":{"createOrg":{"method":"POST","params":{"admin":{"required":true,"type":"string"},"login":{"required":true,"type":"string"},"profile_name":{"type":"string"}},"url":"/admin/organizations"},"createPreReceiveEnvironment":{"method":"POST","params":{"image_url":{"required":true,"type":"string"},"name":{"required":true,"type":"string"}},"url":"/admin/pre-receive-environments"},"createPreReceiveHook":{"method":"POST","params":{"allow_downstream_configuration":{"type":"boolean"},"enforcement":{"type":"string"},"environment":{"required":true,"type":"object"},"name":{"required":true,"type":"string"},"script":{"required":true,"type":"string"},"script_repository":{"required":true,"type":"object"}},"url":"/admin/pre-receive-hooks"},"deletePreReceiveEnvironment":{"method":"DELETE","params":{"id":{"required":true,"type":"string"}},"url":"/admin/pre-receive-environments/:id"},"deletePreReceiveHook":{"method":"DELETE","params":{"id":{"required":true,"type":"string"}},"url":"/admin/pre_receive_hooks/:id"},"editPreReceiveEnvironment":{"method":"PATCH","params":{"id":{"required":true,"type":"string"},"image_url":{"required":true,"type":"string"},"name":{"required":true,"type":"string"}},"url":"/admin/pre-receive-environments/:id"},"editPreReceiveHook":{"method":"PATCH","params":{"hook":{"mapTo":"data","required":true,"type":"object"},"id":{"required":true,"type":"string"}},"url":"/admin/pre_receive_hooks/:id"},"getLicense":{"method":"GET","params":{},"url":"/enterprise/settings/license"},"getPreReceiveEnvironment":{"method":"GET","params":{"id":{"required":true,"type":"string"}},"url":"/admin/pre-receive-environments/:id"},"getPreReceiveEnvironmentDownloadStatus":{"method":"GET","params":{"id":{"required":true,"type":"string"}},"url":"/admin/pre-receive-environments/:id/downloads/latest"},"getPreReceiveEnvironments":{"method":"GET","params":{},"url":"/admin/pre-receive-environments"},"getPreReceiveHook":{"method":"GET","params":{"id":{"required":true,"type":"string"}},"url":"/admin/pre-receive-hooks/:id"},"getPreReceiveHooks":{"method":"GET","params":{},"url":"/admin/pre-receive-hooks"},"queueIndexingJob":{"method":"POST","params":{"target":{"required":true,"type":"string"}},"url":"/staff/indexing_jobs"},"stats":{"method":"GET","params":{"type":{"enum":["issues","hooks","milestones","orgs","comments","pages","users","gists","pulls","repos","all"],"required":true,"type":"string"}},"url":"/enterprise/stats/:type"},"syncLdapForTeam":{"method":"POST","params":{"team_id":{"required":true,"type":"integer"}},"url":"/admin/ldap/teams/:team_id/sync"},"syncLdapForUser":{"method":"POST","params":{"username":{"required":true,"type":"string"}},"url":"/admin/ldap/users/:username/sync"},"triggerPreReceiveEnvironmentDownload":{"method":"POST","params":{"id":{"required":true,"type":"string"}},"url":"/admin/pre-receive-environments/:id/downloads"},"updateLdapForTeam":{"method":"PATCH","params":{"ldap_dn":{"required":true,"type":"string"},"team_id":{"required":true,"type":"integer"}},"url":"/admin/ldap/teams/:team_id/mapping"},"updateLdapForUser":{"method":"PATCH","params":{"ldap_dn":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/admin/ldap/users/:username/mapping"}},"gists":{"checkIsStarred":{"method":"GET","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id/star"},"checkStar":{"alias":"gists.checkIsStarred","deprecated":"`gists.checkStar()` is deprecated, use `gists.checkIsStarred()`"},"create":{"method":"POST","params":{"description":{"type":"string"},"files":{"required":true,"type":"object"},"files.content":{"type":"string"},"public":{"type":"boolean"}},"url":"/gists"},"createComment":{"method":"POST","params":{"body":{"required":true,"type":"string"},"gist_id":{"required":true,"type":"string"}},"url":"/gists/:gist_id/comments"},"delete":{"method":"DELETE","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id"},"deleteComment":{"method":"DELETE","params":{"comment_id":{"required":true,"type":"integer"},"gist_id":{"required":true,"type":"string"},"id":{"alias":"comment_id","deprecated":true}},"url":"/gists/:gist_id/comments/:comment_id"},"edit":{"alias":"gists.update","deprecated":"`gists.edit()` is deprecated, use `gists.update()`"},"editComment":{"alias":"gists.updateComment","deprecated":"`gists.editComment()` is deprecated, use `gists.updateComment()`"},"fork":{"method":"POST","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id/forks"},"get":{"method":"GET","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id"},"getAll":{"alias":"gists.list","deprecated":"`gists.getAll()` is deprecated, use `gists.list()`"},"getComment":{"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"gist_id":{"required":true,"type":"string"},"id":{"alias":"comment_id","deprecated":true}},"url":"/gists/:gist_id/comments/:comment_id"},"getComments":{"alias":"gists.listComments","deprecated":"`gists.getComments()` is deprecated, use `gists.listComments()`"},"getCommits":{"alias":"gists.listCommits","deprecated":"`gists.getCommits()` is deprecated, use `gists.listCommits()`"},"getForUser":{"alias":"gists.listPublicForUser","deprecated":"`gists.getForUser()` is deprecated, use `gists.listPublicForUser()`"},"getForks":{"alias":"gists.listForks","deprecated":"`gists.getForks()` is deprecated, use `gists.listForks()`"},"getPublic":{"alias":"gists.listPublic","deprecated":"`gists.getPublic()` is deprecated, use `gists.listPublic()`"},"getRevision":{"method":"GET","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true},"sha":{"required":true,"type":"string"}},"url":"/gists/:gist_id/:sha"},"getStarred":{"alias":"gists.listStarred","deprecated":"`gists.getStarred()` is deprecated, use `gists.listStarred()`"},"list":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/gists"},"listComments":{"method":"GET","params":{"gist_id":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/gists/:gist_id/comments"},"listCommits":{"method":"GET","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/gists/:gist_id/commits"},"listForks":{"method":"GET","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/gists/:gist_id/forks"},"listPublic":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/gists/public"},"listPublicForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"},"username":{"required":true,"type":"string"}},"url":"/users/:username/gists"},"listStarred":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/gists/starred"},"star":{"method":"PUT","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id/star"},"unstar":{"method":"DELETE","params":{"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id/star"},"update":{"method":"PATCH","params":{"description":{"type":"string"},"files":{"type":"object"},"files.content":{"type":"string"},"files.filename":{"type":"string"},"gist_id":{"required":true,"type":"string"},"id":{"alias":"gist_id","deprecated":true}},"url":"/gists/:gist_id"},"updateComment":{"method":"PATCH","params":{"body":{"required":true,"type":"string"},"comment_id":{"required":true,"type":"integer"},"gist_id":{"required":true,"type":"string"},"id":{"alias":"comment_id","deprecated":true}},"url":"/gists/:gist_id/comments/:comment_id"}},"gitdata":{"createBlob":{"method":"POST","params":{"content":{"required":true,"type":"string"},"encoding":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/blobs"},"createCommit":{"method":"POST","params":{"author":{"type":"object"},"committer":{"type":"object"},"message":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"parents":{"required":true,"type":"string[]"},"repo":{"required":true,"type":"string"},"tree":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/commits"},"createRef":{"method":"POST","params":{"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/refs"},"createReference":{"alias":"gitdata.createRef","deprecated":"`gitdata.createReference()` is deprecated, use `gitdata.createRef()`"},"createTag":{"method":"POST","params":{"message":{"required":true,"type":"string"},"object":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"tag":{"required":true,"type":"string"},"tagger":{"type":"object"},"tagger.date":{"type":"string"},"tagger.email":{"type":"string"},"tagger.name":{"type":"string"},"type":{"enum":["commit","tree","blob"],"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/tags"},"createTree":{"method":"POST","params":{"base_tree":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"tree":{"required":true,"type":"object[]"},"tree[].content":{"type":"string"},"tree[].mode":{"enum":["100644","100755","040000","160000","120000"],"type":"string"},"tree[].path":{"type":"string"},"tree[].sha":{"type":"string"},"tree[].type":{"enum":["blob","tree","commit"],"type":"string"}},"url":"/repos/:owner/:repo/git/trees"},"deleteRef":{"method":"DELETE","params":{"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/refs/:ref"},"deleteReference":{"alias":"gitdata.deleteRef","deprecated":"`gitdata.deleteReference()` is deprecated, use `gitdata.deleteRef()`"},"getBlob":{"method":"GET","params":{"file_sha":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"alias":"file_sha","deprecated":true}},"url":"/repos/:owner/:repo/git/blobs/:file_sha"},"getCommit":{"method":"GET","params":{"commit_sha":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"alias":"commit_sha","deprecated":true}},"url":"/repos/:owner/:repo/git/commits/:commit_sha"},"getCommitSignatureVerification":{"alias":"gitdata.getCommit","deprecated":"`gitdata.getCommitSignatureVerification()` is deprecated, use `gitdata.getCommit()`","params":{}},"getRef":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/refs/:ref"},"getReference":{"alias":"gitdata.getRef","deprecated":"`gitdata.getReference()` is deprecated, use `gitdata.getRef()`"},"getReferences":{"alias":"gitdata.listRefs","deprecated":"`gitdata.getReferences()` is deprecated, use `gitdata.listRefs()`"},"getTag":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"alias":"tag_sha","deprecated":true},"tag_sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/tags/:tag_sha"},"getTagSignatureVerification":{"alias":"gitdata.getTag","deprecated":"`gitdata.getTagSignatureVerification()` is deprecated, use `gitdata.getTag()`","params":{}},"getTags":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/refs/tags"},"getTree":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"recursive":{"enum":[1],"type":"integer"},"repo":{"required":true,"type":"string"},"sha":{"alias":"tree_sha","deprecated":true},"tree_sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/trees/:tree_sha"},"listRefs":{"method":"GET","params":{"namespace":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/refs/:namespace"},"updateRef":{"method":"PATCH","params":{"force":{"type":"boolean"},"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/git/refs/:ref"},"updateReference":{"alias":"gitdata.updateRef","deprecated":"`gitdata.updateReference()` is deprecated, use `gitdata.updateRef()`"}},"gitignore":{"getTemplate":{"method":"GET","params":{"name":{"required":true,"type":"string"}},"url":"/gitignore/templates/:name"},"listTemplates":{"method":"GET","params":{},"url":"/gitignore/templates"}},"integrations":{"addRepoToInstallation":{"alias":"apps.addRepoToInstallation","deprecated":"`integrations.addRepoToInstallation()` is deprecated, use `apps.addRepoToInstallation()`","params":{}},"createInstallationToken":{"alias":"apps.createInstallationToken","deprecated":"`integrations.createInstallationToken()` is deprecated, use `apps.createInstallationToken()`","params":{}},"getInstallationRepositories":{"alias":"apps.listRepos","deprecated":"`integrations.getInstallationRepositories()` is deprecated, use `apps.listRepos()`","params":{}},"getInstallations":{"alias":"apps.listInstallations","deprecated":"`integrations.getInstallations()` is deprecated, use `apps.listInstallations()`","params":{}},"removeRepoFromInstallation":{"alias":"apps.removeRepoFromInstallation","deprecated":"`integrations.removeRepoFromInstallation()` is deprecated, use `apps.removeRepoFromInstallation()`","params":{}}},"issues":{"addAssignees":{"method":"POST","params":{"assignees":{"type":"string[]"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/assignees"},"addAssigneesToIssue":{"alias":"issues.addAssignees","deprecated":"`issues.addAssigneesToIssue()` is deprecated, use `issues.addAssignees()`"},"addLabels":{"method":"POST","params":{"labels":{"required":true,"type":"string[]","mapTo":"data"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/labels"},"checkAssignee":{"method":"GET","params":{"assignee":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/assignees/:assignee"},"create":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"assignee":{"type":"string"},"assignees":{"type":"string[]"},"body":{"type":"string"},"labels":{"type":"string[]"},"milestone":{"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"title":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues"},"createComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"body":{"required":true,"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/comments"},"createLabel":{"method":"POST","params":{"color":{"required":true,"type":"string"},"description":{"type":"string"},"name":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/labels"},"createMilestone":{"method":"POST","params":{"description":{"type":"string"},"due_on":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"state":{"enum":["open","closed"],"type":"string"},"title":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/milestones"},"deleteComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"DELETE","params":{"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/comments/:comment_id"},"deleteLabel":{"method":"DELETE","params":{"name":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/labels/:name"},"deleteMilestone":{"method":"DELETE","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/milestones/:number"},"edit":{"alias":"issues.update","deprecated":"`issues.edit()` is deprecated, use `issues.update()`"},"editComment":{"alias":"issues.updateComment","deprecated":"`issues.editComment()` is deprecated, use `issues.updateComment()`"},"get":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number"},"getAll":{"alias":"issues.list","deprecated":"`issues.getAll()` is deprecated, use `issues.list()`"},"getAssignees":{"alias":"issues.listAssignees","deprecated":"`issues.getAssignees()` is deprecated, use `issues.listAssignees()`"},"getComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/comments/:comment_id"},"getComments":{"alias":"issues.listComments","deprecated":"`issues.getComments()` is deprecated, use `issues.listComments()`"},"getCommentsForRepo":{"alias":"issues.listCommentsForRepo","deprecated":"`issues.getCommentsForRepo()` is deprecated, use `issues.listCommentsForRepo()`"},"getEvent":{"method":"GET","params":{"event_id":{"required":true,"type":"integer"},"id":{"alias":"event_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/events/:event_id"},"getEvents":{"alias":"issues.listEvents","deprecated":"`issues.getEvents()` is deprecated, use `issues.listEvents()`"},"getEventsForRepo":{"alias":"issues.listEventsForRepo","deprecated":"`issues.getEventsForRepo()` is deprecated, use `issues.listEventsForRepo()`"},"getEventsTimeline":{"alias":"issues.listEventsForTimeline","deprecated":"`issues.getEventsTimeline()` is deprecated, use `issues.listEventsForTimeline()`"},"getForOrg":{"alias":"issues.listForOrg","deprecated":"`issues.getForOrg()` is deprecated, use `issues.listForOrg()`"},"getForRepo":{"alias":"issues.listForRepo","deprecated":"`issues.getForRepo()` is deprecated, use `issues.listForRepo()`"},"getForUser":{"alias":"issues.listForAuthenticatedUser","deprecated":"`issues.getForUser()` is deprecated, use `issues.listForAuthenticatedUser()`"},"getIssueLabels":{"alias":"issues.listLabelsOnIssue","deprecated":"`issues.getIssueLabels()` is deprecated, use `issues.listLabelsOnIssue()`"},"getLabel":{"method":"GET","params":{"name":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/labels/:name"},"getLabels":{"alias":"issues.listLabelsForRepo","deprecated":"`issues.getLabels()` is deprecated, use `issues.listLabelsForRepo()`"},"getMilestone":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/milestones/:number"},"getMilestoneLabels":{"alias":"issues.listLabelsForMilestone","deprecated":"`issues.getMilestoneLabels()` is deprecated, use `issues.listLabelsForMilestone()`"},"getMilestones":{"alias":"issues.listMilestonesForRepo","deprecated":"`issues.getMilestones()` is deprecated, use `issues.listMilestonesForRepo()`"},"list":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"filter":{"enum":["assigned","created","mentioned","subscribed","all"],"type":"string"},"labels":{"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"},"sort":{"enum":["created","updated","comments"],"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/issues"},"listAssignees":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/assignees"},"listComments":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"since":{"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/comments"},"listCommentsForRepo":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"since":{"type":"string"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/repos/:owner/:repo/issues/comments"},"listEvents":{"method":"GET","params":{"issue_number":{"alias":"number","deprecated":true},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/events"},"listEventsForRepo":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/events"},"listEventsForTimeline":{"headers":{"accept":"application/vnd.github.mockingbird-preview+json"},"method":"GET","params":{"issue_number":{"alias":"number","deprecated":true},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/timeline"},"listForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"filter":{"enum":["assigned","created","mentioned","subscribed","all"],"type":"string"},"labels":{"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"},"sort":{"enum":["created","updated","comments"],"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/user/issues"},"listForOrg":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"filter":{"enum":["assigned","created","mentioned","subscribed","all"],"type":"string"},"labels":{"type":"string"},"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"},"sort":{"enum":["created","updated","comments"],"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/orgs/:org/issues"},"listForRepo":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"assignee":{"type":"string"},"creator":{"type":"string"},"direction":{"enum":["asc","desc"],"type":"string"},"labels":{"type":"string"},"mentioned":{"type":"string"},"milestone":{"type":"string","validation":"^([0-9]+|none|\\*)$"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"since":{"type":"string"},"sort":{"enum":["created","updated","comments"],"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/repos/:owner/:repo/issues"},"listLabelsForMilestone":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/milestones/:number/labels"},"listLabelsForRepo":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/labels"},"listLabelsOnIssue":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/labels"},"listMilestonesForRepo":{"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"sort":{"enum":["due_on","completeness"],"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/repos/:owner/:repo/milestones"},"lock":{"method":"PUT","params":{"lock_reason":{"enum":["off-topic","too heated","resolved","spam"],"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/lock"},"removeAllLabels":{"alias":"issues.removeLabels","deprecated":"`issues.removeAllLabels()` is deprecated, use `issues.removeLabels()`"},"removeAssignees":{"method":"DELETE","params":{"assignees":{"type":"string[]"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/assignees"},"removeAssigneesFromIssue":{"alias":"issues.removeAssignees","deprecated":"`issues.removeAssigneesFromIssue()` is deprecated, use `issues.removeAssignees()`"},"removeLabel":{"method":"DELETE","params":{"name":{"required":true,"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/labels/:name"},"removeLabels":{"method":"DELETE","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/labels"},"replaceAllLabels":{"alias":"issues.replaceLabels","deprecated":"`issues.replaceAllLabels()` is deprecated, use `issues.replaceLabels()`"},"replaceLabels":{"method":"PUT","params":{"labels":{"type":"string[]"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/labels"},"unlock":{"method":"DELETE","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/lock"},"update":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"PATCH","params":{"assignee":{"type":"string"},"assignees":{"type":"string[]"},"body":{"type":"string"},"labels":{"type":"string[]"},"milestone":{"allowNull":true,"type":"integer"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"state":{"enum":["open","closed"],"type":"string"},"title":{"type":"string"}},"url":"/repos/:owner/:repo/issues/:number"},"updateComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"PATCH","params":{"body":{"required":true,"type":"string"},"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/comments/:comment_id"},"updateLabel":{"method":"PATCH","params":{"color":{"type":"string"},"current_name":{"required":true,"type":"string"},"description":{"type":"string"},"name":{"type":"string"},"oldname":{"alias":"current_name","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/labels/:current_name"},"updateMilestone":{"method":"PATCH","params":{"description":{"type":"string"},"due_on":{"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"state":{"enum":["open","closed"],"type":"string"},"title":{"type":"string"}},"url":"/repos/:owner/:repo/milestones/:number"}},"licenses":{"get":{"method":"GET","params":{"license":{"required":true,"type":"string"}},"url":"/licenses/:license"},"getForRepo":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/license"},"list":{"method":"GET","params":{},"url":"/licenses"}},"markdown":{"render":{"method":"POST","params":{"context":{"type":"string"},"mode":{"enum":["markdown","gfm"],"type":"string"},"text":{"required":true,"type":"string"}},"url":"/markdown"},"renderRaw":{"headers":{"content-type":"text/plain; charset=utf-8"},"method":"POST","params":{"data":{"mapTo":"data","required":true,"type":"string"}},"url":"/markdown/raw"}},"meta":{"get":{"method":"GET","params":{},"url":"/meta"}},"migrations":{"cancelImport":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"DELETE","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/import"},"deleteArchiveForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"DELETE","params":{"migration_id":{"required":true,"type":"integer"}},"url":"/user/migrations/:migration_id/archive"},"deleteArchiveForOrg":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"DELETE","params":{"id":{"alias":"migration_id","deprecated":true},"migration_id":{"required":true,"type":"integer"},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/migrations/:migration_id/archive"},"deleteMigrationArchive":{"alias":"migrations.deleteArchiveForOrg","deprecated":"`migrations.deleteMigrationArchive()` is deprecated, use `migrations.deleteArchiveForOrg()`"},"getArchiveForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"GET","params":{"migration_id":{"required":true,"type":"integer"}},"url":"/user/migrations/:migration_id/archive"},"getArchiveForOrg":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"GET","params":{"id":{"alias":"migration_id","deprecated":true},"migration_id":{"required":true,"type":"integer"},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/migrations/:migration_id/archive"},"getCommitAuthors":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"since":{"type":"string"}},"url":"/repos/:owner/:repo/import/authors"},"getImportCommitAuthors":{"alias":"migrations.getCommitAuthors","deprecated":"`migrations.getImportCommitAuthors()` is deprecated, use `migrations.getCommitAuthors()`"},"getImportProgress":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/import"},"getLargeFiles":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"GET","params":{"name":{"alias":"repo","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/import/large_files"},"getLargeImportFiles":{"alias":"migrations.getLargeFiles","deprecated":"`migrations.getLargeImportFiles()` is deprecated, use `migrations.getLargeFiles()`"},"getMigrationArchiveLink":{"alias":"migrations.getArchiveForOrg","deprecated":"`migrations.getMigrationArchiveLink()` is deprecated, use `migrations.getArchiveForOrg()`"},"getMigrationStatus":{"alias":"migrations.getStatusForOrg","deprecated":"`migrations.getMigrationStatus()` is deprecated, use `migrations.getStatusForOrg()`"},"getMigrations":{"alias":"migrations.listForOrg","deprecated":"`migrations.getMigrations()` is deprecated, use `migrations.listForOrg()`"},"getStatusForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"GET","params":{"migration_id":{"required":true,"type":"integer"}},"url":"/user/migrations/:migration_id"},"getStatusForOrg":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"GET","params":{"id":{"alias":"migration_id","deprecated":true},"migration_id":{"required":true,"type":"integer"},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/migrations/:migration_id"},"listForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/migrations"},"listForOrg":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/migrations"},"mapCommitAuthor":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"PATCH","params":{"author_id":{"required":true,"type":"integer"},"email":{"type":"string"},"name":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/import/authors/:author_id"},"mapImportCommitAuthor":{"alias":"migrations.mapCommitAuthor","deprecated":"`migrations.mapImportCommitAuthor()` is deprecated, use `migrations.mapCommitAuthor()`"},"setImportLfsPreference":{"alias":"migrations.setLfsPreference","deprecated":"`migrations.setImportLfsPreference()` is deprecated, use `migrations.setLfsPreference()`"},"setLfsPreference":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"PATCH","params":{"name":{"alias":"repo","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"use_lfs":{"enum":["opt_in","opt_out"],"required":true,"type":"string"}},"url":"/repos/:owner/:repo/import/lfs"},"startForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"POST","params":{"exclude_attachments":{"type":"boolean"},"lock_repositories":{"type":"boolean"},"repositories":{"required":true,"type":"string[]"}},"url":"/user/migrations"},"startForOrg":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"POST","params":{"exclude_attachments":{"type":"boolean"},"lock_repositories":{"type":"boolean"},"org":{"required":true,"type":"string"},"repositories":{"required":true,"type":"string[]"}},"url":"/orgs/:org/migrations"},"startImport":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"PUT","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"tfvc_project":{"type":"string"},"vcs":{"enum":["subversion","git","mercurial","tfvc"],"type":"string"},"vcs_password":{"type":"string"},"vcs_url":{"required":true,"type":"string"},"vcs_username":{"type":"string"}},"url":"/repos/:owner/:repo/import"},"startMigration":{"alias":"migrations.startForOrg","deprecated":"`migrations.startMigration()` is deprecated, use `migrations.startForOrg()`"},"unlockRepoForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"DELETE","params":{"migration_id":{"required":true,"type":"integer"},"repo_name":{"required":true,"type":"string"}},"url":"/user/migrations/:migration_id/repos/:repo_name/lock"},"unlockRepoForOrg":{"headers":{"accept":"application/vnd.github.wyandotte-preview+json"},"method":"DELETE","params":{"id":{"alias":"migration_id","deprecated":true},"migration_id":{"required":true,"type":"integer"},"org":{"required":true,"type":"string"},"repo_name":{"required":true,"type":"string"}},"url":"/orgs/:org/migrations/:migration_id/repos/:repo_name/lock"},"unlockRepoLockedForMigration":{"alias":"migrations.unlockRepoForOrg","deprecated":"`migrations.unlockRepoLockedForMigration()` is deprecated, use `migrations.unlockRepoForOrg()`"},"updateImport":{"headers":{"accept":"application/vnd.github.barred-rock-preview+json"},"method":"PATCH","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"vcs_password":{"type":"string"},"vcs_username":{"type":"string"}},"url":"/repos/:owner/:repo/import"}},"misc":{"getCodeOfConduct":{"alias":"codesOfConduct.getConductCode","deprecated":"`misc.getCodeOfConduct()` is deprecated, use `codesOfConduct.getConductCode()`"},"getCodesOfConduct":{"alias":"codesOfConduct.listConductCodes","deprecated":"`misc.getCodesOfConduct()` is deprecated, use `codesOfConduct.listConductCodes()`"},"getEmojis":{"alias":"emojis.get","deprecated":"`misc.getEmojis()` is deprecated, use `emojis.get()`","params":{}},"getGitignoreTemplate":{"alias":"gitignore.getTemplate","deprecated":"`misc.getGitignoreTemplate()` is deprecated, use `gitignore.getTemplate()`"},"getGitignoreTemplates":{"alias":"gitignore.listTemplates","deprecated":"`misc.getGitignoreTemplates()` is deprecated, use `gitignore.listTemplates()`"},"getLicense":{"alias":"licenses.get","deprecated":"`misc.getLicense()` is deprecated, use `licenses.get()`"},"getLicenses":{"alias":"licenses.list","deprecated":"`misc.getLicenses()` is deprecated, use `licenses.list()`"},"getMeta":{"alias":"meta.get","deprecated":"`misc.getMeta()` is deprecated, use `meta.get()`","params":{}},"getRateLimit":{"alias":"rateLimit.get","deprecated":"`misc.getRateLimit()` is deprecated, use `rateLimit.get()`"},"getRepoCodeOfConduct":{"alias":"codesOfConduct.getForRepo","deprecated":"`misc.getRepoCodeOfConduct()` is deprecated, use `codesOfConduct.getForRepo()`"},"getRepoLicense":{"alias":"licenses.getForRepo","deprecated":"`misc.getRepoLicense()` is deprecated, use `licenses.getForRepo()`"},"renderMarkdown":{"alias":"markdown.render","deprecated":"`misc.renderMarkdown()` is deprecated, use `markdown.render()`"},"renderMarkdownRaw":{"alias":"markdown.renderRaw","deprecated":"`misc.renderMarkdownRaw()` is deprecated, use `markdown.renderRaw()`"}},"orgs":{"addOrUpdateMembership":{"method":"PUT","params":{"org":{"required":true,"type":"string"},"role":{"enum":["admin","member"],"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/memberships/:username"},"addOrgMembership":{"alias":"orgs.addOrUpdateMembership","deprecated":"`orgs.addOrgMembership()` is deprecated, use `orgs.addOrUpdateMembership()`"},"addTeamMembership":{"alias":"teams.addOrUpdateMembership","deprecated":"`orgs.addTeamMembership()` is deprecated, use `teams.addOrUpdateMembership()`"},"addTeamRepo":{"alias":"teams.addOrUpdateRepo","deprecated":"`orgs.addTeamRepo()` is deprecated, use `teams.addOrUpdateRepo()`"},"blockUser":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"PUT","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/blocks/:username"},"checkBlockedUser":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"GET","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/blocks/:username"},"checkMembership":{"method":"GET","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/members/:username"},"checkPublicMembership":{"method":"GET","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/public_members/:username"},"checkTeamRepo":{"alias":"teams.checkManagesRepo","deprecated":"`orgs.checkTeamRepo()` is deprecated, use `teams.checkManagesRepo()`"},"concealMembership":{"method":"DELETE","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/public_members/:username"},"convertMemberToOutsideCollaborator":{"method":"PUT","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/outside_collaborators/:username"},"createHook":{"method":"POST","params":{"active":{"type":"boolean"},"config":{"required":true,"type":"object"},"config.content_type":{"type":"string"},"config.insecure_ssl":{"type":"string"},"config.secret":{"type":"string"},"config.url":{"required":true,"type":"string"},"events":{"type":"string[]"},"name":{"required":true,"type":"string"},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/hooks"},"createInvitation":{"headers":{"accept":"application/vnd.github.dazzler-preview+json"},"method":"POST","params":{"email":{"type":"string"},"invitee_id":{"type":"integer"},"org":{"required":true,"type":"string"},"role":{"enum":["admin","direct_member","billing_manager"],"type":"string"},"team_ids":{"type":"integer[]"}},"url":"/orgs/:org/invitations"},"createTeam":{"alias":"teams.create","deprecated":"`orgs.createTeam()` is deprecated, use `teams.create()`"},"deleteHook":{"method":"DELETE","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/hooks/:hook_id"},"deleteTeam":{"alias":"teams.delete","deprecated":"`orgs.deleteTeam()` is deprecated, use `teams.delete()`"},"deleteTeamRepo":{"alias":"teams.removeRepo","deprecated":"`orgs.deleteTeamRepo()` is deprecated, use `teams.removeRepo()`"},"editHook":{"alias":"orgs.updateHook","deprecated":"`orgs.editHook()` is deprecated, use `orgs.updateHook()`"},"editTeam":{"alias":"teams.update","deprecated":"`orgs.editTeam()` is deprecated, use `teams.update()`"},"get":{"method":"GET","params":{"org":{"required":true,"type":"string"}},"url":"/orgs/:org"},"getAll":{"alias":"orgs.list","deprecated":"`orgs.getAll()` is deprecated, use `orgs.list()`"},"getBlockedUsers":{"alias":"orgs.listBlockedUsers","deprecated":"`orgs.getBlockedUsers()` is deprecated, use `orgs.listBlockedUsers()`"},"getChildTeams":{"alias":"teams.listChild","deprecated":"`orgs.getChildTeams()` is deprecated, use `teams.listChild()`"},"getForUser":{"alias":"orgs.listForUser","deprecated":"`orgs.getForUser()` is deprecated, use `orgs.listForUser()`"},"getHook":{"method":"GET","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/hooks/:hook_id"},"getHooks":{"alias":"orgs.listHooks","deprecated":"`orgs.getHooks()` is deprecated, use `orgs.listHooks()`"},"getInvitationTeams":{"alias":"orgs.listInvitationTeams","deprecated":"`orgs.getInvitationTeams()` is deprecated, use `orgs.listInvitationTeams()`"},"getMembers":{"alias":"orgs.listMembers","deprecated":"`orgs.getMembers()` is deprecated, use `orgs.listMembers()`"},"getMembership":{"method":"GET","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/memberships/:username"},"getMembershipForAuthenticatedUser":{"method":"GET","params":{"org":{"required":true,"type":"string"}},"url":"/user/memberships/orgs/:org"},"getOrgMembership":{"alias":"orgs.getMembership","deprecated":"`orgs.getOrgMembership()` is deprecated, use `orgs.getMembership()`"},"getOutsideCollaborators":{"alias":"orgs.listOutsideCollaborators","deprecated":"`orgs.getOutsideCollaborators()` is deprecated, use `orgs.listOutsideCollaborators()`"},"getPendingOrgInvites":{"alias":"orgs.listPendingInvitations","deprecated":"`orgs.getPendingOrgInvites()` is deprecated, use `orgs.listPendingInvitations()`"},"getPendingTeamInvites":{"alias":"teams.listPendingInvitations","deprecated":"`orgs.getPendingTeamInvites()` is deprecated, use `teams.listPendingInvitations()`"},"getPublicMembers":{"alias":"orgs.listPublicMembers","deprecated":"`orgs.getPublicMembers()` is deprecated, use `orgs.listPublicMembers()`"},"getTeam":{"alias":"teams.get","deprecated":"`orgs.getTeam()` is deprecated, use `teams.get()`"},"getTeamMembers":{"alias":"teams.listMembers","deprecated":"`orgs.getTeamMembers()` is deprecated, use `teams.listMembers()`"},"getTeamMembership":{"alias":"teams.getMembership","deprecated":"`orgs.getTeamMembership()` is deprecated, use `teams.getMembership()`"},"getTeamRepos":{"alias":"teams.listRepos","deprecated":"`orgs.getTeamRepos()` is deprecated, use `teams.listRepos()`"},"getTeams":{"alias":"teams.list","deprecated":"`orgs.getTeams()` is deprecated, use `teams.list()`"},"list":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/organizations"},"listBlockedUsers":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"GET","params":{"org":{"required":true,"type":"string"}},"url":"/orgs/:org/blocks"},"listForAuthenticatedUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/orgs"},"listForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/orgs"},"listHooks":{"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/hooks"},"listInvitationTeams":{"method":"GET","params":{"invitation_id":{"required":true,"type":"integer"},"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/invitations/:invitation_id/teams"},"listMembers":{"method":"GET","params":{"filter":{"enum":["2fa_disabled","all"],"type":"string"},"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"role":{"enum":["all","admin","member"],"type":"string"}},"url":"/orgs/:org/members"},"listMemberships":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"state":{"enum":["active","pending"],"type":"string"}},"url":"/user/memberships/orgs"},"listOutsideCollaborators":{"method":"GET","params":{"filter":{"enum":["2fa_disabled","all"],"type":"string"},"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/outside_collaborators"},"listPendingInvitations":{"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/invitations"},"listPublicMembers":{"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/public_members"},"pingHook":{"method":"POST","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/hooks/:hook_id/pings"},"publicizeMembership":{"method":"PUT","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/public_members/:username"},"removeMember":{"method":"DELETE","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/members/:username"},"removeMembership":{"method":"DELETE","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/memberships/:username"},"removeOrgMembership":{"alias":"orgs.removeMembership","deprecated":"`orgs.removeOrgMembership()` is deprecated, use `orgs.removeMembership()`"},"removeOutsideCollaborator":{"method":"DELETE","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/outside_collaborators/:username"},"removeTeamMembership":{"alias":"teams.removeMembership","deprecated":"`orgs.removeTeamMembership()` is deprecated, use `teams.removeMembership()`"},"unblockUser":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"DELETE","params":{"org":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/orgs/:org/blocks/:username"},"update":{"method":"PATCH","params":{"billing_email":{"type":"string"},"company":{"type":"string"},"default_repository_permission":{"enum":["read","write","admin","none"],"type":"string"},"description":{"type":"string"},"email":{"type":"string"},"has_organization_projects":{"type":"boolean"},"has_repository_projects":{"type":"boolean"},"location":{"type":"string"},"members_can_create_repositories":{"type":"boolean"},"name":{"type":"string"},"org":{"required":true,"type":"string"}},"url":"/orgs/:org"},"updateHook":{"method":"PATCH","params":{"active":{"type":"boolean"},"config":{"type":"object"},"config.content_type":{"type":"string"},"config.insecure_ssl":{"type":"string"},"config.secret":{"type":"string"},"config.url":{"required":true,"type":"string"},"events":{"type":"string[]"},"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"org":{"required":true,"type":"string"}},"url":"/orgs/:org/hooks/:hook_id"},"updateMembership":{"method":"PATCH","params":{"org":{"required":true,"type":"string"},"state":{"enum":["active"],"required":true,"type":"string"}},"url":"/user/memberships/orgs/:org"}},"projects":{"addCollaborator":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"PUT","params":{"id":{"alias":"project_id","deprecated":true},"permission":{"enum":["read","write","admin"],"type":"string"},"project_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/projects/:project_id/collaborators/:username"},"createCard":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"POST","params":{"column_id":{"required":true,"type":"integer"},"content_id":{"type":"integer"},"content_type":{"type":"string"},"note":{"type":"string"}},"url":"/projects/columns/:column_id/cards"},"createColumn":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"POST","params":{"id":{"alias":"project_id","deprecated":true},"name":{"required":true,"type":"string"},"project_id":{"required":true,"type":"integer"}},"url":"/projects/:project_id/columns"},"createForOrg":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"POST","params":{"body":{"type":"string"},"name":{"required":true,"type":"string"},"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/projects"},"createForRepo":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"POST","params":{"body":{"type":"string"},"name":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/projects"},"createOrgProject":{"alias":"projects.createForOrg","deprecated":"`projects.createOrgProject()` is deprecated, use `projects.createForOrg()`"},"createProjectCard":{"alias":"projects.createCard","deprecated":"`projects.createProjectCard()` is deprecated, use `projects.createCard()`"},"createProjectColumn":{"alias":"projects.createColumn","deprecated":"`projects.createProjectColumn()` is deprecated, use `projects.createColumn()`"},"createRepoProject":{"alias":"projects.createForRepo","deprecated":"`projects.createRepoProject()` is deprecated, use `projects.createForRepo()`"},"delete":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"DELETE","params":{"id":{"alias":"project_id","deprecated":true},"project_id":{"required":true,"type":"integer"}},"url":"/projects/:project_id"},"deleteCard":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"DELETE","params":{"card_id":{"required":true,"type":"integer"},"id":{"alias":"card_id","deprecated":true}},"url":"/projects/columns/cards/:card_id"},"deleteColumn":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"DELETE","params":{"column_id":{"required":true,"type":"integer"},"id":{"alias":"column_id","deprecated":true}},"url":"/projects/columns/:column_id"},"deleteProject":{"alias":"projects.delete","deprecated":"`projects.deleteProject()` is deprecated, use `projects.delete()`"},"deleteProjectCard":{"alias":"projects.deleteCard","deprecated":"`projects.deleteProjectCard()` is deprecated, use `projects.deleteCard()`"},"deleteProjectColumn":{"alias":"projects.deleteColumn","deprecated":"`projects.deleteProjectColumn()` is deprecated, use `projects.deleteColumn()`"},"get":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"id":{"alias":"project_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"project_id":{"required":true,"type":"integer"}},"url":"/projects/:project_id"},"getCard":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"card_id":{"required":true,"type":"integer"},"id":{"alias":"card_id","deprecated":true}},"url":"/projects/columns/cards/:card_id"},"getCollaborators":{"alias":"projects.listCollaborators","deprecated":"`projects.getCollaborators()` is deprecated, use `projects.listCollaborators()`"},"getColumn":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"column_id":{"required":true,"type":"integer"},"id":{"alias":"column_id","deprecated":true}},"url":"/projects/columns/:column_id"},"getOrgProjects":{"alias":"projects.listForOrg","deprecated":"`projects.getOrgProjects()` is deprecated, use `projects.listForOrg()`"},"getProject":{"alias":"projects.get","deprecated":"`projects.getProject()` is deprecated, use `projects.get()`"},"getProjectCard":{"alias":"projects.getCard","deprecated":"`projects.getProjectCard()` is deprecated, use `projects.getCard()`"},"getProjectCards":{"alias":"projects.listCards","deprecated":"`projects.getProjectCards()` is deprecated, use `projects.listCards()`"},"getProjectColumn":{"alias":"projects.getColumn","deprecated":"`projects.getProjectColumn()` is deprecated, use `projects.getColumn()`"},"getProjectColumns":{"alias":"projects.listColumns","deprecated":"`projects.getProjectColumns()` is deprecated, use `projects.listColumns()`"},"getRepoProjects":{"alias":"projects.listForRepo","deprecated":"`projects.getRepoProjects()` is deprecated, use `projects.listForRepo()`"},"getUserPermissionLevel":{"alias":"projects.reviewUserPermissionLevel","deprecated":"`projects.getUserPermissionLevel()` is deprecated, use `projects.reviewUserPermissionLevel()`"},"listCards":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"archived_state":{"enum":["all","archived","not_archived"],"type":"string"},"column_id":{"required":true,"type":"integer"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/projects/columns/:column_id/cards"},"listCollaborators":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"affiliation":{"enum":["outside","direct","all"],"type":"string"},"id":{"alias":"project_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"project_id":{"required":true,"type":"integer"}},"url":"/projects/:project_id/collaborators"},"listColumns":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"id":{"alias":"project_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"project_id":{"required":true,"type":"integer"}},"url":"/projects/:project_id/columns"},"listForOrg":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/orgs/:org/projects"},"listForRepo":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/repos/:owner/:repo/projects"},"moveCard":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"POST","params":{"card_id":{"required":true,"type":"integer"},"column_id":{"type":"integer"},"id":{"alias":"card_id","deprecated":true},"position":{"required":true,"type":"string","validation":"^(top|bottom|after:\\d+)$"}},"url":"/projects/columns/cards/:card_id/moves"},"moveColumn":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"POST","params":{"column_id":{"required":true,"type":"integer"},"id":{"alias":"column_id","deprecated":true},"position":{"required":true,"type":"string","validation":"^(first|last|after:\\d+)$"}},"url":"/projects/columns/:column_id/moves"},"moveProjectCard":{"alias":"projects.moveCard","deprecated":"`projects.moveProjectCard()` is deprecated, use `projects.moveCard()`"},"moveProjectColumn":{"alias":"projects.moveColumn","deprecated":"`projects.moveProjectColumn()` is deprecated, use `projects.moveColumn()`"},"removeCollaborator":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"DELETE","params":{"id":{"alias":"project_id","deprecated":true},"project_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/projects/:project_id/collaborators/:username"},"reviewUserPermissionLevel":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"id":{"alias":"project_id","deprecated":true},"project_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/projects/:project_id/collaborators/:username/permission"},"update":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"PATCH","params":{"body":{"type":"string"},"id":{"alias":"project_id","deprecated":true},"name":{"type":"string"},"organization_permission":{"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"project_id":{"required":true,"type":"integer"},"public":{"type":"boolean"},"state":{"enum":["open","closed"],"type":"string"}},"url":"/projects/:project_id"},"updateCard":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"PATCH","params":{"archived":{"type":"boolean"},"card_id":{"required":true,"type":"integer"},"id":{"alias":"card_id","deprecated":true},"note":{"type":"string"}},"url":"/projects/columns/cards/:card_id"},"updateColumn":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"PATCH","params":{"column_id":{"required":true,"type":"integer"},"id":{"alias":"column_id","deprecated":true},"name":{"required":true,"type":"string"}},"url":"/projects/columns/:column_id"},"updateProject":{"alias":"projects.update","deprecated":"`projects.updateProject()` is deprecated, use `projects.update()`"},"updateProjectCard":{"alias":"projects.updateCard","deprecated":"`projects.updateProjectCard()` is deprecated, use `projects.updateCard()`"},"updateProjectColumn":{"alias":"projects.updateColumn","deprecated":"`projects.updateProjectColumn()` is deprecated, use `projects.updateColumn()`"}},"pullRequests":{"checkIfMerged":{"headers":{"accept":"application/vnd.github.polaris-preview"},"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/merge"},"checkMerged":{"alias":"pullRequests.checkIfMerged","deprecated":"`pullRequests.checkMerged()` is deprecated, use `pullRequests.checkIfMerged()`"},"create":{"method":"POST","params":{"base":{"required":true,"type":"string"},"body":{"type":"string"},"head":{"required":true,"type":"string"},"maintainer_can_modify":{"type":"boolean"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"title":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls"},"createComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"body":{"required":true,"type":"string"},"commit_id":{"required":true,"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"path":{"required":true,"type":"string"},"position":{"required":true,"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/comments"},"createCommentReply":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"body":{"required":true,"type":"string"},"in_reply_to":{"required":true,"type":"integer"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/comments"},"createFromIssue":{"method":"POST","params":{"base":{"required":true,"type":"string"},"head":{"required":true,"type":"string"},"issue":{"required":true,"type":"integer"},"maintainer_can_modify":{"type":"boolean"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls"},"createReview":{"method":"POST","params":{"body":{"type":"string"},"comments":{"type":"object[]"},"comments[].body":{"required":true,"type":"string"},"comments[].path":{"required":true,"type":"string"},"comments[].position":{"required":true,"type":"integer"},"commit_id":{"type":"string"},"event":{"enum":["APPROVE","REQUEST_CHANGES","COMMENT"],"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/reviews"},"createReviewRequest":{"method":"POST","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"reviewers":{"type":"string[]"},"team_reviewers":{"type":"string[]"}},"url":"/repos/:owner/:repo/pulls/:number/requested_reviewers"},"deleteComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"DELETE","params":{"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/comments/:comment_id"},"deletePendingReview":{"method":"DELETE","params":{"id":{"alias":"review_id","deprecated":true},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"review_id":{"required":true,"type":"integer"}},"url":"/repos/:owner/:repo/pulls/:number/reviews/:review_id"},"deleteReviewRequest":{"method":"DELETE","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"reviewers":{"type":"string[]"},"team_reviewers":{"type":"string[]"}},"url":"/repos/:owner/:repo/pulls/:number/requested_reviewers"},"dismissReview":{"method":"PUT","params":{"id":{"alias":"review_id","deprecated":true},"message":{"required":true,"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"review_id":{"required":true,"type":"integer"}},"url":"/repos/:owner/:repo/pulls/:number/reviews/:review_id/dismissals"},"editComment":{"alias":"pullRequests.updateComment","deprecated":"`pullRequests.editComment()` is deprecated, use `pullRequests.updateComment()`"},"get":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number"},"getAll":{"alias":"pullRequests.list","deprecated":"`pullRequests.getAll()` is deprecated, use `pullRequests.list()`"},"getComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/comments/:comment_id"},"getComments":{"alias":"pullRequests.listComments","deprecated":"`pullRequests.getComments()` is deprecated, use `pullRequests.listComments()`"},"getCommentsForRepo":{"alias":"pullRequests.listCommentsForRepo","deprecated":"`pullRequests.getCommentsForRepo()` is deprecated, use `pullRequests.listCommentsForRepo()`"},"getCommentsForReview":{"method":"GET","params":{"id":{"alias":"review_id","deprecated":true},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"review_id":{"required":true,"type":"integer"}},"url":"/repos/:owner/:repo/pulls/:number/reviews/:review_id/comments"},"getCommits":{"alias":"pullRequests.listCommits","deprecated":"`pullRequests.getCommits()` is deprecated, use `pullRequests.listCommits()`"},"getFiles":{"alias":"pullRequests.listFiles","deprecated":"`pullRequests.getFiles()` is deprecated, use `pullRequests.listFiles()`"},"getReview":{"method":"GET","params":{"id":{"alias":"review_id","deprecated":true},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"review_id":{"required":true,"type":"integer"}},"url":"/repos/:owner/:repo/pulls/:number/reviews/:review_id"},"getReviewComments":{"alias":"pullRequests.getCommentsForReview","deprecated":"`pullRequests.getReviewComments()` is deprecated, use `pullRequests.getCommentsForReview()`"},"getReviewRequests":{"alias":"pullRequests.listReviewRequests","deprecated":"`pullRequests.getReviewRequests()` is deprecated, use `pullRequests.listReviewRequests()`"},"getReviews":{"alias":"pullRequests.listReviews","deprecated":"`pullRequests.getReviews()` is deprecated, use `pullRequests.listReviews()`"},"list":{"method":"GET","params":{"base":{"type":"string"},"direction":{"enum":["asc","desc"],"type":"string"},"head":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"sort":{"enum":["created","updated","popularity","long-running"],"type":"string"},"state":{"enum":["open","closed","all"],"type":"string"}},"url":"/repos/:owner/:repo/pulls"},"listComments":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"since":{"type":"string"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/comments"},"listCommentsForRepo":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"since":{"type":"string"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/repos/:owner/:repo/pulls/comments"},"listCommits":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/commits"},"listFiles":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/files"},"listReviewRequests":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/requested_reviewers"},"listReviews":{"method":"GET","params":{"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/reviews"},"merge":{"headers":{"accept":"application/vnd.github.polaris-preview"},"method":"PUT","params":{"commit_message":{"type":"string"},"commit_title":{"type":"string"},"merge_method":{"enum":["merge","squash","rebase"],"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number/merge"},"submitReview":{"method":"POST","params":{"body":{"type":"string"},"event":{"enum":["APPROVE","REQUEST_CHANGES","COMMENT"],"required":true,"type":"string"},"id":{"alias":"review_id","deprecated":true},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"review_id":{"required":true,"type":"integer"}},"url":"/repos/:owner/:repo/pulls/:number/reviews/:review_id/events"},"update":{"method":"PATCH","params":{"base":{"type":"string"},"body":{"type":"string"},"maintainer_can_modify":{"type":"boolean"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"state":{"enum":["open","closed"],"type":"string"},"title":{"type":"string"}},"url":"/repos/:owner/:repo/pulls/:number"},"updateComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"PATCH","params":{"body":{"required":true,"type":"string"},"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/comments/:comment_id"}},"rateLimit":{"get":{"method":"GET","params":{},"url":"/rate_limit"}},"reactions":{"createForCommitComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"comment_id":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"required":true,"type":"string"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/comments/:comment_id/reactions"},"createForIssue":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"required":true,"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/reactions"},"createForIssueComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"comment_id":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"required":true,"type":"string"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/comments/:comment_id/reactions"},"createForPullRequestReviewComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"comment_id":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"required":true,"type":"string"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/comments/:comment_id/reactions"},"createForTeamDiscussion":{"headers":{"accept":"application/vnd.github.echo-preview+json,application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"required":true,"type":"string"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/reactions"},"createForTeamDiscussionComment":{"headers":{"accept":"application/vnd.github.echo-preview+json,application/vnd.github.squirrel-girl-preview+json"},"method":"POST","params":{"comment_number":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"required":true,"type":"string"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments/:comment_number/reactions"},"delete":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"DELETE","params":{"id":{"alias":"reaction_id","deprecated":true},"reaction_id":{"required":true,"type":"integer"}},"url":"/reactions/:reaction_id"},"getForCommitComment":{"alias":"reactions.listForCommitComment","deprecated":"`reactions.getForCommitComment()` is deprecated, use `reactions.listForCommitComment()`"},"getForIssue":{"alias":"reactions.listForIssue","deprecated":"`reactions.getForIssue()` is deprecated, use `reactions.listForIssue()`"},"getForIssueComment":{"alias":"reactions.listForIssueComment","deprecated":"`reactions.getForIssueComment()` is deprecated, use `reactions.listForIssueComment()`"},"getForPullRequestReviewComment":{"alias":"reactions.listForPullRequestReviewComment","deprecated":"`reactions.getForPullRequestReviewComment()` is deprecated, use `reactions.listForPullRequestReviewComment()`"},"getForTeamDiscussion":{"alias":"reactions.listForTeamDiscussion","deprecated":"`reactions.getForTeamDiscussion()` is deprecated, use `reactions.listForTeamDiscussion()`"},"getForTeamDiscussionComment":{"alias":"reactions.listForTeamDiscussionComment","deprecated":"`reactions.getForTeamDiscussionComment()` is deprecated, use `reactions.listForTeamDiscussionComment()`"},"listForCommitComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"type":"string"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/comments/:comment_id/reactions"},"listForIssue":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"type":"string"},"number":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/:number/reactions"},"listForIssueComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"type":"string"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/issues/comments/:comment_id/reactions"},"listForPullRequestReviewComment":{"headers":{"accept":"application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"type":"string"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pulls/comments/:comment_id/reactions"},"listForTeamDiscussion":{"headers":{"accept":"application/vnd.github.echo-preview+json,application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"type":"string"},"discussion_number":{"required":true,"type":"integer"},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/reactions"},"listForTeamDiscussionComment":{"headers":{"accept":"application/vnd.github.echo-preview+json,application/vnd.github.squirrel-girl-preview+json"},"method":"GET","params":{"comment_number":{"required":true,"type":"integer"},"content":{"enum":["+1","-1","laugh","confused","heart","hooray"],"type":"string"},"discussion_number":{"required":true,"type":"integer"},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments/:comment_number/reactions"}},"repos":{"acceptInvitation":{"method":"PATCH","params":{"invitation_id":{"required":true,"type":"integer"}},"url":"/user/repository_invitations/:invitation_id"},"addCollaborator":{"method":"PUT","params":{"owner":{"required":true,"type":"string"},"permission":{"enum":["pull","push","admin"],"type":"string"},"repo":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/collaborators/:username"},"addDeployKey":{"method":"POST","params":{"key":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"read_only":{"type":"boolean"},"repo":{"required":true,"type":"string"},"title":{"type":"string"}},"url":"/repos/:owner/:repo/keys"},"addProtectedBranchAdminEnforcement":{"method":"POST","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/enforce_admins"},"addProtectedBranchRequiredSignatures":{"headers":{"accept":"application/vnd.github.zzzax-preview+json"},"method":"POST","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_signatures"},"addProtectedBranchRequiredStatusChecksContexts":{"method":"POST","params":{"branch":{"required":true,"type":"string"},"contexts":{"mapTo":"data","required":true,"type":"string[]"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks/contexts"},"addProtectedBranchTeamRestrictions":{"method":"POST","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"teams":{"mapTo":"data","required":true,"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/teams"},"addProtectedBranchUserRestrictions":{"method":"POST","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"users":{"mapTo":"data","required":true,"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/users"},"checkCollaborator":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/collaborators/:username"},"compareCommits":{"method":"GET","params":{"base":{"required":true,"type":"string"},"head":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/compare/:base...:head"},"create":{"alias":"repos.createForAuthenticatedUser","deprecated":"`repos.create()` is deprecated, use `repos.createForAuthenticatedUser()`"},"createCommitComment":{"method":"POST","params":{"body":{"required":true,"type":"string"},"line":{"type":"integer"},"owner":{"required":true,"type":"string"},"path":{"type":"string"},"position":{"type":"integer"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:sha/comments"},"createDeployment":{"headers":{"accept":"application/vnd.github.ant-man-preview+json"},"method":"POST","params":{"auto_merge":{"type":"boolean"},"description":{"type":"string"},"environment":{"type":"string"},"owner":{"required":true,"type":"string"},"payload":{"type":"string"},"production_environment":{"type":"boolean"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"required_contexts":{"type":"string[]"},"task":{"type":"string"},"transient_environment":{"type":"boolean"}},"url":"/repos/:owner/:repo/deployments"},"createDeploymentStatus":{"headers":{"accept":"application/vnd.github.ant-man-preview+json"},"method":"POST","params":{"auto_inactive":{"type":"boolean"},"deployment_id":{"required":true,"type":"integer"},"description":{"type":"string"},"environment":{"enum":["production","staging","qa"],"type":"string"},"environment_url":{"type":"string"},"id":{"alias":"deployment_id","deprecated":true},"log_url":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"state":{"enum":["error","failure","inactive","in_progress","queued","pending","success"],"required":true,"type":"string"},"target_url":{"type":"string"}},"url":"/repos/:owner/:repo/deployments/:deployment_id/statuses"},"createFile":{"method":"PUT","params":{"author":{"type":"object"},"author.email":{"required":true,"type":"string"},"author.name":{"required":true,"type":"string"},"branch":{"type":"string"},"committer":{"type":"object"},"committer.email":{"required":true,"type":"string"},"committer.name":{"required":true,"type":"string"},"content":{"required":true,"type":"string"},"message":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"path":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/contents/:path"},"createForAuthenticatedUser":{"method":"POST","params":{"allow_merge_commit":{"type":"boolean"},"allow_rebase_merge":{"type":"boolean"},"allow_squash_merge":{"type":"boolean"},"auto_init":{"type":"boolean"},"description":{"type":"string"},"gitignore_template":{"type":"string"},"has_issues":{"type":"boolean"},"has_projects":{"type":"boolean"},"has_wiki":{"type":"boolean"},"homepage":{"type":"string"},"license_template":{"type":"string"},"name":{"required":true,"type":"string"},"private":{"type":"boolean"},"team_id":{"type":"integer"}},"url":"/user/repos"},"createForOrg":{"alias":"repos.createInOrg","deprecated":"`repos.createForOrg()` is deprecated, use `repos.createInOrg()`"},"createFork":{"method":"POST","params":{"organization":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/forks"},"createHook":{"method":"POST","params":{"active":{"type":"boolean"},"config":{"required":true,"type":"object"},"config.content_type":{"type":"string"},"config.insecure_ssl":{"type":"string"},"config.secret":{"type":"string"},"config.url":{"required":true,"type":"string"},"events":{"type":"string[]"},"name":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks"},"createInOrg":{"method":"POST","params":{"allow_merge_commit":{"type":"boolean"},"allow_rebase_merge":{"type":"boolean"},"allow_squash_merge":{"type":"boolean"},"auto_init":{"type":"boolean"},"description":{"type":"string"},"gitignore_template":{"type":"string"},"has_issues":{"type":"boolean"},"has_projects":{"type":"boolean"},"has_wiki":{"type":"boolean"},"homepage":{"type":"string"},"license_template":{"type":"string"},"name":{"required":true,"type":"string"},"org":{"required":true,"type":"string"},"private":{"type":"boolean"},"team_id":{"type":"integer"}},"url":"/orgs/:org/repos"},"createRelease":{"method":"POST","params":{"body":{"type":"string"},"draft":{"type":"boolean"},"name":{"type":"string"},"owner":{"required":true,"type":"string"},"prerelease":{"type":"boolean"},"repo":{"required":true,"type":"string"},"tag_name":{"required":true,"type":"string"},"target_commitish":{"type":"string"}},"url":"/repos/:owner/:repo/releases"},"createStatus":{"method":"POST","params":{"context":{"type":"string"},"description":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"},"state":{"enum":["error","failure","pending","success"],"required":true,"type":"string"},"target_url":{"type":"string"}},"url":"/repos/:owner/:repo/statuses/:sha"},"declineInvitation":{"method":"DELETE","params":{"invitation_id":{"required":true,"type":"integer"}},"url":"/user/repository_invitations/:invitation_id"},"delete":{"method":"DELETE","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo"},"deleteAsset":{"alias":"repos.deleteReleaseAsset","deprecated":"`repos.deleteAsset()` is deprecated, use `repos.deleteReleaseAsset()`"},"deleteCommitComment":{"method":"DELETE","params":{"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/comments/:comment_id"},"deleteDeployKey":{"alias":"repos.removeDeployKey","deprecated":"`repos.deleteDeployKey()` is deprecated, use `repos.removeDeployKey()`"},"deleteDownload":{"method":"DELETE","params":{"download_id":{"required":true,"type":"integer"},"id":{"alias":"download_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/downloads/:download_id"},"deleteFile":{"method":"DELETE","params":{"author":{"type":"object"},"branch":{"type":"string"},"committer":{"type":"object"},"message":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"path":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/contents/:path"},"deleteHook":{"method":"DELETE","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks/:hook_id"},"deleteInvitation":{"method":"DELETE","params":{"invitation_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/invitations/:invitation_id"},"deleteInvite":{"alias":"repos.deleteInvitation","deprecated":"`repos.deleteInvite()` is deprecated, use `repos.deleteInvitation()`"},"deleteRelease":{"method":"DELETE","params":{"id":{"alias":"release_id","deprecated":true},"owner":{"required":true,"type":"string"},"release_id":{"required":true,"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/:release_id"},"deleteReleaseAsset":{"method":"DELETE","params":{"asset_id":{"required":true,"type":"integer"},"id":{"alias":"asset_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/assets/:asset_id"},"edit":{"alias":"repos.update","deprecated":"`repos.edit()` is deprecated, use `repos.update()`"},"editAsset":{"alias":"repos.updateReleaseAsset","deprecated":"`repos.editAsset()` is deprecated, use `repos.updateReleaseAsset()`"},"editHook":{"alias":"repos.updateHook","deprecated":"`repos.editHook()` is deprecated, use `repos.updateHook()`"},"editRelease":{"alias":"repos.updateRelease","deprecated":"`repos.editRelease()` is deprecated, use `repos.updateRelease()`"},"fork":{"alias":"repos.createFork","deprecated":"`repos.fork()` is deprecated, use `repos.createFork()`"},"get":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo"},"getAll":{"alias":"repos.list","deprecated":"`repos.getAll()` is deprecated, use `repos.list()`"},"getAllCommitComments":{"alias":"repos.listCommitComments","deprecated":"`repos.getAllCommitComments()` is deprecated, use `repos.listCommitComments()`"},"getArchiveLink":{"method":"GET","params":{"archive_format":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/:archive_format/:ref"},"getAsset":{"alias":"repos.getReleaseAsset","deprecated":"`repos.getAsset()` is deprecated, use `repos.getReleaseAsset()`"},"getAssets":{"alias":"repos.listAssetsForRelease","deprecated":"`repos.getAssets()` is deprecated, use `repos.listAssetsForRelease()`"},"getBranch":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch"},"getBranchProtection":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection"},"getBranches":{"alias":"repos.listBranches","deprecated":"`repos.getBranches()` is deprecated, use `repos.listBranches()`"},"getById":{"method":"GET","params":{"id":{"required":true,"type":"string"}},"url":"/repositories/:id"},"getClones":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"per":{"enum":["day","week"],"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/traffic/clones"},"getCodeFrequencyStats":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/stats/code_frequency"},"getCollaboratorPermissionLevel":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/collaborators/:username/permission"},"getCollaborators":{"alias":"repos.listCollaborators","deprecated":"`repos.getCollaborators()` is deprecated, use `repos.listCollaborators()`"},"getCombinedStatusForRef":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:ref/status"},"getCommit":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:sha"},"getCommitActivityStats":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/stats/commit_activity"},"getCommitComment":{"method":"GET","params":{"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/comments/:comment_id"},"getCommitComments":{"alias":"repos.listCommentsForCommit","deprecated":"`repos.getCommitComments()` is deprecated, use `repos.listCommentsForCommit()`"},"getCommitRefSha":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:ref"},"getCommits":{"alias":"repos.listCommits","deprecated":"`repos.getCommits()` is deprecated, use `repos.listCommits()`"},"getCommunityProfileMetrics":{"alias":"repos.retrieveCommunityProfileMetrics","deprecated":"`repos.getCommunityProfileMetrics()` is deprecated, use `repos.retrieveCommunityProfileMetrics()`"},"getContent":{"alias":"repos.getContents","deprecated":"`repos.getContent()` is deprecated, use `repos.getContents()`"},"getContents":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"path":{"required":true,"type":"string"},"ref":{"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/contents/:path"},"getContributors":{"alias":"repos.listContributors","deprecated":"`repos.getContributors()` is deprecated, use `repos.listContributors()`"},"getContributorsStats":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/stats/contributors"},"getDeployKey":{"method":"GET","params":{"id":{"alias":"key_id","deprecated":true},"key_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/keys/:key_id"},"getDeployKeys":{"alias":"repos.listDeployKeys","deprecated":"`repos.getDeployKeys()` is deprecated, use `repos.listDeployKeys()`"},"getDeployment":{"method":"GET","params":{"deployment_id":{"required":true,"type":"integer"},"id":{"alias":"deployment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/deployments/:deployment_id"},"getDeploymentStatus":{"method":"GET","params":{"deployment_id":{"required":true,"type":"integer"},"id":{"alias":"deployment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"status_id":{"required":true,"type":"integer"}},"url":"/repos/:owner/:repo/deployments/:deployment_id/statuses/:status_id"},"getDeploymentStatuses":{"alias":"repos.listDeploymentStatuses","deprecated":"`repos.getDeploymentStatuses()` is deprecated, use `repos.listDeploymentStatuses()`"},"getDeployments":{"alias":"repos.listDeployments","deprecated":"`repos.getDeployments()` is deprecated, use `repos.listDeployments()`"},"getDownload":{"method":"GET","params":{"download_id":{"required":true,"type":"integer"},"id":{"alias":"download_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/downloads/:download_id"},"getDownloads":{"alias":"repos.listDownloads","deprecated":"`repos.getDownloads()` is deprecated, use `repos.listDownloads()`"},"getForOrg":{"alias":"repos.listForOrg","deprecated":"`repos.getForOrg()` is deprecated, use `repos.listForOrg()`"},"getForUser":{"alias":"repos.listForUser","deprecated":"`repos.getForUser()` is deprecated, use `repos.listForUser()`"},"getForks":{"alias":"repos.listForks","deprecated":"`repos.getForks()` is deprecated, use `repos.listForks()`"},"getHook":{"method":"GET","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks/:hook_id"},"getHooks":{"alias":"repos.listHooks","deprecated":"`repos.getHooks()` is deprecated, use `repos.listHooks()`"},"getInvites":{"alias":"repos.listInvitations","deprecated":"`repos.getInvites()` is deprecated, use `repos.listInvitations()`"},"getLanguages":{"alias":"repos.listLanguages","deprecated":"`repos.getLanguages()` is deprecated, use `repos.listLanguages()`"},"getLatestPagesBuild":{"headers":{"accept":"application/vnd.github.mister-fantastic-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pages/builds/latest"},"getLatestRelease":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/latest"},"getPages":{"headers":{"accept":"application/vnd.github.mister-fantastic-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pages"},"getPagesBuild":{"headers":{"accept":"application/vnd.github.mister-fantastic-preview+json"},"method":"GET","params":{"build_id":{"required":true,"type":"integer"},"id":{"alias":"build_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pages/builds/:build_id"},"getPagesBuilds":{"alias":"repos.listPagesBuilds","deprecated":"`repos.getPagesBuilds()` is deprecated, use `repos.listPagesBuilds()`"},"getParticipationStats":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/stats/participation"},"getPaths":{"alias":"repos.getTopPaths","deprecated":"`repos.getPaths()` is deprecated, use `repos.getTopPaths()`"},"getProtectedBranchAdminEnforcement":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/enforce_admins"},"getProtectedBranchPullRequestReviewEnforcement":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_pull_request_reviews"},"getProtectedBranchRequiredSignatures":{"headers":{"accept":"application/vnd.github.zzzax-preview+json"},"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_signatures"},"getProtectedBranchRequiredStatusChecks":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks"},"getProtectedBranchRequiredStatusChecksContexts":{"alias":"repos.listProtectedBranchRequiredStatusChecksContexts","deprecated":"`repos.getProtectedBranchRequiredStatusChecksContexts()` is deprecated, use `repos.listProtectedBranchRequiredStatusChecksContexts()`"},"getProtectedBranchRestrictions":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions"},"getProtectedBranchTeamRestrictions":{"alias":"repos.listProtectedBranchTeamRestrictions","deprecated":"`repos.getProtectedBranchTeamRestrictions()` is deprecated, use `repos.listProtectedBranchTeamRestrictions()`"},"getProtectedBranchUserRestrictions":{"alias":"repos.listProtectedBranchUserRestrictions","deprecated":"`repos.getProtectedBranchUserRestrictions()` is deprecated, use `repos.listProtectedBranchUserRestrictions()`"},"getPublic":{"alias":"repos.listPublic","deprecated":"`repos.getPublic()` is deprecated, use `repos.listPublic()`"},"getPunchCardStats":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/stats/punch_card"},"getReadme":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"ref":{"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/readme"},"getReferrers":{"alias":"repos.getTopReferrers","deprecated":"`repos.getReferrers()` is deprecated, use `repos.getTopReferrers()`"},"getRelease":{"method":"GET","params":{"id":{"alias":"release_id","deprecated":true},"owner":{"required":true,"type":"string"},"release_id":{"required":true,"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/:release_id"},"getReleaseAsset":{"method":"GET","params":{"asset_id":{"required":true,"type":"integer"},"id":{"alias":"asset_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/assets/:asset_id"},"getReleaseByTag":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"tag":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/tags/:tag"},"getReleases":{"alias":"repos.listReleases","deprecated":"`repos.getReleases()` is deprecated, use `repos.listReleases()`"},"getShaOfCommitRef":{"alias":"repos.getCommitRefSha","deprecated":"`repos.getShaOfCommitRef()` is deprecated, use `repos.getCommitRefSha()`"},"getStatsCodeFrequency":{"alias":"repos.getCodeFrequencyStats","deprecated":"`repos.getStatsCodeFrequency()` is deprecated, use `repos.getCodeFrequencyStats()`"},"getStatsCommitActivity":{"alias":"repos.getCommitActivityStats","deprecated":"`repos.getStatsCommitActivity()` is deprecated, use `repos.getCommitActivityStats()`"},"getStatsContributors":{"alias":"repos.getContributorsStats","deprecated":"`repos.getStatsContributors()` is deprecated, use `repos.getContributorsStats()`"},"getStatsParticipation":{"alias":"repos.getParticipationStats","deprecated":"`repos.getStatsParticipation()` is deprecated, use `repos.getParticipationStats()`"},"getStatsPunchCard":{"alias":"repos.getPunchCardStats","deprecated":"`repos.getStatsPunchCard()` is deprecated, use `repos.getPunchCardStats()`"},"getStatuses":{"alias":"repos.listStatusesForRef","deprecated":"`repos.getStatuses()` is deprecated, use `repos.listStatusesForRef()`"},"getTags":{"alias":"repos.listTags","deprecated":"`repos.getTags()` is deprecated, use `repos.listTags()`"},"getTeams":{"alias":"repos.listTeams","deprecated":"`repos.getTeams()` is deprecated, use `repos.listTeams()`"},"getTopPaths":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/traffic/popular/paths"},"getTopReferrers":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/traffic/popular/referrers"},"getTopics":{"alias":"repos.listTopics","deprecated":"`repos.getTopics()` is deprecated, use `repos.listTopics()`"},"getViews":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"per":{"enum":["day","week"],"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/traffic/views"},"list":{"method":"GET","params":{"affiliation":{"enum":["owner","collaborator","organization_member"],"type":"string"},"direction":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"sort":{"enum":["created","updated","pushed","full_name"],"type":"string"},"type":{"enum":["all","owner","public","private","member"],"type":"string"},"visibility":{"enum":["all","public","private"],"type":"string"}},"url":"/user/repos"},"listAssetsForRelease":{"method":"GET","params":{"id":{"alias":"release_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"release_id":{"required":true,"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/:release_id/assets"},"listBranches":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"protected":{"type":"boolean"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches"},"listCollaborators":{"method":"GET","params":{"affiliation":{"enum":["outside","direct","all"],"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/collaborators"},"listCommentsForCommit":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:ref/comments"},"listCommitComments":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/comments"},"listCommits":{"method":"GET","params":{"author":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"path":{"type":"string"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"sha":{"type":"string"},"since":{"type":"string"},"until":{"type":"string"}},"url":"/repos/:owner/:repo/commits"},"listContributors":{"method":"GET","params":{"anon":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/contributors"},"listDeployKeys":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/keys"},"listDeploymentStatuses":{"headers":{"accept":"application/vnd.github.ant-man-preview+json"},"method":"GET","params":{"deployment_id":{"required":true,"type":"integer"},"id":{"alias":"deployment_id","deprecated":true},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/deployments/:deployment_id/statuses"},"listDeployments":{"headers":{"accept":"application/vnd.github.ant-man-preview+json"},"method":"GET","params":{"environment":{"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"ref":{"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"type":"string"},"task":{"type":"string"}},"url":"/repos/:owner/:repo/deployments"},"listDownloads":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/downloads"},"listForOrg":{"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"type":{"enum":["all","public","private","forks","sources","member"],"type":"string"}},"url":"/orgs/:org/repos"},"listForUser":{"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"sort":{"enum":["created","updated","pushed","full_name"],"type":"string"},"type":{"enum":["all","owner","member"],"type":"string"},"username":{"required":true,"type":"string"}},"url":"/users/:username/repos"},"listForks":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"},"sort":{"enum":["newest","oldest","stargazers"],"type":"string"}},"url":"/repos/:owner/:repo/forks"},"listHooks":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks"},"listInvitations":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/invitations"},"listInvitationsForAuthenticatedUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/repository_invitations"},"listLanguages":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/languages"},"listPagesBuilds":{"headers":{"accept":"application/vnd.github.mister-fantastic-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pages/builds"},"listProtectedBranchRequiredStatusChecksContexts":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks/contexts"},"listProtectedBranchTeamRestrictions":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/teams"},"listProtectedBranchUserRestrictions":{"method":"GET","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/users"},"listPublic":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/repositories"},"listReleases":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases"},"listStatusesForRef":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"ref":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/commits/:ref/statuses"},"listTags":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/tags"},"listTeams":{"method":"GET","params":{"owner":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/teams"},"listTopics":{"headers":{"accept":"application/vnd.github.mercy-preview+json"},"method":"GET","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/topics"},"merge":{"method":"POST","params":{"base":{"required":true,"type":"string"},"commit_message":{"type":"string"},"head":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/merges"},"pingHook":{"method":"POST","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks/:hook_id/pings"},"removeBranchProtection":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection"},"removeCollaborator":{"method":"DELETE","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/collaborators/:username"},"removeDeployKey":{"method":"DELETE","params":{"id":{"alias":"key_id","deprecated":true},"key_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/keys/:key_id"},"removeProtectedBranchAdminEnforcement":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/enforce_admins"},"removeProtectedBranchPullRequestReviewEnforcement":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_pull_request_reviews"},"removeProtectedBranchRequiredSignatures":{"headers":{"accept":"application/vnd.github.zzzax-preview+json"},"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_signatures"},"removeProtectedBranchRequiredStatusChecks":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks"},"removeProtectedBranchRequiredStatusChecksContexts":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"contexts":{"mapTo":"data","required":true,"type":"string[]"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks/contexts"},"removeProtectedBranchRestrictions":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions"},"removeProtectedBranchTeamRestrictions":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"teams":{"mapTo":"data","required":true,"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/teams"},"removeProtectedBranchUserRestrictions":{"method":"DELETE","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"users":{"mapTo":"data","required":true,"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/users"},"replaceProtectedBranchRequiredStatusChecksContexts":{"method":"PUT","params":{"branch":{"required":true,"type":"string"},"contexts":{"mapTo":"data","required":true,"type":"string[]"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks/contexts"},"replaceProtectedBranchTeamRestrictions":{"method":"PUT","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"teams":{"mapTo":"data","required":true,"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/teams"},"replaceProtectedBranchUserRestrictions":{"method":"PUT","params":{"branch":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"users":{"mapTo":"data","required":true,"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection/restrictions/users"},"replaceTopics":{"headers":{"accept":"application/vnd.github.mercy-preview+json"},"method":"PUT","params":{"names":{"required":true,"type":"string[]"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/topics"},"requestPageBuild":{"headers":{"accept":"application/vnd.github.mister-fantastic-preview+json"},"method":"POST","params":{"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/pages/builds"},"retrieveCommunityProfileMetrics":{"headers":{"accept":"application/vnd.github.black-panther-preview+json"},"method":"GET","params":{"name":{"alias":"repo","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/community/profile"},"reviewUserPermissionLevel":{"alias":"repos.getCollaboratorPermissionLevel","deprecated":"`repos.reviewUserPermissionLevel()` is deprecated, use `repos.getCollaboratorPermissionLevel()`"},"testHook":{"alias":"repos.testPushHook","deprecated":"`repos.testHook()` is deprecated, use `repos.testPushHook()`"},"testPushHook":{"method":"POST","params":{"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks/:hook_id/tests"},"transfer":{"headers":{"accept":"application/vnd.github.nightshade-preview+json"},"method":"POST","params":{"new_owner":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"team_id":{"alias":"team_ids","deprecated":true},"team_ids":{"type":"integer[]"}},"url":"/repos/:owner/:repo/transfer"},"update":{"method":"PATCH","params":{"allow_merge_commit":{"type":"boolean"},"allow_rebase_merge":{"type":"boolean"},"allow_squash_merge":{"type":"boolean"},"archived":{"type":"boolean"},"default_branch":{"type":"string"},"description":{"type":"string"},"has_issues":{"type":"boolean"},"has_projects":{"type":"boolean"},"has_wiki":{"type":"boolean"},"homepage":{"type":"string"},"name":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"private":{"type":"boolean"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo"},"updateBranchProtection":{"method":"PUT","params":{"branch":{"required":true,"type":"string"},"enforce_admins":{"allowNull":true,"required":true,"type":"boolean"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"required_pull_request_reviews":{"allowNull":true,"required":true,"type":"object"},"required_pull_request_reviews.dismiss_stale_reviews":{"type":"boolean"},"required_pull_request_reviews.dismissal_restrictions":{"type":"object"},"required_pull_request_reviews.dismissal_restrictions.teams":{"type":"string[]"},"required_pull_request_reviews.dismissal_restrictions.users":{"type":"string[]"},"required_pull_request_reviews.require_code_owner_reviews":{"type":"boolean"},"required_pull_request_reviews.required_approving_review_count":{"type":"integer"},"required_status_checks":{"allowNull":true,"required":true,"type":"object"},"required_status_checks.contexts":{"required":true,"type":"string[]"},"required_status_checks.strict":{"required":true,"type":"boolean"},"restrictions":{"allowNull":true,"required":true,"type":"object"},"restrictions.teams":{"type":"string[]"},"restrictions.users":{"type":"string[]"}},"url":"/repos/:owner/:repo/branches/:branch/protection"},"updateCommitComment":{"method":"PATCH","params":{"body":{"required":true,"type":"string"},"comment_id":{"required":true,"type":"integer"},"id":{"alias":"comment_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/comments/:comment_id"},"updateFile":{"method":"PUT","params":{"author":{"type":"object"},"author.email":{"required":true,"type":"string"},"author.name":{"required":true,"type":"string"},"branch":{"type":"string"},"committer":{"type":"object"},"committer.email":{"required":true,"type":"string"},"committer.name":{"required":true,"type":"string"},"content":{"required":true,"type":"string"},"message":{"required":true,"type":"string"},"owner":{"required":true,"type":"string"},"path":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"sha":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/contents/:path"},"updateHook":{"method":"PATCH","params":{"active":{"type":"boolean"},"add_events":{"type":"string[]"},"config":{"type":"object"},"config.content_type":{"type":"string"},"config.insecure_ssl":{"type":"string"},"config.secret":{"type":"string"},"config.url":{"required":true,"type":"string"},"events":{"type":"string[]"},"hook_id":{"required":true,"type":"integer"},"id":{"alias":"hook_id","deprecated":true},"owner":{"required":true,"type":"string"},"remove_events":{"type":"string[]"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/hooks/:hook_id"},"updateInformationAboutPagesSite":{"headers":{"accept":"application/vnd.github.mister-fantastic-preview+json"},"method":"PUT","params":{"cname":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"source":{"enum":["\"gh-pages\"","\"master\"","\"master /docs\""],"type":"string"}},"url":"/repos/:owner/:repo/pages"},"updateInvitation":{"method":"PATCH","params":{"invitation_id":{"required":true,"type":"integer"},"owner":{"required":true,"type":"string"},"permissions":{"enum":["read","write","admin"],"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/invitations/:invitation_id"},"updateInvite":{"alias":"repos.updateInvitation","deprecated":"`repos.updateInvite()` is deprecated, use `repos.updateInvitation()`"},"updateProtectedBranchPullRequestReviewEnforcement":{"method":"PATCH","params":{"branch":{"required":true,"type":"string"},"dismiss_stale_reviews":{"type":"boolean"},"dismissal_restrictions":{"type":"object"},"dismissal_restrictions.teams":{"type":"string[]"},"dismissal_restrictions.users":{"type":"string[]"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"require_code_owner_reviews":{"type":"boolean"},"required_approving_review_count":{"type":"integer"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_pull_request_reviews"},"updateProtectedBranchRequiredStatusChecks":{"method":"PATCH","params":{"branch":{"required":true,"type":"string"},"contexts":{"type":"string[]"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"strict":{"type":"boolean"}},"url":"/repos/:owner/:repo/branches/:branch/protection/required_status_checks"},"updateRelease":{"method":"PATCH","params":{"body":{"type":"string"},"draft":{"type":"boolean"},"id":{"alias":"release_id","deprecated":true},"name":{"type":"string"},"owner":{"required":true,"type":"string"},"prerelease":{"type":"boolean"},"release_id":{"required":true,"type":"integer"},"repo":{"required":true,"type":"string"},"tag_name":{"type":"string"},"target_commitish":{"type":"string"}},"url":"/repos/:owner/:repo/releases/:release_id"},"updateReleaseAsset":{"method":"PATCH","params":{"asset_id":{"required":true,"type":"integer"},"id":{"alias":"asset_id","deprecated":true},"label":{"type":"string"},"name":{"type":"string"},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"}},"url":"/repos/:owner/:repo/releases/assets/:asset_id"},"uploadAsset":{"alias":"repos.uploadReleaseAsset","deprecated":"`repos.uploadAsset()` is deprecated, use `repos.uploadReleaseAsset()`"},"uploadReleaseAsset":{"method":"POST","params":{"contentLength":{"alias":"headers.content-length","deprecated":true},"contentType":{"alias":"headers.content-type","deprecated":true},"file":{"mapTo":"data","required":true,"type":"string | object"},"headers.content-length":{"required":true,"type":"integer"},"headers.content-type":{"required":true,"type":"string"},"label":{"type":"string"},"name":{"required":true,"type":"string"},"url":{"required":true,"type":"string"}},"url":":url"}},"search":{"code":{"method":"GET","params":{"order":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"q":{"required":true,"type":"string"},"sort":{"enum":["indexed"],"type":"string"}},"url":"/search/code"},"commits":{"headers":{"accept":"application/vnd.github.cloak-preview+json"},"method":"GET","params":{"order":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"q":{"required":true,"type":"string"},"sort":{"enum":["author-date","committer-date"],"type":"string"}},"url":"/search/commits"},"issues":{"method":"GET","params":{"order":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"q":{"required":true,"type":"string"},"sort":{"enum":["comments","created","updated"],"type":"string"}},"url":"/search/issues"},"labels":{"headers":{"accept":"application/vnd.github.symmetra-preview+json"},"method":"GET","params":{"order":{"enum":["asc","desc"],"type":"string"},"q":{"required":true,"type":"string"},"repository_id":{"required":true,"type":"integer"},"sort":{"enum":["created","updated"],"type":"string"}},"url":"/search/labels"},"repos":{"headers":{"accept":"application/vnd.github.mercy-preview+json"},"method":"GET","params":{"order":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"q":{"required":true,"type":"string"},"sort":{"enum":["stars","forks","updated"],"type":"string"}},"url":"/search/repositories"},"topics":{"headers":{"accept":"application/vnd.github.mercy-preview+json"},"method":"GET","params":{"q":{"required":true,"type":"string"}},"url":"/search/topics"},"users":{"method":"GET","params":{"order":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"q":{"required":true,"type":"string"},"sort":{"enum":["followers","repositories","joined"],"type":"string"}},"url":"/search/users"}},"teams":{"addMember":{"method":"PUT","params":{"team_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/teams/:team_id/members/:username"},"addOrUpdateMembership":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"PUT","params":{"id":{"alias":"team_id","deprecated":true},"role":{"enum":["member","maintainer"],"type":"string"},"team_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/teams/:team_id/memberships/:username"},"addOrUpdateProject":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"PUT","params":{"permission":{"enum":["read","write","admin"],"type":"string"},"project_id":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/projects/:project_id"},"addOrUpdateRepo":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"PUT","params":{"id":{"alias":"team_id","deprecated":true},"org":{"alias":"owner","deprecated":true},"owner":{"required":true,"type":"string"},"permission":{"enum":["pull","push","admin"],"type":"string"},"repo":{"required":true,"type":"string"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/repos/:owner/:repo"},"checkManagesRepo":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/repos/:owner/:repo"},"create":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"POST","params":{"description":{"type":"string"},"maintainers":{"type":"string[]"},"name":{"required":true,"type":"string"},"org":{"required":true,"type":"string"},"parent_team_id":{"type":"integer"},"permission":{"enum":["pull","push","admin"],"type":"string"},"privacy":{"enum":["secret","closed"],"type":"string"},"repo_names":{"type":"string[]"}},"url":"/orgs/:org/teams"},"createDiscussion":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"POST","params":{"body":{"required":true,"type":"string"},"private":{"type":"boolean"},"team_id":{"required":true,"type":"integer"},"title":{"required":true,"type":"string"}},"url":"/teams/:team_id/discussions"},"createDiscussionComment":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"POST","params":{"body":{"required":true,"type":"string"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments"},"delete":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"DELETE","params":{"id":{"alias":"team_id","deprecated":true},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id"},"deleteDiscussion":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"DELETE","params":{"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number"},"deleteDiscussionComment":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"DELETE","params":{"comment_number":{"required":true,"type":"integer"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments/:comment_number"},"get":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id"},"getDiscussion":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"GET","params":{"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number"},"getDiscussionComment":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"GET","params":{"comment_number":{"required":true,"type":"integer"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments/:comment_number"},"getMember":{"method":"GET","params":{"team_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/teams/:team_id/members/:username"},"getMembership":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"team_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/teams/:team_id/memberships/:username"},"list":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"org":{"required":true,"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/orgs/:org/teams"},"listChild":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/teams"},"listDiscussionComments":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"discussion_number":{"required":true,"type":"integer"},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments"},"listDiscussions":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"GET","params":{"direction":{"enum":["asc","desc"],"type":"string"},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions"},"listForAuthenticatedUser":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/teams"},"listMembers":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"role":{"enum":["member","maintainer","all"],"type":"string"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/members"},"listPendingInvitations":{"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/invitations"},"listProjects":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/projects"},"listRepos":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"GET","params":{"id":{"alias":"team_id","deprecated":true},"page":{"type":"integer"},"per_page":{"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/repos"},"removeMember":{"method":"DELETE","params":{"team_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/teams/:team_id/members/:username"},"removeMembership":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"DELETE","params":{"id":{"alias":"team_id","deprecated":true},"team_id":{"required":true,"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/teams/:team_id/memberships/:username"},"removeProject":{"method":"DELETE","params":{"project_id":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/projects/:project_id"},"removeRepo":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"DELETE","params":{"id":{"alias":"team_id","deprecated":true},"owner":{"required":true,"type":"string"},"repo":{"required":true,"type":"string"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/repos/:owner/:repo"},"reviewProject":{"headers":{"accept":"application/vnd.github.inertia-preview+json"},"method":"GET","params":{"project_id":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/projects/:project_id"},"update":{"headers":{"accept":"application/vnd.github.hellcat-preview+json"},"method":"PATCH","params":{"description":{"type":"string"},"id":{"alias":"team_id","deprecated":true},"name":{"required":true,"type":"string"},"parent_team_id":{"type":"integer"},"permission":{"enum":["pull","push","admin"],"type":"string"},"privacy":{"type":"string"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id"},"updateDiscussion":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"PATCH","params":{"body":{"type":"string"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"},"title":{"type":"string"}},"url":"/teams/:team_id/discussions/:discussion_number"},"updateDiscussionComment":{"headers":{"accept":"application/vnd.github.echo-preview+json"},"method":"PATCH","params":{"body":{"required":true,"type":"string"},"comment_number":{"required":true,"type":"integer"},"discussion_number":{"required":true,"type":"integer"},"team_id":{"required":true,"type":"integer"}},"url":"/teams/:team_id/discussions/:discussion_number/comments/:comment_number"}},"users":{"acceptRepoInvite":{"alias":"repos.acceptInvitation","deprecated":"`users.acceptRepoInvite()` is deprecated, use `repos.acceptInvitation()`"},"addEmails":{"method":"POST","params":{"emails":{"required":true,"type":"string[]"}},"url":"/user/emails"},"addRepoToInstallation":{"alias":"apps.addRepoToInstallation","deprecated":"`integrations.addRepoToInstallation()` is deprecated, use `apps.addRepoToInstallation()`","params":{}},"block":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"PUT","params":{"username":{"required":true,"type":"string"}},"url":"/user/blocks/:username"},"blockUser":{"alias":"users.block","deprecated":"`users.blockUser()` is deprecated, use `users.block()`"},"checkBlocked":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"GET","params":{"username":{"required":true,"type":"string"}},"url":"/user/blocks/:username"},"checkBlockedUser":{"alias":"users.checkBlocked","deprecated":"`users.checkBlockedUser()` is deprecated, use `users.checkBlocked()`"},"checkFollowing":{"method":"GET","params":{"username":{"required":true,"type":"string"}},"url":"/user/following/:username"},"checkFollowingForUser":{"method":"GET","params":{"target_user":{"required":true,"type":"string"},"username":{"required":true,"type":"string"}},"url":"/users/:username/following/:target_user"},"checkIfOneFollowersOther":{"alias":"users.checkFollowingForUser","deprecated":"`users.checkIfOneFollowersOther()` is deprecated, use `users.checkFollowingForUser()`"},"createGpgKey":{"method":"POST","params":{"armored_public_key":{"type":"string"}},"url":"/user/gpg_keys"},"createKey":{"alias":"users.createPublicKey","deprecated":"`users.createKey()` is deprecated, use `users.createPublicKey()`"},"createPublicKey":{"method":"POST","params":{"key":{"type":"string"},"title":{"type":"string"}},"url":"/user/keys"},"declineRepoInvite":{"alias":"repos.declineInvitation","deprecated":"`users.declineRepoInvite()` is deprecated, use `repos.declineInvitation()`"},"deleteEmails":{"method":"DELETE","params":{"emails":{"required":true,"type":"string[]"}},"url":"/user/emails"},"deleteGpgKey":{"method":"DELETE","params":{"gpg_key_id":{"required":true,"type":"integer"},"id":{"alias":"gpg_key_id","deprecated":true}},"url":"/user/gpg_keys/:gpg_key_id"},"deleteKey":{"alias":"users.deletePublicKey","deprecated":"`users.deleteKey()` is deprecated, use `users.deletePublicKey()`"},"deletePublicKey":{"method":"DELETE","params":{"id":{"alias":"key_id","deprecated":true},"key_id":{"required":true,"type":"integer"}},"url":"/user/keys/:key_id"},"demote":{"method":"DELETE","params":{"username":{"required":true,"type":"string"}},"url":"/users/:username/site_admin"},"editOrgMembership":{"alias":"orgs.updateMembership","deprecated":"`users.editOrgMembership()` is deprecated, use `orgs.updateMembership()`"},"follow":{"method":"PUT","params":{"username":{"required":true,"type":"string"}},"url":"/user/following/:username"},"followUser":{"alias":"users.follow","deprecated":"`users.followUser()` is deprecated, use `users.follow()`"},"get":{"alias":"users.getAuthenticated","deprecated":"`users.get()` is deprecated, use `users.getAuthenticated()`"},"getAll":{"alias":"users.list","deprecated":"`users.getAll()` is deprecated, use `users.list()`"},"getAuthenticated":{"method":"GET","params":{},"url":"/user"},"getBlockedUsers":{"alias":"users.listBlocked","deprecated":"`users.getBlockedUsers()` is deprecated, use `users.listBlocked()`"},"getById":{"method":"GET","params":{"id":{"required":true,"type":"string"}},"url":"/user/:id"},"getByUsername":{"method":"GET","params":{"username":{"required":true,"type":"string"}},"url":"/users/:username"},"getContextForUser":{"headers":{"accept":"application/vnd.github.hagar-preview+json"},"method":"GET","params":{"subject_id":{"type":"string"},"subject_type":{"enum":["organization","repository","issue","pull_request"],"type":"string"},"username":{"required":true,"type":"string"}},"url":"/users/:username/hovercard"},"getEmails":{"alias":"users.listEmails","deprecated":"`users.getEmails()` is deprecated, use `users.listEmails()`"},"getFollowers":{"alias":"users.listFollowersForAuthenticatedUser","deprecated":"`users.getFollowers()` is deprecated, use `users.listFollowersForAuthenticatedUser()`"},"getFollowersForUser":{"alias":"users.listFollowersForUser","deprecated":"`users.getFollowersForUser()` is deprecated, use `users.listFollowersForUser()`"},"getFollowing":{"alias":"users.listFollowingForAuthenticatedUser","deprecated":"`users.getFollowing()` is deprecated, use `users.listFollowingForAuthenticatedUser()`"},"getFollowingForUser":{"alias":"users.listFollowingForUser","deprecated":"`users.getFollowingForUser()` is deprecated, use `users.listFollowingForUser()`"},"getForUser":{"alias":"users.getByUsername","deprecated":"`users.getForUser()` is deprecated, use `users.getByUsername()`"},"getGpgKey":{"method":"GET","params":{"gpg_key_id":{"required":true,"type":"integer"},"id":{"alias":"gpg_key_id","deprecated":true}},"url":"/user/gpg_keys/:gpg_key_id"},"getGpgKeys":{"alias":"users.listGpgKeys","deprecated":"`users.getGpgKeys()` is deprecated, use `users.listGpgKeys()`"},"getGpgKeysForUser":{"alias":"users.listGpgKeysForUser","deprecated":"`users.getGpgKeysForUser()` is deprecated, use `users.listGpgKeysForUser()`"},"getInstallationRepos":{"alias":"apps.listInstallationReposForAuthenticatedUser","deprecated":"`users.getInstallationRepos()` is deprecated, use `apps.listInstallationReposForAuthenticatedUser()`"},"getInstallations":{"alias":"apps.listInstallationsForAuthenticatedUser","deprecated":"`users.getInstallations()` is deprecated, use `apps.listInstallationsForAuthenticatedUser()`"},"getKey":{"alias":"users.getPublicKey","deprecated":"`users.getKey()` is deprecated, use `users.getPublicKey()`"},"getKeys":{"alias":"users.listPublicKeys","deprecated":"`users.getKeys()` is deprecated, use `users.listPublicKeys()`"},"getKeysForUser":{"alias":"users.listPublicKeysForUser","deprecated":"`users.getKeysForUser()` is deprecated, use `users.listPublicKeysForUser()`"},"getMarketplacePurchases":{"alias":"apps.listMarketplacePurchasesForAuthenticatedUser","deprecated":"`users.getMarketplacePurchases()` is deprecated, use `apps.listMarketplacePurchasesForAuthenticatedUser()`"},"getMarketplaceStubbedPurchases":{"alias":"apps.listMarketplacePurchasesForAuthenticatedUserStubbed","deprecated":"`users.getMarketplaceStubbedPurchases()` is deprecated, use `apps.listMarketplacePurchasesForAuthenticatedUserStubbed()`"},"getOrgMembership":{"alias":"orgs.getMembershipForAuthenticatedUser","deprecated":"`users.getOrgMembership()` is deprecated, use `orgs.getMembershipForAuthenticatedUser()`"},"getOrgMemberships":{"alias":"orgs.listMemberships","deprecated":"`users.getOrgMemberships()` is deprecated, use `orgs.listMemberships()`"},"getOrgs":{"alias":"orgs.listForAuthenticatedUser","deprecated":"`users.getOrgs()` is deprecated, use `orgs.listForAuthenticatedUser()`"},"getPublicEmails":{"alias":"users.listPublicEmails","deprecated":"`users.getPublicEmails()` is deprecated, use `users.listPublicEmails()`"},"getPublicKey":{"method":"GET","params":{"id":{"alias":"key_id","deprecated":true},"key_id":{"required":true,"type":"integer"}},"url":"/user/keys/:key_id"},"getRepoInvites":{"alias":"repos.listInvitationsForAuthenticatedUser","deprecated":"`users.getRepoInvites()` is deprecated, use `repos.listInvitationsForAuthenticatedUser()`"},"getTeams":{"alias":"teams.listForAuthenticatedUser","deprecated":"`users.getTeams()` is deprecated, use `teams.listForAuthenticatedUser()`"},"list":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"since":{"type":"string"}},"url":"/users"},"listBlocked":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"GET","params":{},"url":"/user/blocks"},"listEmails":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/emails"},"listFollowersForAuthenticatedUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/followers"},"listFollowersForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/followers"},"listFollowingForAuthenticatedUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/following"},"listFollowingForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/following"},"listGpgKeys":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/gpg_keys"},"listGpgKeysForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/gpg_keys"},"listPublicEmails":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/public_emails"},"listPublicKeys":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"}},"url":"/user/keys"},"listPublicKeysForUser":{"method":"GET","params":{"page":{"type":"integer"},"per_page":{"type":"integer"},"username":{"required":true,"type":"string"}},"url":"/users/:username/keys"},"promote":{"method":"PUT","params":{"username":{"required":true,"type":"string"}},"url":"/users/:username/site_admin"},"removeRepoFromInstallation":{"alias":"apps.removeRepoFromInstallation","deprecated":"`integrations.removeRepoFromInstallation()` is deprecated, use `apps.removeRepoFromInstallation()`","params":{}},"suspend":{"method":"PUT","params":{"username":{"required":true,"type":"string"}},"url":"/users/:username/suspended"},"togglePrimaryEmailVisibility":{"method":"PATCH","params":{"email":{"required":true,"type":"string"},"visibility":{"required":true,"type":"string"}},"url":"/user/email/visibility"},"unblock":{"headers":{"accept":"application/vnd.github.giant-sentry-fist-preview+json"},"method":"DELETE","params":{"username":{"required":true,"type":"string"}},"url":"/user/blocks/:username"},"unblockUser":{"alias":"users.unblock","deprecated":"`users.unblockUser()` is deprecated, use `users.unblock()`"},"unfollow":{"method":"DELETE","params":{"username":{"required":true,"type":"string"}},"url":"/user/following/:username"},"unfollowUser":{"alias":"users.unfollow","deprecated":"`users.unfollowUser()` is deprecated, use `users.unfollow()`"},"unsuspend":{"method":"DELETE","params":{"username":{"required":true,"type":"string"}},"url":"/users/:username/suspended"},"update":{"alias":"users.updateAuthenticated","deprecated":"`users.update()` is deprecated, use `users.updateAuthenticated()`"},"updateAuthenticated":{"method":"PATCH","params":{"bio":{"type":"string"},"blog":{"type":"string"},"company":{"type":"string"},"email":{"type":"string"},"hireable":{"type":"boolean"},"location":{"type":"string"},"name":{"type":"string"}},"url":"/user"}}};
 
 /***/ }),
 /* 521 */
@@ -54321,7 +52921,7 @@ const CookieJar = __webpack_require__(278).CookieJar;
 const CookieAccess = __webpack_require__(278).CookieAccessInfo;
 const parse = __webpack_require__(835).parse;
 const request = __webpack_require__(385);
-const AgentBase = __webpack_require__(844);
+const AgentBase = __webpack_require__(299);
 let methods = __webpack_require__(463);
 
 /**
@@ -54422,7 +53022,58 @@ module.exports = function nodeRNG() {
 
 
 /***/ }),
-/* 546 */,
+/* 546 */
+/***/ (function(module) {
+
+module.exports = addHook
+
+function addHook (state, kind, name, hook) {
+  var orig = hook
+  if (!state.registry[name]) {
+    state.registry[name] = []
+  }
+
+  if (kind === 'before') {
+    hook = function (method, options) {
+      return Promise.resolve()
+        .then(orig.bind(null, options))
+        .then(method.bind(null, options))
+    }
+  }
+
+  if (kind === 'after') {
+    hook = function (method, options) {
+      var result
+      return Promise.resolve()
+        .then(method.bind(null, options))
+        .then(function (result_) {
+          result = result_
+          return orig(result, options)
+        })
+        .then(function () {
+          return result
+        })
+    }
+  }
+
+  if (kind === 'error') {
+    hook = function (method, options) {
+      return Promise.resolve()
+        .then(method.bind(null, options))
+        .catch(function (error) {
+          return orig(error, options)
+        })
+    }
+  }
+
+  state.registry[name].push({
+    hook: hook,
+    orig: orig
+  })
+}
+
+
+/***/ }),
 /* 547 */,
 /* 548 */,
 /* 549 */
@@ -54792,22 +53443,22 @@ var bunyan_1 = __importDefault(__webpack_require__(225));
 exports.Logger = bunyan_1.default;
 var application_1 = __webpack_require__(201);
 exports.Application = application_1.Application;
-var cache_1 = __webpack_require__(803);
+var cache_1 = __webpack_require__(94);
 var context_1 = __webpack_require__(928);
 exports.Context = context_1.Context;
-var github_app_1 = __webpack_require__(311);
+var github_app_1 = __webpack_require__(32);
 var logger_1 = __webpack_require__(679);
 var resolver_1 = __webpack_require__(600);
-var server_1 = __webpack_require__(355);
-var webhook_proxy_1 = __webpack_require__(214);
+var server_1 = __webpack_require__(363);
+var webhook_proxy_1 = __webpack_require__(931);
 // tslint:disable:no-var-requires
 // These needs types
 var logRequestErrors = __webpack_require__(595);
 var cache = cache_1.createDefaultCache();
 var defaultAppFns = [
     __webpack_require__(473),
-    __webpack_require__(55),
-    __webpack_require__(148)
+    __webpack_require__(501),
+    __webpack_require__(432)
 ];
 // tslint:enable:no-var-requires
 var Probot = /** @class */ (function () {
@@ -54862,7 +53513,6 @@ var Probot = /** @class */ (function () {
     };
     Probot.prototype.receive = function (event) {
         this.logger.debug({ event: event }, 'Webhook received');
-        console.log('apps', this.apps.length, this.apps)
         return Promise.all(this.apps.map(function (app) { return app.receive(event); }));
     };
     Probot.prototype.load = function (appFn) {
@@ -55135,36 +53785,42 @@ function ContentType (type) {
 
 /***/ }),
 /* 554 */
-/***/ (function(module) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-// API
-module.exports = abort;
+module.exports = apiMethod
 
-/**
- * Aborts leftover active jobs
- *
- * @param {object} state - current state object
- */
-function abort(state)
-{
-  Object.keys(state.jobs).forEach(clean.bind(state));
+const clone = __webpack_require__(490)
+const defaultsDeep = __webpack_require__(318)
+const mapKeys = __webpack_require__(882)
 
-  // reset leftover jobs
-  state.jobs = {};
-}
+const deprecate = __webpack_require__(730)
+const validate = __webpack_require__(494)
 
-/**
- * Cleans up leftover job by invoking abort function for the provided job id
- *
- * @this  state
- * @param {string|number} key - job id to abort
- */
-function clean(key)
-{
-  if (typeof this.jobs[key] == 'function')
-  {
-    this.jobs[key]();
+function apiMethod (octokit, endpointDefaults, endpointParams, options, callback) {
+  // Do not alter passed options (#786)
+  options = clone(options) || {}
+
+  // lowercase header names (#760)
+  options.headers = mapKeys(options.headers, (value, key) => key.toLowerCase())
+
+  if (endpointDefaults.deprecated) {
+    deprecate(endpointDefaults.deprecated)
+    delete endpointDefaults.deprecated
   }
+
+  const endpointOptions = defaultsDeep(options, endpointDefaults)
+
+  const promise = Promise.resolve(endpointOptions)
+    .then(validate.bind(null, endpointParams))
+    .then(octokit.request)
+
+  if (callback) {
+    deprecate('callbacks will be removed in v16. Use async/await or Promises instead.')
+    promise.then(callback.bind(null, null), callback)
+    return
+  }
+
+  return promise
 }
 
 
@@ -55953,17 +54609,216 @@ methods.forEach(function(method){
 /* 559 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-module.exports = hasNextPage
+"use strict";
 
-const getPageLinks = __webpack_require__(931)
 
-function hasNextPage (link) {
-  return getPageLinks(link).next
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+
+function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+
+function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+
+var Events, IORedisConnection, Scripts, parser;
+parser = __webpack_require__(188);
+Events = __webpack_require__(317);
+Scripts = __webpack_require__(327);
+
+IORedisConnection = function () {
+  class IORedisConnection {
+    constructor(options = {}) {
+      parser.load(options, this.defaults, this);
+
+      if (this.Redis == null) {
+        this.Redis = eval("require")("ioredis"); // Obfuscated or else Webpack/Angular will try to inline the optional ioredis module. To override this behavior: pass the ioredis module to Bottleneck as the 'Redis' option.
+      }
+
+      if (this.Events == null) {
+        this.Events = new Events(this);
+      }
+
+      this.terminated = false;
+
+      if (this.clusterNodes != null) {
+        this.client = new this.Redis.Cluster(this.clusterNodes, this.clientOptions);
+        this.subscriber = new this.Redis.Cluster(this.clusterNodes, this.clientOptions);
+      } else if (this.client != null && this.client.duplicate == null) {
+        this.subscriber = new this.Redis.Cluster(this.client.startupNodes, this.client.options);
+      } else {
+        if (this.client == null) {
+          this.client = new this.Redis(this.clientOptions);
+        }
+
+        this.subscriber = this.client.duplicate();
+      }
+
+      this.limiters = {};
+      this.ready = this.Promise.all([this._setup(this.client, false), this._setup(this.subscriber, true)]).then(() => {
+        this._loadScripts();
+
+        return {
+          client: this.client,
+          subscriber: this.subscriber
+        };
+      });
+    }
+
+    _setup(client, sub) {
+      client.setMaxListeners(0);
+      return new this.Promise((resolve, reject) => {
+        client.on("error", e => {
+          return this.Events.trigger("error", e);
+        });
+
+        if (sub) {
+          client.on("message", (channel, message) => {
+            var ref;
+            return (ref = this.limiters[channel]) != null ? ref._store.onMessage(channel, message) : void 0;
+          });
+        }
+
+        if (client.status === "ready") {
+          return resolve();
+        } else {
+          return client.once("ready", resolve);
+        }
+      });
+    }
+
+    _loadScripts() {
+      return Scripts.names.forEach(name => {
+        return this.client.defineCommand(name, {
+          lua: Scripts.payload(name)
+        });
+      });
+    }
+
+    __runCommand__(cmd) {
+      var _this = this;
+
+      return _asyncToGenerator(function* () {
+        var _, deleted;
+
+        yield _this.ready;
+
+        var _ref = yield _this.client.pipeline([cmd]).exec();
+
+        var _ref2 = _slicedToArray(_ref, 1);
+
+        var _ref2$ = _slicedToArray(_ref2[0], 2);
+
+        _ = _ref2$[0];
+        deleted = _ref2$[1];
+        return deleted;
+      })();
+    }
+
+    __addLimiter__(instance) {
+      return this.Promise.all([instance.channel(), instance.channel_client()].map(channel => {
+        return new this.Promise((resolve, reject) => {
+          return this.subscriber.subscribe(channel, () => {
+            this.limiters[channel] = instance;
+            return resolve();
+          });
+        });
+      }));
+    }
+
+    __removeLimiter__(instance) {
+      var _this2 = this;
+
+      return [instance.channel(), instance.channel_client()].forEach(
+      /*#__PURE__*/
+      function () {
+        var _ref3 = _asyncToGenerator(function* (channel) {
+          if (!_this2.terminated) {
+            yield _this2.subscriber.unsubscribe(channel);
+          }
+
+          return delete _this2.limiters[channel];
+        });
+
+        return function (_x) {
+          return _ref3.apply(this, arguments);
+        };
+      }());
+    }
+
+    __scriptArgs__(name, id, args, cb) {
+      var keys;
+      keys = Scripts.keys(name, id);
+      return [keys.length].concat(keys, args, cb);
+    }
+
+    __scriptFn__(name) {
+      return this.client[name].bind(this.client);
+    }
+
+    disconnect(flush = true) {
+      var i, k, len, ref;
+      ref = Object.keys(this.limiters);
+
+      for (i = 0, len = ref.length; i < len; i++) {
+        k = ref[i];
+        clearInterval(this.limiters[k]._store.heartbeat);
+      }
+
+      this.limiters = {};
+      this.terminated = true;
+
+      if (flush) {
+        return this.Promise.all([this.client.quit(), this.subscriber.quit()]);
+      } else {
+        this.client.disconnect();
+        this.subscriber.disconnect();
+        return this.Promise.resolve();
+      }
+    }
+
+  }
+
+  ;
+  IORedisConnection.prototype.datastore = "ioredis";
+  IORedisConnection.prototype.defaults = {
+    Redis: null,
+    clientOptions: {},
+    clusterNodes: null,
+    client: null,
+    Promise: Promise,
+    Events: null
+  };
+  return IORedisConnection;
+}.call(void 0);
+
+module.exports = IORedisConnection;
+
+/***/ }),
+/* 560 */
+/***/ (function(module) {
+
+module.exports = getPageLinks
+
+function getPageLinks (link) {
+  link = link.link || link.headers.link || ''
+
+  const links = {}
+
+  // link format:
+  // '<https://api.github.com/users/aseemk/followers?page=2>; rel="next", <https://api.github.com/users/aseemk/followers?page=2>; rel="last"'
+  link.replace(/<([^>]*)>;\s*rel="([\w]*)"/g, (m, uri, type) => {
+    links[type] = uri
+  })
+
+  return links
 }
 
 
 /***/ }),
-/* 560 */,
 /* 561 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -58606,30 +57461,7 @@ module.exports.safeDump = safeDump;
 /***/ }),
 /* 580 */,
 /* 581 */,
-/* 582 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = blacklist;
-
-var _assertString = _interopRequireDefault(__webpack_require__(567));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function blacklist(str, chars) {
-  (0, _assertString.default)(str);
-  return str.replace(new RegExp("[".concat(chars, "]+"), 'g'), '');
-}
-
-module.exports = exports.default;
-module.exports.default = exports.default;
-
-/***/ }),
+/* 582 */,
 /* 583 */
 /***/ (function(module) {
 
@@ -59515,12 +58347,28 @@ module.exports = baseHasIn;
 
 
 /***/ }),
-/* 602 */,
+/* 602 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = __webpack_require__(837);
+module.exports.utils = __webpack_require__(270);
+
+module.exports.transports = __webpack_require__(411);
+module.exports.parsers = __webpack_require__(30);
+
+// To infinity and beyond
+Error.stackTraceLimit = Infinity;
+
+
+/***/ }),
 /* 603 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 /*global exports*/
-var SignStream = __webpack_require__(502);
+var SignStream = __webpack_require__(793);
 var VerifyStream = __webpack_require__(2);
 
 var ALGORITHMS = [
@@ -59811,13 +58659,296 @@ try {
 /* 609 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-module.exports = getFirstPage
+var fs = __webpack_require__(747);
+var path = __webpack_require__(622);
+var caller = __webpack_require__(981);
+var nodeModulesPaths = __webpack_require__(635);
+var normalizeOptions = __webpack_require__(733);
+var isCore = __webpack_require__(561);
 
-const getPage = __webpack_require__(360)
+var defaultIsFile = function isFile(file, cb) {
+    fs.stat(file, function (err, stat) {
+        if (!err) {
+            return cb(null, stat.isFile() || stat.isFIFO());
+        }
+        if (err.code === 'ENOENT' || err.code === 'ENOTDIR') return cb(null, false);
+        return cb(err);
+    });
+};
 
-function getFirstPage (octokit, link, headers, callback) {
-  return getPage(octokit, link, 'first', headers, callback)
-}
+var defaultIsDir = function isDirectory(dir, cb) {
+    fs.stat(dir, function (err, stat) {
+        if (!err) {
+            return cb(null, stat.isDirectory());
+        }
+        if (err.code === 'ENOENT' || err.code === 'ENOTDIR') return cb(null, false);
+        return cb(err);
+    });
+};
+
+var maybeUnwrapSymlink = function maybeUnwrapSymlink(x, opts, cb) {
+    if (opts && opts.preserveSymlinks === false) {
+        fs.realpath(x, function (realPathErr, realPath) {
+            if (realPathErr && realPathErr.code !== 'ENOENT') cb(realPathErr);
+            else cb(null, realPathErr ? x : realPath);
+        });
+    } else {
+        cb(null, x);
+    }
+};
+
+var getPackageCandidates = function getPackageCandidates(x, start, opts) {
+    var dirs = nodeModulesPaths(start, opts, x);
+    for (var i = 0; i < dirs.length; i++) {
+        dirs[i] = path.join(dirs[i], x);
+    }
+    return dirs;
+};
+
+module.exports = function resolve(x, options, callback) {
+    var cb = callback;
+    var opts = options;
+    if (typeof options === 'function') {
+        cb = opts;
+        opts = {};
+    }
+    if (typeof x !== 'string') {
+        var err = new TypeError('Path must be a string.');
+        return process.nextTick(function () {
+            cb(err);
+        });
+    }
+
+    opts = normalizeOptions(x, opts);
+
+    var isFile = opts.isFile || defaultIsFile;
+    var isDirectory = opts.isDirectory || defaultIsDir;
+    var readFile = opts.readFile || fs.readFile;
+    var packageIterator = opts.packageIterator;
+
+    var extensions = opts.extensions || ['.js'];
+    var basedir = opts.basedir || path.dirname(caller());
+    var parent = opts.filename || basedir;
+
+    opts.paths = opts.paths || [];
+
+    // ensure that `basedir` is an absolute path at this point, resolving against the process' current working directory
+    var absoluteStart = path.resolve(basedir);
+
+    maybeUnwrapSymlink(
+        absoluteStart,
+        opts,
+        function (err, realStart) {
+            if (err) cb(err);
+            else init(realStart);
+        }
+    );
+
+    var res;
+    function init(basedir) {
+        if ((/^(?:\.\.?(?:\/|$)|\/|([A-Za-z]:)?[/\\])/).test(x)) {
+            res = path.resolve(basedir, x);
+            if (x === '.' || x === '..' || x.slice(-1) === '/') res += '/';
+            if ((/\/$/).test(x) && res === basedir) {
+                loadAsDirectory(res, opts.package, onfile);
+            } else loadAsFile(res, opts.package, onfile);
+        } else if (isCore(x)) {
+            return cb(null, x);
+        } else loadNodeModules(x, basedir, function (err, n, pkg) {
+            if (err) cb(err);
+            else if (n) {
+                return maybeUnwrapSymlink(n, opts, function (err, realN) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        cb(null, realN, pkg);
+                    }
+                });
+            } else {
+                var moduleError = new Error("Cannot find module '" + x + "' from '" + parent + "'");
+                moduleError.code = 'MODULE_NOT_FOUND';
+                cb(moduleError);
+            }
+        });
+    }
+
+    function onfile(err, m, pkg) {
+        if (err) cb(err);
+        else if (m) cb(null, m, pkg);
+        else loadAsDirectory(res, function (err, d, pkg) {
+            if (err) cb(err);
+            else if (d) {
+                maybeUnwrapSymlink(d, opts, function (err, realD) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        cb(null, realD, pkg);
+                    }
+                });
+            } else {
+                var moduleError = new Error("Cannot find module '" + x + "' from '" + parent + "'");
+                moduleError.code = 'MODULE_NOT_FOUND';
+                cb(moduleError);
+            }
+        });
+    }
+
+    function loadAsFile(x, thePackage, callback) {
+        var loadAsFilePackage = thePackage;
+        var cb = callback;
+        if (typeof loadAsFilePackage === 'function') {
+            cb = loadAsFilePackage;
+            loadAsFilePackage = undefined;
+        }
+
+        var exts = [''].concat(extensions);
+        load(exts, x, loadAsFilePackage);
+
+        function load(exts, x, loadPackage) {
+            if (exts.length === 0) return cb(null, undefined, loadPackage);
+            var file = x + exts[0];
+
+            var pkg = loadPackage;
+            if (pkg) onpkg(null, pkg);
+            else loadpkg(path.dirname(file), onpkg);
+
+            function onpkg(err, pkg_, dir) {
+                pkg = pkg_;
+                if (err) return cb(err);
+                if (dir && pkg && opts.pathFilter) {
+                    var rfile = path.relative(dir, file);
+                    var rel = rfile.slice(0, rfile.length - exts[0].length);
+                    var r = opts.pathFilter(pkg, x, rel);
+                    if (r) return load(
+                        [''].concat(extensions.slice()),
+                        path.resolve(dir, r),
+                        pkg
+                    );
+                }
+                isFile(file, onex);
+            }
+            function onex(err, ex) {
+                if (err) return cb(err);
+                if (ex) return cb(null, file, pkg);
+                load(exts.slice(1), x, pkg);
+            }
+        }
+    }
+
+    function loadpkg(dir, cb) {
+        if (dir === '' || dir === '/') return cb(null);
+        if (process.platform === 'win32' && (/^\w:[/\\]*$/).test(dir)) {
+            return cb(null);
+        }
+        if ((/[/\\]node_modules[/\\]*$/).test(dir)) return cb(null);
+
+        maybeUnwrapSymlink(dir, opts, function (unwrapErr, pkgdir) {
+            if (unwrapErr) return loadpkg(path.dirname(dir), cb);
+            var pkgfile = path.join(pkgdir, 'package.json');
+            isFile(pkgfile, function (err, ex) {
+                // on err, ex is false
+                if (!ex) return loadpkg(path.dirname(dir), cb);
+
+                readFile(pkgfile, function (err, body) {
+                    if (err) cb(err);
+                    try { var pkg = JSON.parse(body); } catch (jsonErr) {}
+
+                    if (pkg && opts.packageFilter) {
+                        pkg = opts.packageFilter(pkg, pkgfile);
+                    }
+                    cb(null, pkg, dir);
+                });
+            });
+        });
+    }
+
+    function loadAsDirectory(x, loadAsDirectoryPackage, callback) {
+        var cb = callback;
+        var fpkg = loadAsDirectoryPackage;
+        if (typeof fpkg === 'function') {
+            cb = fpkg;
+            fpkg = opts.package;
+        }
+
+        maybeUnwrapSymlink(x, opts, function (unwrapErr, pkgdir) {
+            if (unwrapErr) return cb(unwrapErr);
+            var pkgfile = path.join(pkgdir, 'package.json');
+            isFile(pkgfile, function (err, ex) {
+                if (err) return cb(err);
+                if (!ex) return loadAsFile(path.join(x, 'index'), fpkg, cb);
+
+                readFile(pkgfile, function (err, body) {
+                    if (err) return cb(err);
+                    try {
+                        var pkg = JSON.parse(body);
+                    } catch (jsonErr) {}
+
+                    if (pkg && opts.packageFilter) {
+                        pkg = opts.packageFilter(pkg, pkgfile);
+                    }
+
+                    if (pkg && pkg.main) {
+                        if (typeof pkg.main !== 'string') {
+                            var mainError = new TypeError('package “' + pkg.name + '” `main` must be a string');
+                            mainError.code = 'INVALID_PACKAGE_MAIN';
+                            return cb(mainError);
+                        }
+                        if (pkg.main === '.' || pkg.main === './') {
+                            pkg.main = 'index';
+                        }
+                        loadAsFile(path.resolve(x, pkg.main), pkg, function (err, m, pkg) {
+                            if (err) return cb(err);
+                            if (m) return cb(null, m, pkg);
+                            if (!pkg) return loadAsFile(path.join(x, 'index'), pkg, cb);
+
+                            var dir = path.resolve(x, pkg.main);
+                            loadAsDirectory(dir, pkg, function (err, n, pkg) {
+                                if (err) return cb(err);
+                                if (n) return cb(null, n, pkg);
+                                loadAsFile(path.join(x, 'index'), pkg, cb);
+                            });
+                        });
+                        return;
+                    }
+
+                    loadAsFile(path.join(x, '/index'), pkg, cb);
+                });
+            });
+        });
+    }
+
+    function processDirs(cb, dirs) {
+        if (dirs.length === 0) return cb(null, undefined);
+        var dir = dirs[0];
+
+        isDirectory(path.dirname(dir), isdir);
+
+        function isdir(err, isdir) {
+            if (err) return cb(err);
+            if (!isdir) return processDirs(cb, dirs.slice(1));
+            loadAsFile(dir, opts.package, onfile);
+        }
+
+        function onfile(err, m, pkg) {
+            if (err) return cb(err);
+            if (m) return cb(null, m, pkg);
+            loadAsDirectory(dir, opts.package, ondir);
+        }
+
+        function ondir(err, n, pkg) {
+            if (err) return cb(err);
+            if (n) return cb(null, n, pkg);
+            processDirs(cb, dirs.slice(1));
+        }
+    }
+    function loadNodeModules(x, start, cb) {
+        var thunk = function () { return getPackageCandidates(x, start, opts); };
+        processDirs(
+            cb,
+            packageIterator ? packageIterator(x, start, thunk, opts) : thunk()
+        );
+    }
+};
 
 
 /***/ }),
@@ -59878,7 +59009,27 @@ module.exports = getAllKeysIn;
 
 
 /***/ }),
-/* 612 */,
+/* 612 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+module.exports = getUserAgentNode
+
+const osName = __webpack_require__(990)
+
+function getUserAgentNode () {
+  try {
+    return `Node.js/${process.version.substr(1)} (${osName()}; ${process.arch})`
+  } catch (error) {
+    if (/wmic os get Caption/.test(error.message)) {
+      return 'Windows <version undetectable>'
+    }
+
+    throw error
+  }
+}
+
+
+/***/ }),
 /* 613 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -61119,299 +60270,43 @@ module.exports = new Type('tag:yaml.org,2002:str', {
 
 /***/ }),
 /* 621 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
-var fs = __webpack_require__(747);
-var path = __webpack_require__(622);
-var caller = __webpack_require__(981);
-var nodeModulesPaths = __webpack_require__(306);
-var normalizeOptions = __webpack_require__(733);
-var isCore = __webpack_require__(561);
+"use strict";
 
-var defaultIsFile = function isFile(file, cb) {
-    fs.stat(file, function (err, stat) {
-        if (!err) {
-            return cb(null, stat.isFile() || stat.isFIFO());
-        }
-        if (err.code === 'ENOENT' || err.code === 'ENOTDIR') return cb(null, false);
-        return cb(err);
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0)
+            t[p[i]] = s[p[i]];
+    return t;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var bunyan_1 = __importDefault(__webpack_require__(225));
+exports.Logger = bunyan_1.default;
+function addLogging(client, logger) {
+    if (!logger) {
+        return;
+    }
+    client.hook.error('request', function (error, options) {
+        var method = options.method, url = options.url, headers = options.headers, params = __rest(options, ["method", "url", "headers"]);
+        var msg = "GitHub request: " + method + " " + url + " - " + error.code + " " + error.status;
+        logger.debug({ params: params }, msg);
+        throw error;
     });
-};
-
-var defaultIsDir = function isDirectory(dir, cb) {
-    fs.stat(dir, function (err, stat) {
-        if (!err) {
-            return cb(null, stat.isDirectory());
-        }
-        if (err.code === 'ENOENT' || err.code === 'ENOTDIR') return cb(null, false);
-        return cb(err);
+    client.hook.after('request', function (result, options) {
+        var method = options.method, url = options.url, headers = options.headers, params = __rest(options, ["method", "url", "headers"]);
+        var msg = "GitHub request: " + method + " " + url + " - " + result.headers.status;
+        logger.debug({ params: params }, msg);
     });
-};
-
-var maybeUnwrapSymlink = function maybeUnwrapSymlink(x, opts, cb) {
-    if (opts && opts.preserveSymlinks === false) {
-        fs.realpath(x, function (realPathErr, realPath) {
-            if (realPathErr && realPathErr.code !== 'ENOENT') cb(realPathErr);
-            else cb(null, realPathErr ? x : realPath);
-        });
-    } else {
-        cb(null, x);
-    }
-};
-
-var getPackageCandidates = function getPackageCandidates(x, start, opts) {
-    var dirs = nodeModulesPaths(start, opts, x);
-    for (var i = 0; i < dirs.length; i++) {
-        dirs[i] = path.join(dirs[i], x);
-    }
-    return dirs;
-};
-
-module.exports = function resolve(x, options, callback) {
-    var cb = callback;
-    var opts = options;
-    if (typeof options === 'function') {
-        cb = opts;
-        opts = {};
-    }
-    if (typeof x !== 'string') {
-        var err = new TypeError('Path must be a string.');
-        return process.nextTick(function () {
-            cb(err);
-        });
-    }
-
-    opts = normalizeOptions(x, opts);
-
-    var isFile = opts.isFile || defaultIsFile;
-    var isDirectory = opts.isDirectory || defaultIsDir;
-    var readFile = opts.readFile || fs.readFile;
-    var packageIterator = opts.packageIterator;
-
-    var extensions = opts.extensions || ['.js'];
-    var basedir = opts.basedir || path.dirname(caller());
-    var parent = opts.filename || basedir;
-
-    opts.paths = opts.paths || [];
-
-    // ensure that `basedir` is an absolute path at this point, resolving against the process' current working directory
-    var absoluteStart = path.resolve(basedir);
-
-    maybeUnwrapSymlink(
-        absoluteStart,
-        opts,
-        function (err, realStart) {
-            if (err) cb(err);
-            else init(realStart);
-        }
-    );
-
-    var res;
-    function init(basedir) {
-        if ((/^(?:\.\.?(?:\/|$)|\/|([A-Za-z]:)?[/\\])/).test(x)) {
-            res = path.resolve(basedir, x);
-            if (x === '.' || x === '..' || x.slice(-1) === '/') res += '/';
-            if ((/\/$/).test(x) && res === basedir) {
-                loadAsDirectory(res, opts.package, onfile);
-            } else loadAsFile(res, opts.package, onfile);
-        } else if (isCore(x)) {
-            return cb(null, x);
-        } else loadNodeModules(x, basedir, function (err, n, pkg) {
-            if (err) cb(err);
-            else if (n) {
-                return maybeUnwrapSymlink(n, opts, function (err, realN) {
-                    if (err) {
-                        cb(err);
-                    } else {
-                        cb(null, realN, pkg);
-                    }
-                });
-            } else {
-                var moduleError = new Error("Cannot find module '" + x + "' from '" + parent + "'");
-                moduleError.code = 'MODULE_NOT_FOUND';
-                cb(moduleError);
-            }
-        });
-    }
-
-    function onfile(err, m, pkg) {
-        if (err) cb(err);
-        else if (m) cb(null, m, pkg);
-        else loadAsDirectory(res, function (err, d, pkg) {
-            if (err) cb(err);
-            else if (d) {
-                maybeUnwrapSymlink(d, opts, function (err, realD) {
-                    if (err) {
-                        cb(err);
-                    } else {
-                        cb(null, realD, pkg);
-                    }
-                });
-            } else {
-                var moduleError = new Error("Cannot find module '" + x + "' from '" + parent + "'");
-                moduleError.code = 'MODULE_NOT_FOUND';
-                cb(moduleError);
-            }
-        });
-    }
-
-    function loadAsFile(x, thePackage, callback) {
-        var loadAsFilePackage = thePackage;
-        var cb = callback;
-        if (typeof loadAsFilePackage === 'function') {
-            cb = loadAsFilePackage;
-            loadAsFilePackage = undefined;
-        }
-
-        var exts = [''].concat(extensions);
-        load(exts, x, loadAsFilePackage);
-
-        function load(exts, x, loadPackage) {
-            if (exts.length === 0) return cb(null, undefined, loadPackage);
-            var file = x + exts[0];
-
-            var pkg = loadPackage;
-            if (pkg) onpkg(null, pkg);
-            else loadpkg(path.dirname(file), onpkg);
-
-            function onpkg(err, pkg_, dir) {
-                pkg = pkg_;
-                if (err) return cb(err);
-                if (dir && pkg && opts.pathFilter) {
-                    var rfile = path.relative(dir, file);
-                    var rel = rfile.slice(0, rfile.length - exts[0].length);
-                    var r = opts.pathFilter(pkg, x, rel);
-                    if (r) return load(
-                        [''].concat(extensions.slice()),
-                        path.resolve(dir, r),
-                        pkg
-                    );
-                }
-                isFile(file, onex);
-            }
-            function onex(err, ex) {
-                if (err) return cb(err);
-                if (ex) return cb(null, file, pkg);
-                load(exts.slice(1), x, pkg);
-            }
-        }
-    }
-
-    function loadpkg(dir, cb) {
-        if (dir === '' || dir === '/') return cb(null);
-        if (process.platform === 'win32' && (/^\w:[/\\]*$/).test(dir)) {
-            return cb(null);
-        }
-        if ((/[/\\]node_modules[/\\]*$/).test(dir)) return cb(null);
-
-        maybeUnwrapSymlink(dir, opts, function (unwrapErr, pkgdir) {
-            if (unwrapErr) return loadpkg(path.dirname(dir), cb);
-            var pkgfile = path.join(pkgdir, 'package.json');
-            isFile(pkgfile, function (err, ex) {
-                // on err, ex is false
-                if (!ex) return loadpkg(path.dirname(dir), cb);
-
-                readFile(pkgfile, function (err, body) {
-                    if (err) cb(err);
-                    try { var pkg = JSON.parse(body); } catch (jsonErr) {}
-
-                    if (pkg && opts.packageFilter) {
-                        pkg = opts.packageFilter(pkg, pkgfile);
-                    }
-                    cb(null, pkg, dir);
-                });
-            });
-        });
-    }
-
-    function loadAsDirectory(x, loadAsDirectoryPackage, callback) {
-        var cb = callback;
-        var fpkg = loadAsDirectoryPackage;
-        if (typeof fpkg === 'function') {
-            cb = fpkg;
-            fpkg = opts.package;
-        }
-
-        maybeUnwrapSymlink(x, opts, function (unwrapErr, pkgdir) {
-            if (unwrapErr) return cb(unwrapErr);
-            var pkgfile = path.join(pkgdir, 'package.json');
-            isFile(pkgfile, function (err, ex) {
-                if (err) return cb(err);
-                if (!ex) return loadAsFile(path.join(x, 'index'), fpkg, cb);
-
-                readFile(pkgfile, function (err, body) {
-                    if (err) return cb(err);
-                    try {
-                        var pkg = JSON.parse(body);
-                    } catch (jsonErr) {}
-
-                    if (pkg && opts.packageFilter) {
-                        pkg = opts.packageFilter(pkg, pkgfile);
-                    }
-
-                    if (pkg && pkg.main) {
-                        if (typeof pkg.main !== 'string') {
-                            var mainError = new TypeError('package “' + pkg.name + '” `main` must be a string');
-                            mainError.code = 'INVALID_PACKAGE_MAIN';
-                            return cb(mainError);
-                        }
-                        if (pkg.main === '.' || pkg.main === './') {
-                            pkg.main = 'index';
-                        }
-                        loadAsFile(path.resolve(x, pkg.main), pkg, function (err, m, pkg) {
-                            if (err) return cb(err);
-                            if (m) return cb(null, m, pkg);
-                            if (!pkg) return loadAsFile(path.join(x, 'index'), pkg, cb);
-
-                            var dir = path.resolve(x, pkg.main);
-                            loadAsDirectory(dir, pkg, function (err, n, pkg) {
-                                if (err) return cb(err);
-                                if (n) return cb(null, n, pkg);
-                                loadAsFile(path.join(x, 'index'), pkg, cb);
-                            });
-                        });
-                        return;
-                    }
-
-                    loadAsFile(path.join(x, '/index'), pkg, cb);
-                });
-            });
-        });
-    }
-
-    function processDirs(cb, dirs) {
-        if (dirs.length === 0) return cb(null, undefined);
-        var dir = dirs[0];
-
-        isDirectory(path.dirname(dir), isdir);
-
-        function isdir(err, isdir) {
-            if (err) return cb(err);
-            if (!isdir) return processDirs(cb, dirs.slice(1));
-            loadAsFile(dir, opts.package, onfile);
-        }
-
-        function onfile(err, m, pkg) {
-            if (err) return cb(err);
-            if (m) return cb(null, m, pkg);
-            loadAsDirectory(dir, opts.package, ondir);
-        }
-
-        function ondir(err, n, pkg) {
-            if (err) return cb(err);
-            if (n) return cb(null, n, pkg);
-            processDirs(cb, dirs.slice(1));
-        }
-    }
-    function loadNodeModules(x, start, cb) {
-        var thunk = function () { return getPackageCandidates(x, start, opts); };
-        processDirs(
-            cb,
-            packageIterator ? packageIterator(x, start, thunk, opts) : thunk()
-        );
-    }
-};
-
+}
+exports.addLogging = addLogging;
+//# sourceMappingURL=logging.js.map
 
 /***/ }),
 /* 622 */
@@ -61653,7 +60548,30 @@ module.exports = baseIsSet;
 
 
 /***/ }),
-/* 626 */,
+/* 626 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+module.exports = extractUrlVariableName
+
+const flatten = __webpack_require__(158)
+
+const urlVariableRegex = /\{[^}]+\}/g
+function extractUrlVariableName (url) {
+  const matches = url.match(urlVariableRegex)
+
+  if (!matches) {
+    return []
+  }
+
+  return flatten(matches.map(removeNonChars))
+}
+
+function removeNonChars (variableName) {
+  return variableName.replace(/^\W+|\W+$/g, '').split(/,/)
+}
+
+
+/***/ }),
 /* 627 */
 /***/ (function(module) {
 
@@ -61693,7 +60611,7 @@ module.exports = toKey;
 /* 629 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-var JsonWebTokenError = __webpack_require__(662);
+var JsonWebTokenError = __webpack_require__(986);
 
 var NotBeforeError = function (message, date) {
   JsonWebTokenError.call(this, message);
@@ -61942,16 +60860,50 @@ function fresh (url, parsedUrl) {
 
 /***/ }),
 /* 635 */
-/***/ (function(module) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-module.exports = {
-  method: 'get',
-  baseUrl: 'https://api.github.com',
-  headers: {
-    accept: 'application/vnd.github.v3+json'
-  },
-  request: {}
-}
+var path = __webpack_require__(622);
+var parse = path.parse || __webpack_require__(816);
+
+var getNodeModulesDirs = function getNodeModulesDirs(absoluteStart, modules) {
+    var prefix = '/';
+    if ((/^([A-Za-z]:)/).test(absoluteStart)) {
+        prefix = '';
+    } else if ((/^\\\\/).test(absoluteStart)) {
+        prefix = '\\\\';
+    }
+
+    var paths = [absoluteStart];
+    var parsed = parse(absoluteStart);
+    while (parsed.dir !== paths[paths.length - 1]) {
+        paths.push(parsed.dir);
+        parsed = parse(parsed.dir);
+    }
+
+    return paths.reduce(function (dirs, aPath) {
+        return dirs.concat(modules.map(function (moduleDir) {
+            return path.resolve(prefix, aPath, moduleDir);
+        }));
+    }, []);
+};
+
+module.exports = function nodeModulesPaths(start, opts, request) {
+    var modules = opts && opts.moduleDirectory
+        ? [].concat(opts.moduleDirectory)
+        : ['node_modules'];
+
+    if (opts && typeof opts.paths === 'function') {
+        return opts.paths(
+            request,
+            start,
+            function () { return getNodeModulesDirs(start, modules); },
+            opts
+        );
+    }
+
+    var dirs = getNodeModulesDirs(start, modules);
+    return opts && opts.paths ? dirs.concat(opts.paths) : dirs;
+};
 
 
 /***/ }),
@@ -61986,7 +60938,7 @@ module.exports = baseMatches;
 /* 637 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-var JsonWebTokenError = __webpack_require__(662);
+var JsonWebTokenError = __webpack_require__(986);
 
 var TokenExpiredError = function (message, expiredAt) {
   JsonWebTokenError.call(this, message);
@@ -62041,7 +60993,7 @@ module.exports = arrayFilter;
 /* 640 */
 /***/ (function(module) {
 
-module.exports = {"_from":"@octokit/rest@^15.18.0","_id":"@octokit/rest@15.18.3","_inBundle":false,"_integrity":"sha512-oHABAvvC83tPIuvUfWRaw9eLThFrCxBgywl+KvEwfTFjoCrMOfEaMh0r39+Ub/EEbV345GJiMzN+zPZ4kqOvbA==","_location":"/@octokit/rest","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"@octokit/rest@^15.18.0","name":"@octokit/rest","escapedName":"@octokit%2frest","scope":"@octokit","rawSpec":"^15.18.0","saveSpec":null,"fetchSpec":"^15.18.0"},"_requiredBy":["/probot"],"_resolved":"https://registry.npmjs.org/@octokit/rest/-/rest-15.18.3.tgz","_shasum":"ff4ecbb784ca286c40cc1d568abceda6d99b36fc","_spec":"@octokit/rest@^15.18.0","_where":"/Users/svanboxel/dev/temp/deploy/node_modules/probot","apidoc":{"template":{"withCompare":false}},"author":{"name":"Gregor Martynus","url":"https://github.com/gr2m"},"browser":{"./lib/get-request-agent.js":false,"./lib/request/get-buffer-response.js":"./lib/request/get-buffer-response-browser.js"},"bugs":{"url":"https://github.com/octokit/rest.js/issues"},"bundleDependencies":false,"bundlesize":[{"path":"./dist/octokit-rest.min.js.gz","maxSize":"33 kB"}],"contributors":[{"name":"Mike de Boer","email":"info@mikedeboer.nl"},{"name":"Fabian Jakobs","email":"fabian@c9.io"},{"name":"Joe Gallo","email":"joe@brassafrax.com"},{"name":"Gregor Martynus","url":"https://github.com/gr2m"}],"dependencies":{"before-after-hook":"^1.1.0","btoa-lite":"^1.0.0","debug":"^3.1.0","http-proxy-agent":"^2.1.0","https-proxy-agent":"^2.2.0","lodash":"^4.17.4","node-fetch":"^2.1.1","universal-user-agent":"^2.0.0","url-template":"^2.0.8"},"deprecated":false,"description":"GitHub REST API client for Node.js","devDependencies":{"@gimenete/type-writer":"^0.1.3","@gr2m/node-fetch":"^2.0.0","@octokit/fixtures-server":"^3.0.0","@octokit/routes":"15.0.1","@types/node":"^10.1.2","apidoc":"^0.17.6","bundlesize":"^0.17.0","chai":"^4.1.2","compression-webpack-plugin":"^2.0.0","coveralls":"^3.0.0","cypress":"^3.0.0","dotenv":"^6.0.0","gh-pages-with-token":"^1.0.0","glob":"^7.1.2","mkdirp":"^0.5.1","mocha":"^5.0.0","mustache":"^3.0.0","nock":"^10.0.0","npm-run-all":"^4.1.2","nyc":"^12.0.1","prettier":"^1.14.2","proxy":"^0.2.4","proxyquire":"^2.0.0","semantic-release":"^16.0.0-beta.22","sinon":"^6.0.0","sinon-chai":"^3.0.0","sort-keys":"^2.0.0","standard":"^12.0.0","standard-markdown":"^5.0.1","string-to-arraybuffer":"^1.0.0","typescript":"^2.9.2","webpack":"^4.0.0","webpack-bundle-analyzer":"^3.0.0","webpack-cli":"^3.0.0"},"engines":{"node":">=4"},"files":["index.js","index.d.ts","index.js.flow","lib"],"homepage":"https://github.com/octokit/rest.js#readme","keywords":["octokit","github","rest","api-client"],"license":"MIT","name":"@octokit/rest","nyc":{"ignore":["examples","test"]},"publishConfig":{"access":"public"},"release":{"publish":["@semantic-release/npm",{"path":"@semantic-release/github","assets":["dist/*","!dist/*.map.gz"]}]},"repository":{"type":"git","url":"git+https://github.com/octokit/rest.js.git"},"scripts":{"build":"npm-run-all build:*","build:browser":"npm-run-all build:browser:*","build:browser:development":"webpack --mode development --entry . --output-library=Octokit --output=./dist/octokit-rest.js --profile --json > dist/bundle-stats.json","build:browser:production":"webpack --mode production --entry . --plugin=compression-webpack-plugin --output-library=Octokit --output-path=./dist --output-filename=octokit-rest.min.js --devtool source-map","build:docs":"node scripts/generate-api-docs","build:flow":"node scripts/generate-flow-types","build:ts":"node scripts/generate-typescript-types","coverage":"nyc report --reporter=html && open coverage/index.html","coverage:upload":"nyc report --reporter=text-lcov | coveralls","deploy-docs":"gh-pages-with-token -d doc","generate-bundle-report":"webpack-bundle-analyzer dist/bundle-stats.json --mode=static --no-open --report dist/bundle-report.html","generate-routes":"node scripts/generate-routes","postbuild:docs":"apidoc -i doc/ -o doc/","postvalidate:ts":"tsc --noEmit --target es6 test/typescript-validate.ts","prebuild:browser":"mkdirp dist/","prebuild:docs":"mkdirp doc/","pretest":"standard && standard-markdown *.md","prevalidate:ts":"npm run -s build:ts","semantic-release":"semantic-release","start-fixtures-server":"octokit-fixtures-server","test":"nyc mocha test/mocha-node-setup.js \"test/**/*-test.js\"","test:browser":"cypress run --browser chrome","test:examples":"node test/examples.js","validate:ts":"tsc --target es6 index.d.ts"},"standard":{"globals":["describe","before","beforeEach","afterEach","after","it","expect","cy"]},"types":"index.d.ts","version":"15.18.3"};
+module.exports = {"_from":"@octokit/rest@^15.18.0","_id":"@octokit/rest@15.18.3","_inBundle":false,"_integrity":"sha512-oHABAvvC83tPIuvUfWRaw9eLThFrCxBgywl+KvEwfTFjoCrMOfEaMh0r39+Ub/EEbV345GJiMzN+zPZ4kqOvbA==","_location":"/probot/@octokit/rest","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"@octokit/rest@^15.18.0","name":"@octokit/rest","escapedName":"@octokit%2frest","scope":"@octokit","rawSpec":"^15.18.0","saveSpec":null,"fetchSpec":"^15.18.0"},"_requiredBy":["/probot"],"_resolved":"https://registry.npmjs.org/@octokit/rest/-/rest-15.18.3.tgz","_shasum":"ff4ecbb784ca286c40cc1d568abceda6d99b36fc","_spec":"@octokit/rest@^15.18.0","_where":"/Users/svanboxel/dev/temp/deploy/node_modules/probot","apidoc":{"template":{"withCompare":false}},"author":{"name":"Gregor Martynus","url":"https://github.com/gr2m"},"browser":{"./lib/get-request-agent.js":false,"./lib/request/get-buffer-response.js":"./lib/request/get-buffer-response-browser.js"},"bugs":{"url":"https://github.com/octokit/rest.js/issues"},"bundleDependencies":false,"bundlesize":[{"path":"./dist/octokit-rest.min.js.gz","maxSize":"33 kB"}],"contributors":[{"name":"Mike de Boer","email":"info@mikedeboer.nl"},{"name":"Fabian Jakobs","email":"fabian@c9.io"},{"name":"Joe Gallo","email":"joe@brassafrax.com"},{"name":"Gregor Martynus","url":"https://github.com/gr2m"}],"dependencies":{"before-after-hook":"^1.1.0","btoa-lite":"^1.0.0","debug":"^3.1.0","http-proxy-agent":"^2.1.0","https-proxy-agent":"^2.2.0","lodash":"^4.17.4","node-fetch":"^2.1.1","universal-user-agent":"^2.0.0","url-template":"^2.0.8"},"deprecated":false,"description":"GitHub REST API client for Node.js","devDependencies":{"@gimenete/type-writer":"^0.1.3","@gr2m/node-fetch":"^2.0.0","@octokit/fixtures-server":"^3.0.0","@octokit/routes":"15.0.1","@types/node":"^10.1.2","apidoc":"^0.17.6","bundlesize":"^0.17.0","chai":"^4.1.2","compression-webpack-plugin":"^2.0.0","coveralls":"^3.0.0","cypress":"^3.0.0","dotenv":"^6.0.0","gh-pages-with-token":"^1.0.0","glob":"^7.1.2","mkdirp":"^0.5.1","mocha":"^5.0.0","mustache":"^3.0.0","nock":"^10.0.0","npm-run-all":"^4.1.2","nyc":"^12.0.1","prettier":"^1.14.2","proxy":"^0.2.4","proxyquire":"^2.0.0","semantic-release":"^16.0.0-beta.22","sinon":"^6.0.0","sinon-chai":"^3.0.0","sort-keys":"^2.0.0","standard":"^12.0.0","standard-markdown":"^5.0.1","string-to-arraybuffer":"^1.0.0","typescript":"^2.9.2","webpack":"^4.0.0","webpack-bundle-analyzer":"^3.0.0","webpack-cli":"^3.0.0"},"engines":{"node":">=4"},"files":["index.js","index.d.ts","index.js.flow","lib"],"homepage":"https://github.com/octokit/rest.js#readme","keywords":["octokit","github","rest","api-client"],"license":"MIT","name":"@octokit/rest","nyc":{"ignore":["examples","test"]},"publishConfig":{"access":"public"},"release":{"publish":["@semantic-release/npm",{"path":"@semantic-release/github","assets":["dist/*","!dist/*.map.gz"]}]},"repository":{"type":"git","url":"git+https://github.com/octokit/rest.js.git"},"scripts":{"build":"npm-run-all build:*","build:browser":"npm-run-all build:browser:*","build:browser:development":"webpack --mode development --entry . --output-library=Octokit --output=./dist/octokit-rest.js --profile --json > dist/bundle-stats.json","build:browser:production":"webpack --mode production --entry . --plugin=compression-webpack-plugin --output-library=Octokit --output-path=./dist --output-filename=octokit-rest.min.js --devtool source-map","build:docs":"node scripts/generate-api-docs","build:flow":"node scripts/generate-flow-types","build:ts":"node scripts/generate-typescript-types","coverage":"nyc report --reporter=html && open coverage/index.html","coverage:upload":"nyc report --reporter=text-lcov | coveralls","deploy-docs":"gh-pages-with-token -d doc","generate-bundle-report":"webpack-bundle-analyzer dist/bundle-stats.json --mode=static --no-open --report dist/bundle-report.html","generate-routes":"node scripts/generate-routes","postbuild:docs":"apidoc -i doc/ -o doc/","postvalidate:ts":"tsc --noEmit --target es6 test/typescript-validate.ts","prebuild:browser":"mkdirp dist/","prebuild:docs":"mkdirp doc/","pretest":"standard && standard-markdown *.md","prevalidate:ts":"npm run -s build:ts","semantic-release":"semantic-release","start-fixtures-server":"octokit-fixtures-server","test":"nyc mocha test/mocha-node-setup.js \"test/**/*-test.js\"","test:browser":"cypress run --browser chrome","test:examples":"node test/examples.js","validate:ts":"tsc --target es6 index.d.ts"},"standard":{"globals":["describe","before","beforeEach","afterEach","after","it","expect","cy"]},"types":"index.d.ts","version":"15.18.3"};
 
 /***/ }),
 /* 641 */
@@ -62180,29 +61132,13 @@ module.exports = Queues;
 /* 645 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-"use strict";
+module.exports = getLastPage
 
+const getPage = __webpack_require__(944)
 
-/**
- * Module dependencies.
- */
-
-const qs = __webpack_require__(940);
-
-module.exports = function(res, fn){
-  res.text = '';
-  res.setEncoding('ascii');
-  res.on('data', chunk => {
-    res.text += chunk;
-  });
-  res.on('end', () => {
-    try {
-      fn(null, qs.parse(res.text));
-    } catch (err) {
-      fn(err);
-    }
-  });
-};
+function getLastPage (octokit, link, headers, callback) {
+  return getPage(octokit, link, 'last', headers, callback)
+}
 
 
 /***/ }),
@@ -62657,6 +61593,15 @@ module.exports = app => {
         accept: 'application/vnd.github.ant-man-preview+json'
       }
 
+      if (process.env.GITHUB_RUN_ID) {
+        context.github.checks.update({
+          owner: context.payload.repository.owner.login,
+          repo: context.payload.repository.name,
+          check_run_id: process.env.GITHUB_RUN_ID,
+          conclusion: 'success'
+        })      
+      }
+
       context.github.repos.createDeployment(deployment).then(function (deploymentResult) {
         return deploymentResult
       }, function (apiError) {
@@ -63008,22 +61953,16 @@ patchRouterParam();
 
 /***/ }),
 /* 662 */
-/***/ (function(module) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-var JsonWebTokenError = function (message, error) {
-  Error.call(this, message);
-  if(Error.captureStackTrace) {
-    Error.captureStackTrace(this, this.constructor);
-  }
-  this.name = 'JsonWebTokenError';
-  this.message = message;
-  if (error) this.inner = error;
+// Unique ID creation requires a high quality random # generator.  In node.js
+// this is pretty straight-forward - we use the crypto API.
+
+var crypto = __webpack_require__(373);
+
+module.exports = function nodeRNG() {
+  return crypto.randomBytes(16);
 };
-
-JsonWebTokenError.prototype = Object.create(Error.prototype);
-JsonWebTokenError.prototype.constructor = JsonWebTokenError;
-
-module.exports = JsonWebTokenError;
 
 
 /***/ }),
@@ -63270,98 +62209,8 @@ module.exports = new Type('tag:yaml.org,2002:bool', {
 
 
 /***/ }),
-/* 665 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = apiPlugin
-
-const get = __webpack_require__(736)
-const pick = __webpack_require__(449)
-
-const method = __webpack_require__(951)
-
-const ENDPOINT_DEFAULTS = __webpack_require__(119)
-
-function apiPlugin (octokit) {
-  Object.keys(ENDPOINT_DEFAULTS).forEach(namespaceName => {
-    octokit[namespaceName] = {}
-
-    Object.keys(ENDPOINT_DEFAULTS[namespaceName]).forEach(apiName => {
-      let apiOptions = ENDPOINT_DEFAULTS[namespaceName][apiName]
-      let deprecated
-
-      if (apiOptions.alias) {
-        deprecated = apiOptions.deprecated
-        apiOptions = get(ENDPOINT_DEFAULTS, apiOptions.alias)
-      }
-
-      const endpointDefaults = pick(apiOptions, ['method', 'url', 'headers', 'request'])
-      if (deprecated) {
-        endpointDefaults.deprecated = deprecated
-      }
-
-      octokit[namespaceName][apiName] = method.bind(null, octokit, endpointDefaults, apiOptions.params)
-    })
-  })
-}
-
-
-/***/ }),
-/* 666 */
-/***/ (function(module) {
-
-module.exports = addHook
-
-function addHook (state, kind, name, hook) {
-  var orig = hook
-  if (!state.registry[name]) {
-    state.registry[name] = []
-  }
-
-  if (kind === 'before') {
-    hook = function (method, options) {
-      return Promise.resolve()
-        .then(orig.bind(null, options))
-        .then(method.bind(null, options))
-    }
-  }
-
-  if (kind === 'after') {
-    hook = function (method, options) {
-      var result
-      return Promise.resolve()
-        .then(method.bind(null, options))
-        .then(function (result_) {
-          result = result_
-          return orig(result, options)
-        })
-        .then(function () {
-          return result
-        })
-    }
-  }
-
-  if (kind === 'error') {
-    hook = function (method, options) {
-      return Promise.resolve()
-        .then(method.bind(null, options))
-        .catch(function (error) {
-          return orig(error, options)
-        })
-    }
-  }
-
-  state.registry[name].push({
-    hook: hook,
-    orig: orig
-  })
-}
-
-
-/***/ }),
+/* 665 */,
+/* 666 */,
 /* 667 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -63496,9 +62345,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var rest_1 = __importDefault(__webpack_require__(107));
+var rest_1 = __importDefault(__webpack_require__(161));
 var graphql_1 = __webpack_require__(510);
-var logging_1 = __webpack_require__(955);
+var logging_1 = __webpack_require__(621);
 var pagination_1 = __webpack_require__(585);
 var rate_limiting_1 = __webpack_require__(150);
 /**
@@ -63523,25 +62372,13 @@ exports.GraphQLQueryError = graphql_2.GraphQLQueryError;
 //# sourceMappingURL=index.js.map
 
 /***/ }),
-/* 674 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-module.exports = getNextPage
-
-const getPage = __webpack_require__(360)
-
-function getNextPage (octokit, link, headers, callback) {
-  return getPage(octokit, link, 'next', headers, callback)
-}
-
-
-/***/ }),
+/* 674 */,
 /* 675 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-var iterate    = __webpack_require__(520)
+var iterate    = __webpack_require__(172)
   , initState  = __webpack_require__(801)
-  , terminator = __webpack_require__(100)
+  , terminator = __webpack_require__(748)
   ;
 
 // Public API
@@ -64834,7 +63671,19 @@ exports.resetRetrieveHandlers = function() {
 
 
 /***/ }),
-/* 690 */,
+/* 690 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+module.exports = getNextPage
+
+const getPage = __webpack_require__(944)
+
+function getNextPage (octokit, link, headers, callback) {
+  return getPage(octokit, link, 'next', headers, callback)
+}
+
+
+/***/ }),
 /* 691 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -65057,7 +63906,7 @@ var Stack = __webpack_require__(429),
     baseAssign = __webpack_require__(957),
     baseAssignIn = __webpack_require__(102),
     cloneBuffer = __webpack_require__(842),
-    copyArray = __webpack_require__(849),
+    copyArray = __webpack_require__(487),
     copySymbols = __webpack_require__(857),
     copySymbolsIn = __webpack_require__(619),
     getAllKeys = __webpack_require__(268),
@@ -66417,9 +65266,204 @@ module.exports = castArrayLikeObject;
 
 
 /***/ }),
-/* 713 */,
+/* 713 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = isCurrency;
+
+var _merge = _interopRequireDefault(__webpack_require__(652));
+
+var _assertString = _interopRequireDefault(__webpack_require__(567));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function currencyRegex(options) {
+  var decimal_digits = "\\d{".concat(options.digits_after_decimal[0], "}");
+  options.digits_after_decimal.forEach(function (digit, index) {
+    if (index !== 0) decimal_digits = "".concat(decimal_digits, "|\\d{").concat(digit, "}");
+  });
+  var symbol = "(\\".concat(options.symbol.replace(/\./g, '\\.'), ")").concat(options.require_symbol ? '' : '?'),
+      negative = '-?',
+      whole_dollar_amount_without_sep = '[1-9]\\d*',
+      whole_dollar_amount_with_sep = "[1-9]\\d{0,2}(\\".concat(options.thousands_separator, "\\d{3})*"),
+      valid_whole_dollar_amounts = ['0', whole_dollar_amount_without_sep, whole_dollar_amount_with_sep],
+      whole_dollar_amount = "(".concat(valid_whole_dollar_amounts.join('|'), ")?"),
+      decimal_amount = "(\\".concat(options.decimal_separator, "(").concat(decimal_digits, "))").concat(options.require_decimal ? '' : '?');
+  var pattern = whole_dollar_amount + (options.allow_decimal || options.require_decimal ? decimal_amount : ''); // default is negative sign before symbol, but there are two other options (besides parens)
+
+  if (options.allow_negatives && !options.parens_for_negatives) {
+    if (options.negative_sign_after_digits) {
+      pattern += negative;
+    } else if (options.negative_sign_before_digits) {
+      pattern = negative + pattern;
+    }
+  } // South African Rand, for example, uses R 123 (space) and R-123 (no space)
+
+
+  if (options.allow_negative_sign_placeholder) {
+    pattern = "( (?!\\-))?".concat(pattern);
+  } else if (options.allow_space_after_symbol) {
+    pattern = " ?".concat(pattern);
+  } else if (options.allow_space_after_digits) {
+    pattern += '( (?!$))?';
+  }
+
+  if (options.symbol_after_digits) {
+    pattern += symbol;
+  } else {
+    pattern = symbol + pattern;
+  }
+
+  if (options.allow_negatives) {
+    if (options.parens_for_negatives) {
+      pattern = "(\\(".concat(pattern, "\\)|").concat(pattern, ")");
+    } else if (!(options.negative_sign_before_digits || options.negative_sign_after_digits)) {
+      pattern = negative + pattern;
+    }
+  } // ensure there's a dollar and/or decimal amount, and that
+  // it doesn't start with a space or a negative sign followed by a space
+
+
+  return new RegExp("^(?!-? )(?=.*\\d)".concat(pattern, "$"));
+}
+
+var default_currency_options = {
+  symbol: '$',
+  require_symbol: false,
+  allow_space_after_symbol: false,
+  symbol_after_digits: false,
+  allow_negatives: true,
+  parens_for_negatives: false,
+  negative_sign_before_digits: false,
+  negative_sign_after_digits: false,
+  allow_negative_sign_placeholder: false,
+  thousands_separator: ',',
+  decimal_separator: '.',
+  allow_decimal: true,
+  require_decimal: false,
+  digits_after_decimal: [2],
+  allow_space_after_digits: false
+};
+
+function isCurrency(str, options) {
+  (0, _assertString.default)(str);
+  options = (0, _merge.default)(options, default_currency_options);
+  return currencyRegex(options).test(str);
+}
+
+module.exports = exports.default;
+module.exports.default = exports.default;
+
+/***/ }),
 /* 714 */,
-/* 715 */,
+/* 715 */
+/***/ (function(module) {
+
+(function() {
+  var base64map
+      = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/',
+
+  crypt = {
+    // Bit-wise rotation left
+    rotl: function(n, b) {
+      return (n << b) | (n >>> (32 - b));
+    },
+
+    // Bit-wise rotation right
+    rotr: function(n, b) {
+      return (n << (32 - b)) | (n >>> b);
+    },
+
+    // Swap big-endian to little-endian and vice versa
+    endian: function(n) {
+      // If number given, swap endian
+      if (n.constructor == Number) {
+        return crypt.rotl(n, 8) & 0x00FF00FF | crypt.rotl(n, 24) & 0xFF00FF00;
+      }
+
+      // Else, assume array and swap all items
+      for (var i = 0; i < n.length; i++)
+        n[i] = crypt.endian(n[i]);
+      return n;
+    },
+
+    // Generate an array of any length of random bytes
+    randomBytes: function(n) {
+      for (var bytes = []; n > 0; n--)
+        bytes.push(Math.floor(Math.random() * 256));
+      return bytes;
+    },
+
+    // Convert a byte array to big-endian 32-bit words
+    bytesToWords: function(bytes) {
+      for (var words = [], i = 0, b = 0; i < bytes.length; i++, b += 8)
+        words[b >>> 5] |= bytes[i] << (24 - b % 32);
+      return words;
+    },
+
+    // Convert big-endian 32-bit words to a byte array
+    wordsToBytes: function(words) {
+      for (var bytes = [], b = 0; b < words.length * 32; b += 8)
+        bytes.push((words[b >>> 5] >>> (24 - b % 32)) & 0xFF);
+      return bytes;
+    },
+
+    // Convert a byte array to a hex string
+    bytesToHex: function(bytes) {
+      for (var hex = [], i = 0; i < bytes.length; i++) {
+        hex.push((bytes[i] >>> 4).toString(16));
+        hex.push((bytes[i] & 0xF).toString(16));
+      }
+      return hex.join('');
+    },
+
+    // Convert a hex string to a byte array
+    hexToBytes: function(hex) {
+      for (var bytes = [], c = 0; c < hex.length; c += 2)
+        bytes.push(parseInt(hex.substr(c, 2), 16));
+      return bytes;
+    },
+
+    // Convert a byte array to a base-64 string
+    bytesToBase64: function(bytes) {
+      for (var base64 = [], i = 0; i < bytes.length; i += 3) {
+        var triplet = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+        for (var j = 0; j < 4; j++)
+          if (i * 8 + j * 6 <= bytes.length * 8)
+            base64.push(base64map.charAt((triplet >>> 6 * (3 - j)) & 0x3F));
+          else
+            base64.push('=');
+      }
+      return base64.join('');
+    },
+
+    // Convert a base-64 string to a byte array
+    base64ToBytes: function(base64) {
+      // Remove non-base-64 characters
+      base64 = base64.replace(/[^A-Z0-9+\/]/ig, '');
+
+      for (var bytes = [], i = 0, imod4 = 0; i < base64.length;
+          imod4 = ++i % 4) {
+        if (imod4 == 0) continue;
+        bytes.push(((base64map.indexOf(base64.charAt(i - 1))
+            & (Math.pow(2, -2 * imod4 + 8) - 1)) << (imod4 * 2))
+            | (base64map.indexOf(base64.charAt(i)) >>> (6 - imod4 * 2)));
+      }
+      return bytes;
+    }
+  };
+
+  module.exports = crypt;
+})();
+
+
+/***/ }),
 /* 716 */,
 /* 717 */
 /***/ (function(module) {
@@ -66507,79 +65551,19 @@ try {
 
 /***/ }),
 /* 720 */
-/***/ (function(__unusedmodule, exports) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
 "use strict";
 
 
-/**
- * Return the mime type for the given `str`.
- *
- * @param {String} str
- * @return {String}
- * @api private
- */
+var stringify = __webpack_require__(44);
+var parse = __webpack_require__(971);
+var formats = __webpack_require__(382);
 
-exports.type = function(str){
-  return str.split(/ *; */).shift();
-};
-
-/**
- * Return header field parameters.
- *
- * @param {String} str
- * @return {Object}
- * @api private
- */
-
-exports.params = function(str){
-  return str.split(/ *; */).reduce(function(obj, str){
-    var parts = str.split(/ *= */);
-    var key = parts.shift();
-    var val = parts.shift();
-
-    if (key && val) obj[key] = val;
-    return obj;
-  }, {});
-};
-
-/**
- * Parse Link header fields.
- *
- * @param {String} str
- * @return {Object}
- * @api private
- */
-
-exports.parseLinks = function(str){
-  return str.split(/ *, */).reduce(function(obj, str){
-    var parts = str.split(/ *; */);
-    var url = parts[0].slice(1, -1);
-    var rel = parts[1].split(/ *= */)[1].slice(1, -1);
-    obj[rel] = url;
-    return obj;
-  }, {});
-};
-
-/**
- * Strip content related fields from `header`.
- *
- * @param {Object} header
- * @return {Object} header
- * @api private
- */
-
-exports.cleanHeader = function(header, changesOrigin){
-  delete header['content-type'];
-  delete header['content-length'];
-  delete header['transfer-encoding'];
-  delete header['host'];
-  // secuirty
-  if (changesOrigin) {
-    delete header['authorization'];
-    delete header['cookie'];
-  }
-  return header;
+module.exports = {
+    formats: formats,
+    parse: parse,
+    stringify: stringify
 };
 
 
@@ -67660,35 +66644,16 @@ module.exports = LocalDatastore;
 
 /***/ }),
 /* 728 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-"use strict";
+module.exports = hasPreviousPage
 
+const getPageLinks = __webpack_require__(560)
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = isNumeric;
-
-var _assertString = _interopRequireDefault(__webpack_require__(567));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var numeric = /^[+-]?([0-9]*[.])?[0-9]+$/;
-var numericNoSymbols = /^[0-9]+$/;
-
-function isNumeric(str, options) {
-  (0, _assertString.default)(str);
-
-  if (options && options.no_symbols) {
-    return numericNoSymbols.test(str);
-  }
-
-  return numeric.test(str);
+function hasPreviousPage (link) {
+  return getPageLinks(link).prev
 }
 
-module.exports = exports.default;
-module.exports.default = exports.default;
 
 /***/ }),
 /* 729 */
@@ -67759,16 +66724,48 @@ SafeBuffer.allocUnsafeSlow = function (size) {
 
 
 /***/ }),
-/* 730 */,
+/* 730 */
+/***/ (function(module) {
+
+module.exports = deprecate
+
+const loggedMessages = {}
+
+function deprecate (message) {
+  if (loggedMessages[message]) {
+    return
+  }
+
+  console.warn(`DEPRECATED (@octokit/rest): ${message}`)
+  loggedMessages[message] = 1
+}
+
+
+/***/ }),
 /* 731 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module) {
 
-module.exports = getPreviousPage
+module.exports = addQueryParameters
 
-const getPage = __webpack_require__(360)
+function addQueryParameters (url, parameters) {
+  const separator = /\?/.test(url) ? '&' : '?'
+  const names = Object.keys(parameters)
 
-function getPreviousPage (octokit, link, headers, callback) {
-  return getPage(octokit, link, 'prev', headers, callback)
+  if (names.length === 0) {
+    return url
+  }
+
+  return url + separator + names
+    .map(name => {
+      if (name === 'q') {
+        return 'q=' + parameters.q.split('+')
+          .map(encodeURIComponent)
+          .join('+')
+      }
+
+      return `${name}=${encodeURIComponent(parameters[name])}`
+    })
+    .join('&')
 }
 
 
@@ -67947,7 +66944,38 @@ module.exports = function (x, opts) {
 
 
 /***/ }),
-/* 734 */,
+/* 734 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = isNumeric;
+
+var _assertString = _interopRequireDefault(__webpack_require__(567));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var numeric = /^[+-]?([0-9]*[.])?[0-9]+$/;
+var numericNoSymbols = /^[0-9]+$/;
+
+function isNumeric(str, options) {
+  (0, _assertString.default)(str);
+
+  if (options && options.no_symbols) {
+    return numericNoSymbols.test(str);
+  }
+
+  return numeric.test(str);
+}
+
+module.exports = exports.default;
+module.exports.default = exports.default;
+
+/***/ }),
 /* 735 */
 /***/ (function(module) {
 
@@ -68264,7 +67292,7 @@ module.exports = baseUniq;
 /** @namespace cacheManager */
 var cacheManager = {
     caching: __webpack_require__(557),
-    multiCaching: __webpack_require__(944)
+    multiCaching: __webpack_require__(781)
 };
 
 module.exports = cacheManager;
@@ -68334,23 +67362,63 @@ module.exports = baseMatchesProperty;
 module.exports = require("fs");
 
 /***/ }),
-/* 748 */,
-/* 749 */
+/* 748 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-module.exports = authenticationPlugin
+var abort = __webpack_require__(869)
+  , async = __webpack_require__(395)
+  ;
 
-const authenticate = __webpack_require__(766)
-const beforeRequest = __webpack_require__(432)
+// API
+module.exports = terminator;
 
-function authenticationPlugin (octokit) {
-  const state = {
-    auth: false
+/**
+ * Terminates jobs in the attached state context
+ *
+ * @this  AsyncKitState#
+ * @param {function} callback - final callback to invoke after termination
+ */
+function terminator(callback)
+{
+  if (!Object.keys(this.jobs).length)
+  {
+    return;
   }
-  octokit.authenticate = authenticate.bind(null, state)
-  octokit.hook.before('request', beforeRequest.bind(null, state))
+
+  // fast forward iteration index
+  this.index = this.size;
+
+  // abort jobs
+  abort(this);
+
+  // send back results we have so far
+  async(callback)(null, this.results);
 }
 
+
+/***/ }),
+/* 749 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = escape;
+
+var _assertString = _interopRequireDefault(__webpack_require__(567));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function escape(str) {
+  (0, _assertString.default)(str);
+  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\//g, '&#x2F;').replace(/\\/g, '&#x5C;').replace(/`/g, '&#96;');
+}
+
+module.exports = exports.default;
+module.exports.default = exports.default;
 
 /***/ }),
 /* 750 */
@@ -69299,29 +68367,81 @@ module.exports = createBaseFor;
 
 /***/ }),
 /* 757 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unusedmodule, exports) {
 
 "use strict";
 
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = isMagnetURI;
+/**
+ * Return the mime type for the given `str`.
+ *
+ * @param {String} str
+ * @return {String}
+ * @api private
+ */
 
-var _assertString = _interopRequireDefault(__webpack_require__(567));
+exports.type = function(str){
+  return str.split(/ *; */).shift();
+};
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+/**
+ * Return header field parameters.
+ *
+ * @param {String} str
+ * @return {Object}
+ * @api private
+ */
 
-var magnetURI = /^magnet:\?xt=urn:[a-z0-9]+:[a-z0-9]{32,40}&dn=.+&tr=.+$/i;
+exports.params = function(str){
+  return str.split(/ *; */).reduce(function(obj, str){
+    var parts = str.split(/ *= */);
+    var key = parts.shift();
+    var val = parts.shift();
 
-function isMagnetURI(url) {
-  (0, _assertString.default)(url);
-  return magnetURI.test(url.trim());
-}
+    if (key && val) obj[key] = val;
+    return obj;
+  }, {});
+};
 
-module.exports = exports.default;
-module.exports.default = exports.default;
+/**
+ * Parse Link header fields.
+ *
+ * @param {String} str
+ * @return {Object}
+ * @api private
+ */
+
+exports.parseLinks = function(str){
+  return str.split(/ *, */).reduce(function(obj, str){
+    var parts = str.split(/ *; */);
+    var url = parts[0].slice(1, -1);
+    var rel = parts[1].split(/ *= */)[1].slice(1, -1);
+    obj[rel] = url;
+    return obj;
+  }, {});
+};
+
+/**
+ * Strip content related fields from `header`.
+ *
+ * @param {Object} header
+ * @return {Object} header
+ * @api private
+ */
+
+exports.cleanHeader = function(header, changesOrigin){
+  delete header['content-type'];
+  delete header['content-length'];
+  delete header['transfer-encoding'];
+  delete header['host'];
+  // secuirty
+  if (changesOrigin) {
+    delete header['authorization'];
+    delete header['cookie'];
+  }
+  return header;
+};
+
 
 /***/ }),
 /* 758 */
@@ -69741,43 +68861,144 @@ module.exports = isBuffer;
 
 /***/ }),
 /* 766 */
-/***/ (function(module) {
+/***/ (function(__unusedmodule, exports) {
 
-module.exports = authenticate
+exports.get = function(belowFn) {
+  var oldLimit = Error.stackTraceLimit;
+  Error.stackTraceLimit = Infinity;
 
-function authenticate (state, options) {
-  if (!options) {
-    state.auth = false
-    return
+  var dummyObject = {};
+
+  var v8Handler = Error.prepareStackTrace;
+  Error.prepareStackTrace = function(dummyObject, v8StackTrace) {
+    return v8StackTrace;
+  };
+  Error.captureStackTrace(dummyObject, belowFn || exports.get);
+
+  var v8StackTrace = dummyObject.stack;
+  Error.prepareStackTrace = v8Handler;
+  Error.stackTraceLimit = oldLimit;
+
+  return v8StackTrace;
+};
+
+exports.parse = function(err) {
+  if (!err.stack) {
+    return [];
   }
 
-  switch (options.type) {
-    case 'basic':
-      if (!options.username || !options.password) {
-        throw new Error('Basic authentication requires both a username and password to be set')
-      }
-      break
+  var self = this;
+  var lines = err.stack.split('\n').slice(1);
 
-    case 'oauth':
-      if (!options.token && !(options.key && options.secret)) {
-        throw new Error('OAuth2 authentication requires a token or key & secret to be set')
+  return lines
+    .map(function(line) {
+      if (line.match(/^\s*[-]{4,}$/)) {
+        return self._createParsedCallSite({
+          fileName: line,
+          lineNumber: null,
+          functionName: null,
+          typeName: null,
+          methodName: null,
+          columnNumber: null,
+          'native': null,
+        });
       }
-      break
 
-    case 'token':
-    case 'integration':
-    case 'app':
-      if (!options.token) {
-        throw new Error('Token authentication requires a token to be set')
+      var lineMatch = line.match(/at (?:(.+)\s+\()?(?:(.+?):(\d+)(?::(\d+))?|([^)]+))\)?/);
+      if (!lineMatch) {
+        return;
       }
-      break
 
-    default:
-      throw new Error("Invalid authentication type, must be 'basic', 'integration', or 'oauth'")
+      var object = null;
+      var method = null;
+      var functionName = null;
+      var typeName = null;
+      var methodName = null;
+      var isNative = (lineMatch[5] === 'native');
+
+      if (lineMatch[1]) {
+        functionName = lineMatch[1];
+        var methodStart = functionName.lastIndexOf('.');
+        if (functionName[methodStart-1] == '.')
+          methodStart--;
+        if (methodStart > 0) {
+          object = functionName.substr(0, methodStart);
+          method = functionName.substr(methodStart + 1);
+          var objectEnd = object.indexOf('.Module');
+          if (objectEnd > 0) {
+            functionName = functionName.substr(objectEnd + 1);
+            object = object.substr(0, objectEnd);
+          }
+        }
+        typeName = null;
+      }
+
+      if (method) {
+        typeName = object;
+        methodName = method;
+      }
+
+      if (method === '<anonymous>') {
+        methodName = null;
+        functionName = null;
+      }
+
+      var properties = {
+        fileName: lineMatch[2] || null,
+        lineNumber: parseInt(lineMatch[3], 10) || null,
+        functionName: functionName,
+        typeName: typeName,
+        methodName: methodName,
+        columnNumber: parseInt(lineMatch[4], 10) || null,
+        'native': isNative,
+      };
+
+      return self._createParsedCallSite(properties);
+    })
+    .filter(function(callSite) {
+      return !!callSite;
+    });
+};
+
+function CallSite(properties) {
+  for (var property in properties) {
+    this[property] = properties[property];
   }
-
-  state.auth = options
 }
+
+var strProperties = [
+  'this',
+  'typeName',
+  'functionName',
+  'methodName',
+  'fileName',
+  'lineNumber',
+  'columnNumber',
+  'function',
+  'evalOrigin'
+];
+var boolProperties = [
+  'topLevel',
+  'eval',
+  'native',
+  'constructor'
+];
+strProperties.forEach(function (property) {
+  CallSite.prototype[property] = null;
+  CallSite.prototype['get' + property[0].toUpperCase() + property.substr(1)] = function () {
+    return this[property];
+  }
+});
+boolProperties.forEach(function (property) {
+  CallSite.prototype[property] = false;
+  CallSite.prototype['is' + property[0].toUpperCase() + property.substr(1)] = function () {
+    return this[property];
+  }
+});
+
+exports._createParsedCallSite = function(properties) {
+  return new CallSite(properties);
+};
 
 
 /***/ }),
@@ -70427,10 +69648,679 @@ var isArray = Array.isArray || function (xs) {
 
 
 /***/ }),
-/* 778 */,
+/* 778 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = apiPlugin
+
+const get = __webpack_require__(736)
+const pick = __webpack_require__(449)
+
+const method = __webpack_require__(554)
+
+const ENDPOINT_DEFAULTS = __webpack_require__(520)
+
+function apiPlugin (octokit) {
+  Object.keys(ENDPOINT_DEFAULTS).forEach(namespaceName => {
+    octokit[namespaceName] = {}
+
+    Object.keys(ENDPOINT_DEFAULTS[namespaceName]).forEach(apiName => {
+      let apiOptions = ENDPOINT_DEFAULTS[namespaceName][apiName]
+      let deprecated
+
+      if (apiOptions.alias) {
+        deprecated = apiOptions.deprecated
+        apiOptions = get(ENDPOINT_DEFAULTS, apiOptions.alias)
+      }
+
+      const endpointDefaults = pick(apiOptions, ['method', 'url', 'headers', 'request'])
+      if (deprecated) {
+        endpointDefaults.deprecated = deprecated
+      }
+
+      octokit[namespaceName][apiName] = method.bind(null, octokit, endpointDefaults, apiOptions.params)
+    })
+  })
+}
+
+
+/***/ }),
 /* 779 */,
 /* 780 */,
-/* 781 */,
+/* 781 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+/** @module cacheManager/multiCaching */
+var async = __webpack_require__(67);
+var CallbackFiller = __webpack_require__(610);
+var utils = __webpack_require__(166);
+var isObject = utils.isObject;
+var parseWrapArguments = utils.parseWrapArguments;
+
+/**
+ * Module that lets you specify a hierarchy of caches.
+ *
+ * @param {array} caches - Array of caching objects.
+ * @param {object} [options]
+ * @param {function} [options.isCacheableValue] - A callback function which is called
+ *   with every value returned from cache or from a wrapped function. This lets you specify
+ *   which values should and should not be cached. If the function returns true, it will be
+ *   stored in cache. By default it caches everything except undefined.
+ *
+ *   If an underlying cache specifies its own isCacheableValue function, that function will
+ *   be used instead of the multiCaching's _isCacheableValue function.
+ */
+var multiCaching = function(caches, options) {
+    var self = {};
+    options = options || {};
+
+    var Promise = options.promiseDependency || global.Promise;
+
+    if (!Array.isArray(caches)) {
+        throw new Error('multiCaching requires an array of caches');
+    }
+
+    var callbackFiller = new CallbackFiller();
+
+    if (typeof options.isCacheableValue === 'function') {
+        self._isCacheableValue = options.isCacheableValue;
+    } else {
+        self._isCacheableValue = function(value) {
+            return value !== undefined;
+        };
+    }
+
+    /**
+     * If the underlying cache specifies its own isCacheableValue function (such
+     * as how node-cache-manager-redis does), use that function, otherwise use
+     * self._isCacheableValue function.
+     */
+    function getIsCacheableValueFunction(cache) {
+        if (cache.store && typeof cache.store.isCacheableValue === 'function') {
+            return cache.store.isCacheableValue.bind(cache.store);
+        } else {
+            return self._isCacheableValue;
+        }
+    }
+
+    function getFromHighestPriorityCachePromise() {
+        var args = Array.prototype.slice.apply(arguments).filter(function(v) {
+            return typeof v !== 'undefined';
+        });
+
+        return new Promise(function(resolve, reject) {
+            var cb = function(err, result) {
+                if (err) {
+                    return reject(err);
+                }
+                resolve(result);
+            };
+            args.push(cb);
+            getFromHighestPriorityCache.apply(null, args);
+        });
+    }
+
+    function getFromHighestPriorityCache() {
+        var args = Array.prototype.slice.apply(arguments).filter(function(v) {
+            return typeof v !== 'undefined';
+        });
+        var cb;
+        var options = {};
+
+        if (typeof args[args.length - 1] === 'function') {
+            cb = args.pop();
+        }
+
+        if (!cb) {
+            return getFromHighestPriorityCachePromise.apply(this, args);
+        }
+
+        if (isObject(args[args.length - 1])) {
+            options = args.pop();
+        }
+
+        /**
+         * Keep a copy of the keys to retrieve
+         */
+        var keys = Array.prototype.slice.apply(args);
+        var multi = keys.length > 1;
+
+        /**
+         * Then put back the options in the args Array
+         */
+        args.push(options);
+
+        if (multi) {
+            /**
+             * Keep track of the keys left to fetch accross the caches
+             */
+            var keysToFetch = Array.prototype.slice.apply(keys);
+
+            /**
+             * Hash to save our multi keys result
+             */
+            var mapResult = {};
+        }
+
+        var i = 0;
+        async.eachSeries(caches, function(cache, next) {
+            var callback = function(err, result) {
+                if (err) {
+                    return next(err);
+                }
+
+                var _isCacheableValue = getIsCacheableValueFunction(cache);
+
+                if (multi) {
+                    addResultToMap(result, _isCacheableValue);
+
+                    if (keysToFetch.length === 0 || i === caches.length - 1) {
+                        // Return an Array with the values merged from all the caches
+                        return cb(null, keys.map(function(k) {
+                            return mapResult[k] || undefined;
+                        }), i);
+                    }
+                } else if (_isCacheableValue(result)) {
+                    // break out of async loop.
+                    return cb(err, result, i);
+                }
+
+                i += 1;
+                next();
+            };
+
+            if (multi) {
+                if (typeof cache.store.mget !== 'function') {
+                    /**
+                     * Silently fail for store that don't support mget()
+                     */
+                    return callback(null, []);
+                }
+                var _args = Array.prototype.slice.apply(keysToFetch);
+                _args.push(options);
+                _args.push(callback);
+                cache.store.mget.apply(cache.store, _args);
+            } else {
+                cache.store.get(args[0], options, callback);
+            }
+        }, function(err, result) {
+            return cb(err, result);
+        });
+
+        function addResultToMap(result, isCacheable) {
+            var key;
+            var diff = 0;
+
+            /**
+             * We loop through the result and if the value
+             * is cacheable we add it to the mapResult hash
+             * and remove the key to fetch from the "keysToFetch" array
+             */
+            result.forEach(function(res, i) {
+                if (isCacheable(res)) {
+                    key = keysToFetch[i - diff];
+
+                    // Add the result to our map
+                    mapResult[key] = res;
+
+                    // delete key from our keysToFetch array
+                    keysToFetch.splice(i - diff, 1);
+                    diff += 1;
+                }
+            });
+        }
+    }
+
+    function setInMultipleCachesPromise() {
+        var args = Array.prototype.slice.apply(arguments);
+
+        return new Promise(function(resolve, reject) {
+            var cb = function(err, result) {
+                if (err) {
+                    return reject(err);
+                }
+                resolve(result);
+            };
+            args.push(cb);
+            setInMultipleCaches.apply(null, args);
+        });
+    }
+
+    function setInMultipleCaches() {
+        var args = Array.prototype.slice.apply(arguments);
+        var _caches = Array.isArray(args[0]) ? args.shift() : caches;
+
+        var cb;
+        var options = {};
+
+        if (typeof args[args.length - 1] === 'function') {
+            cb = args.pop();
+        }
+
+        if (!cb) {
+            return setInMultipleCachesPromise.apply(this, args);
+        }
+
+        if (args.length % 2 > 0 && isObject(args[args.length - 1])) {
+            options = args.pop();
+        }
+
+        var length = args.length;
+        var multi = length > 2;
+        var i;
+
+        async.each(_caches, function(cache, next) {
+            var _isCacheableValue = getIsCacheableValueFunction(cache);
+            var keysValues = Array.prototype.slice.apply(args);
+
+            /**
+             * We filter out the keys *not* cacheable
+             */
+            for (i = 0; i < length; i += 2) {
+                if (!_isCacheableValue(keysValues[i + 1])) {
+                    keysValues.splice(i, 2);
+                }
+            }
+
+            if (keysValues.length === 0) {
+                return next();
+            }
+
+            var cacheOptions = options;
+            if (typeof options.ttl === 'function') {
+                /**
+                 * Dynamically set the ttl by context depending of the store
+                 */
+                cacheOptions = {};
+                cacheOptions.ttl = options.ttl(keysValues, cache.store.name);
+            }
+
+            if (multi) {
+                if (typeof cache.store.mset !== 'function') {
+                    /**
+                     * Silently fail for store that don't support mset()
+                     */
+                    return next();
+                }
+                keysValues.push(cacheOptions);
+                keysValues.push(next);
+
+                cache.store.mset.apply(cache.store, keysValues);
+            } else {
+                cache.store.set(keysValues[0], keysValues[1], cacheOptions, next);
+            }
+        }, function(err, result) {
+            cb(err, result);
+        });
+    }
+
+    function getAndPassUpPromise(key) {
+        return new Promise(function(resolve, reject) {
+            self.getAndPassUp(key, function(err, result) {
+                if (err) {
+                    return reject(err);
+                }
+                resolve(result);
+            });
+        });
+    }
+
+    /**
+     * Looks for an item in cache tiers.
+     * When a key is found in a lower cache, all higher levels are updated.
+     *
+     * @param {string} key
+     * @param {function} cb
+     */
+    self.getAndPassUp = function(key, cb) {
+        if (!cb) {
+            return getAndPassUpPromise(key);
+        }
+
+        getFromHighestPriorityCache(key, function(err, result, index) {
+            if (err) {
+                return cb(err);
+            }
+
+            if (index) {
+                var cachesToUpdate = caches.slice(0, index);
+                async.each(cachesToUpdate, function(cache, next) {
+                    var _isCacheableValue = getIsCacheableValueFunction(cache);
+                    if (_isCacheableValue(result)) {
+                        // We rely on the cache module's default TTL
+                        cache.set(key, result, next);
+                    }
+                });
+            }
+
+            return cb(err, result);
+        });
+    };
+
+    function wrapPromise(key, promise, options) {
+        return new Promise(function(resolve, reject) {
+            self.wrap(key, function(cb) {
+                Promise.resolve()
+                    .then(promise)
+                    .then(function(result) {
+                        cb(null, result);
+                    })
+                    .catch(cb);
+            }, options, function(err, result) {
+                if (err) {
+                    return reject(err);
+                }
+                resolve(result);
+            });
+        });
+    }
+
+    /**
+     * Wraps a function in one or more caches.
+     * Has same API as regular caching module.
+     *
+     * If a key doesn't exist in any cache, it gets set in all caches.
+     * If a key exists in a high-priority (e.g., first) cache, it gets returned immediately
+     * without getting set in other lower-priority caches.
+     * If a key doesn't exist in a higher-priority cache but exists in a lower-priority
+     * cache, it gets set in all higher-priority caches.
+     * You can pass any number of keys as long as the wrapped function returns
+     * an array with the same number of values and in the same order.
+     *
+     * @function
+     * @name wrap
+     *
+     * @param {string} key - The cache key to use in cache operations. Can be one or many.
+     * @param {function} work - The function to wrap
+     * @param {object} [options] - options passed to `set` function
+     * @param {function} cb
+     */
+    self.wrap = function() {
+        var parsedArgs = parseWrapArguments(Array.prototype.slice.apply(arguments));
+        var keys = parsedArgs.keys;
+        var work = parsedArgs.work;
+        var options = parsedArgs.options;
+        var cb = parsedArgs.cb;
+
+        if (!cb) {
+            keys.push(work);
+            keys.push(options);
+            return wrapPromise.apply(this, keys);
+        }
+
+        if (keys.length > 1) {
+            /**
+             * Handle more than 1 key
+             */
+            return wrapMultiple(keys, work, options, cb);
+        }
+
+        var key = keys[0];
+
+        var hasKey = callbackFiller.has(key);
+        callbackFiller.add(key, {cb: cb});
+        if (hasKey) { return; }
+
+        getFromHighestPriorityCache(key, function(err, result, index) {
+            if (err) {
+                return callbackFiller.fill(key, err);
+            } else if (self._isCacheableValue(result)) {
+                var cachesToUpdate = caches.slice(0, index);
+                var args = [cachesToUpdate, key, result, options, function(err) {
+                    callbackFiller.fill(key, err, result);
+                }];
+
+                setInMultipleCaches.apply(null, args);
+            } else {
+                work(function(err, data) {
+                    if (err) {
+                        return callbackFiller.fill(key, err);
+                    }
+
+                    if (!self._isCacheableValue(data)) {
+                        return callbackFiller.fill(key, err, data);
+                    }
+
+                    var args = [caches, key, data, options, function(err) {
+                        callbackFiller.fill(key, err, data);
+                    }];
+
+                    setInMultipleCaches.apply(null, args);
+                });
+            }
+        });
+    };
+
+    function wrapMultiple(keys, work, options, cb) {
+        /**
+         * We create a unique key for the multiple keys
+         * by concatenating them
+         */
+        var combinedKey = keys.reduce(function(acc, k) {
+            return acc + k;
+        }, '');
+
+        var hasKey = callbackFiller.has(combinedKey);
+        callbackFiller.add(combinedKey, {cb: cb});
+        if (hasKey) { return; }
+
+        keys.push(options);
+        keys.push(onResult);
+
+        /**
+         * Get from all the caches. If multiple keys have been passed,
+         * we'll go through all the caches and merge the result
+         */
+        getFromHighestPriorityCache.apply(this, keys);
+
+        function onResult(err, result, index) {
+            if (err) {
+                return done(err);
+            }
+
+            /**
+             * If all the values returned are cacheable we don't need
+             * to call our "work" method and the values returned by the cache
+             * are valid. If one or more of the values is not cacheable
+             * the cache result is not valid.
+             */
+            var cacheOK = result.filter(function(_result) {
+                return self._isCacheableValue(_result);
+            }).length === result.length;
+
+            if (!cacheOK) {
+                /**
+                 * We need to fetch the data first
+                 */
+                return work(workCallback);
+            }
+
+            var cachesToUpdate = caches.slice(0, index);
+
+            /**
+             * Prepare arguments to set the values in
+             * higher priority caches
+             */
+            var _args = [cachesToUpdate];
+
+            /**
+             * Add the {key, value} pair
+             */
+            result.forEach(function(value, i) {
+                _args.push(keys[i]);
+                _args.push(value);
+            });
+
+            /**
+             * Add options and final callback
+             */
+            _args.push(options);
+            _args.push(function(err) {
+                done(err, result);
+            });
+
+            return setInMultipleCaches.apply(null, _args);
+
+            /**
+             * Wrapped function callback
+             */
+            function workCallback(err, data) {
+                if (err) {
+                    return done(err);
+                }
+
+                /**
+                 * Prepare arguments for "setInMultipleCaches"
+                 */
+                var _args;
+
+                _args = [];
+                data.forEach(function(value, i) {
+                    /**
+                     * Add the {key, value} pair to the args
+                     * array that we will send to mset()
+                     */
+                    if (self._isCacheableValue(value)) {
+                        _args.push(keys[i]);
+                        _args.push(value);
+                    }
+                });
+                // If no key,value --> exit
+                if (_args.length === 0) {
+                    return done(null);
+                }
+
+                /**
+                 * Add options and final callback
+                 */
+                _args.push(options);
+                _args.push(function(err) {
+                    done(err, data);
+                });
+
+                setInMultipleCaches.apply(null, _args);
+            }
+
+            /**
+             * Final callback
+             */
+            function done(err, data) {
+                callbackFiller.fill(combinedKey, err, data);
+            }
+        }
+    }
+
+    /**
+     * Set value in all caches
+     *
+     * @function
+     * @name set
+     *
+     * @param {string} key
+     * @param {*} value
+     * @param {object} [options] to pass to underlying set function.
+     * @param {function} [cb]
+     */
+    self.set = setInMultipleCaches;
+
+    /**
+     * Set multiple values in all caches
+     * Accepts an unlimited pair of {key, value}
+     *
+     * @function
+     * @name mset
+     *
+     * @param {string} key
+     * @param {*} value
+     * @param {string} [key2]
+     * @param {*} [value2]
+     * @param {object} [options] to pass to underlying set function.
+     * @param {function} [cb]
+     */
+    self.mset = setInMultipleCaches;
+
+    /**
+     * Get value from highest level cache that has stored it.
+     *
+     * @function
+     * @name get
+     *
+     * @param {string} key
+     * @param {object} [options] to pass to underlying get function.
+     * @param {function} cb
+     */
+    self.get = getFromHighestPriorityCache;
+
+    /**
+     * Get multiple value from highest level cache that has stored it.
+     * If some values are not found, the next highest cache is used
+     * until either all keys are found or all caches have been fetched.
+     * Accepts an unlimited number of keys.
+     *
+     * @function
+     * @name mget
+     *
+     * @param {string} key key to get (any number)
+     * @param {object} [options] to pass to underlying get function.
+     * @param {function} cb optional callback
+     */
+    self.mget = getFromHighestPriorityCache;
+
+    /**
+     * Delete value from all caches.
+     *
+     * @function
+     * @name del
+     *
+     * @param {string} key
+     * @param {object} [options] to pass to underlying del function.
+     * @param {function} cb
+     */
+    self.del = function() {
+        var args = Array.prototype.slice.apply(arguments);
+        var cb;
+        var options = {};
+
+        if (typeof args[args.length - 1] === 'function') {
+            cb = args.pop();
+        }
+
+        if (isObject(args[args.length - 1])) {
+            options = args.pop();
+        }
+
+        args.push(options);
+        async.each(caches, function(cache, next) {
+            var _args = Array.prototype.slice.apply(args);
+            _args.push(next);
+            cache.store.del.apply(cache.store, _args);
+        }, cb);
+    };
+
+    /**
+     * Reset all caches.
+     *
+     * @function
+     * @name reset
+     *
+     * @param {function} cb
+     */
+    self.reset = function(cb) {
+        async.each(caches, function(cache, next) {
+            cache.store.reset(next);
+        }, cb);
+    };
+
+    return self;
+};
+
+module.exports = multiCaching;
+
+
+/***/ }),
 /* 782 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -70931,7 +70821,35 @@ GlobSync.prototype._makeAbs = function (f) {
 
 
 /***/ }),
-/* 785 */,
+/* 785 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Module dependencies.
+ */
+
+const qs = __webpack_require__(720);
+
+module.exports = function(res, fn){
+  res.text = '';
+  res.setEncoding('ascii');
+  res.on('data', chunk => {
+    res.text += chunk;
+  });
+  res.on('end', () => {
+    try {
+      fn(null, qs.parse(res.text));
+    } catch (err) {
+      fn(err);
+    }
+  });
+};
+
+
+/***/ }),
 /* 786 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -72210,102 +72128,165 @@ module.exports = function query(options) {
 /* 792 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-var arrayMap = __webpack_require__(126),
-    baseClone = __webpack_require__(695),
-    baseUnset = __webpack_require__(237),
-    castPath = __webpack_require__(289),
-    copyObject = __webpack_require__(479),
-    customOmitClone = __webpack_require__(445),
-    flatRest = __webpack_require__(76),
-    getAllKeysIn = __webpack_require__(611);
+module.exports = parseOptions
 
-/** Used to compose bitmasks for cloning. */
-var CLONE_DEEP_FLAG = 1,
-    CLONE_FLAT_FLAG = 2,
-    CLONE_SYMBOLS_FLAG = 4;
+const defaults = __webpack_require__(438)
+const pick = __webpack_require__(449)
 
-/**
- * The opposite of `_.pick`; this method creates an object composed of the
- * own and inherited enumerable property paths of `object` that are not omitted.
- *
- * **Note:** This method is considerably slower than `_.pick`.
- *
- * @static
- * @since 0.1.0
- * @memberOf _
- * @category Object
- * @param {Object} object The source object.
- * @param {...(string|string[])} [paths] The property paths to omit.
- * @returns {Object} Returns the new object.
- * @example
- *
- * var object = { 'a': 1, 'b': '2', 'c': 3 };
- *
- * _.omit(object, ['a', 'c']);
- * // => { 'b': '2' }
- */
-var omit = flatRest(function(object, paths) {
-  var result = {};
-  if (object == null) {
-    return result;
-  }
-  var isDeep = false;
-  paths = arrayMap(paths, function(path) {
-    path = castPath(path, object);
-    isDeep || (isDeep = path.length > 1);
-    return path;
-  });
-  copyObject(object, getAllKeysIn(object), result);
-  if (isDeep) {
-    result = baseClone(result, CLONE_DEEP_FLAG | CLONE_FLAT_FLAG | CLONE_SYMBOLS_FLAG, customOmitClone);
-  }
-  var length = paths.length;
-  while (length--) {
-    baseUnset(result, paths[length]);
-  }
-  return result;
-});
+const deprecate = __webpack_require__(730)
+const getRequestAgent = __webpack_require__(832)
+const DEFAULTS = __webpack_require__(849)
+const OPTION_NAMES = [
+  'timeout',
+  'baseUrl',
+  'agent',
+  'headers'
+]
 
-module.exports = omit;
+function parseOptions (userOptions) {
+  if (!userOptions) {
+    userOptions = {}
+  }
+
+  if ('followRedirects' in userOptions) {
+    deprecate('followRedirects option is no longer supported. All redirects are followed correctly')
+  }
+
+  if ('protocol' in userOptions) {
+    deprecate('protocol option is no longer supported')
+  }
+
+  if ('host' in userOptions) {
+    deprecate('host option is no longer supported')
+  }
+
+  if ('port' in userOptions) {
+    deprecate('port option is no longer supported')
+  }
+
+  if ('pathPrefix' in userOptions) {
+    deprecate('pathPrefix option is no longer supported')
+  }
+
+  if ('Promise' in userOptions) {
+    deprecate('Promise option is no longer supported. The native Promise API is used')
+  }
+
+  const options = defaults(pick(userOptions, OPTION_NAMES), DEFAULTS)
+
+  const clientDefaults = {
+    baseUrl: options.baseUrl,
+    headers: options.headers,
+    request: {
+      timeout: options.timeout
+    }
+  }
+  if (userOptions.protocol) {
+    clientDefaults.baseUrl = `${userOptions.protocol}://${userOptions.host}`
+
+    /* istanbul ignore else */
+    if (userOptions.port) {
+      clientDefaults.baseUrl += `:${userOptions.port}`
+    }
+
+    // Check if a prefix is passed in the options and strip any leading or trailing slashes from it.
+    /* istanbul ignore else */
+    if (userOptions.pathPrefix) {
+      clientDefaults.baseUrl += '/' + userOptions.pathPrefix.replace(/(^[/]+|[/]+$)/g, '')
+    }
+  }
+  /* istanbul ignore else */
+
+  if (!process.browser) {
+    clientDefaults.request.agent = getRequestAgent(clientDefaults.baseUrl, userOptions)
+  }
+
+  return clientDefaults
+}
 
 
 /***/ }),
 /* 793 */
-/***/ (function(module) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-module.exports = register
+/*global module*/
+var Buffer = __webpack_require__(960).Buffer;
+var DataStream = __webpack_require__(173);
+var jwa = __webpack_require__(654);
+var Stream = __webpack_require__(413);
+var toString = __webpack_require__(870);
+var util = __webpack_require__(669);
 
-function register (state, name, options, method) {
-  if (arguments.length === 3) {
-    method = options
-    options = {}
-  }
-
-  if (typeof method !== 'function') {
-    throw new Error('method for before hook must be a function')
-  }
-
-  if (typeof options !== 'object') {
-    throw new Error('options for before hook must be an object')
-  }
-
-  if (Array.isArray(name)) {
-    return name.reverse().reduce(function (callback, name) {
-      return register.bind(null, state, name, options, callback)
-    }, method)()
-  }
-
-  return Promise.resolve()
-    .then(function () {
-      if (!state.registry[name]) {
-        return method(options)
-      }
-
-      return (state.registry[name]).reduce(function (method, registered) {
-        return registered.hook.bind(null, method, options)
-      }, method)()
-    })
+function base64url(string, encoding) {
+  return Buffer
+    .from(string, encoding)
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
 }
+
+function jwsSecuredInput(header, payload, encoding) {
+  encoding = encoding || 'utf8';
+  var encodedHeader = base64url(toString(header), 'binary');
+  var encodedPayload = base64url(toString(payload), encoding);
+  return util.format('%s.%s', encodedHeader, encodedPayload);
+}
+
+function jwsSign(opts) {
+  var header = opts.header;
+  var payload = opts.payload;
+  var secretOrKey = opts.secret || opts.privateKey;
+  var encoding = opts.encoding;
+  var algo = jwa(header.alg);
+  var securedInput = jwsSecuredInput(header, payload, encoding);
+  var signature = algo.sign(securedInput, secretOrKey);
+  return util.format('%s.%s', securedInput, signature);
+}
+
+function SignStream(opts) {
+  var secret = opts.secret||opts.privateKey||opts.key;
+  var secretStream = new DataStream(secret);
+  this.readable = true;
+  this.header = opts.header;
+  this.encoding = opts.encoding;
+  this.secret = this.privateKey = this.key = secretStream;
+  this.payload = new DataStream(opts.payload);
+  this.secret.once('close', function () {
+    if (!this.payload.writable && this.readable)
+      this.sign();
+  }.bind(this));
+
+  this.payload.once('close', function () {
+    if (!this.secret.writable && this.readable)
+      this.sign();
+  }.bind(this));
+}
+util.inherits(SignStream, Stream);
+
+SignStream.prototype.sign = function sign() {
+  try {
+    var signature = jwsSign({
+      header: this.header,
+      payload: this.payload.buffer,
+      secret: this.secret.buffer,
+      encoding: this.encoding
+    });
+    this.emit('done', signature);
+    this.emit('data', signature);
+    this.emit('end');
+    this.readable = false;
+    return signature;
+  } catch (e) {
+    this.readable = false;
+    this.emit('error', e);
+    this.emit('close');
+  }
+};
+
+SignStream.sign = jwsSign;
+
+module.exports = SignStream;
 
 
 /***/ }),
@@ -72313,153 +72294,21 @@ function register (state, name, options, method) {
 /* 795 */
 /***/ (function(module) {
 
-var hasOwnProperty = Object.prototype.hasOwnProperty
-
-module.exports = PseudoMap
-
-function PseudoMap (set) {
-  if (!(this instanceof PseudoMap)) // whyyyyyyy
-    throw new TypeError("Constructor PseudoMap requires 'new'")
-
-  this.clear()
-
-  if (set) {
-    if ((set instanceof PseudoMap) ||
-        (typeof Map === 'function' && set instanceof Map))
-      set.forEach(function (value, key) {
-        this.set(key, value)
-      }, this)
-    else if (Array.isArray(set))
-      set.forEach(function (kv) {
-        this.set(kv[0], kv[1])
-      }, this)
-    else
-      throw new TypeError('invalid argument')
-  }
-}
-
-PseudoMap.prototype.forEach = function (fn, thisp) {
-  thisp = thisp || this
-  Object.keys(this._data).forEach(function (k) {
-    if (k !== 'size')
-      fn.call(thisp, this._data[k].value, this._data[k].key)
-  }, this)
-}
-
-PseudoMap.prototype.has = function (k) {
-  return !!find(this._data, k)
-}
-
-PseudoMap.prototype.get = function (k) {
-  var res = find(this._data, k)
-  return res && res.value
-}
-
-PseudoMap.prototype.set = function (k, v) {
-  set(this._data, k, v)
-}
-
-PseudoMap.prototype.delete = function (k) {
-  var res = find(this._data, k)
-  if (res) {
-    delete this._data[res._index]
-    this._data.size--
-  }
-}
-
-PseudoMap.prototype.clear = function () {
-  var data = Object.create(null)
-  data.size = 0
-
-  Object.defineProperty(this, '_data', {
-    value: data,
-    enumerable: false,
-    configurable: true,
-    writable: false
-  })
-}
-
-Object.defineProperty(PseudoMap.prototype, 'size', {
-  get: function () {
-    return this._data.size
-  },
-  set: function (n) {},
-  enumerable: true,
-  configurable: true
-})
-
-PseudoMap.prototype.values =
-PseudoMap.prototype.keys =
-PseudoMap.prototype.entries = function () {
-  throw new Error('iterators are not implemented in this version')
-}
-
-// Either identical, or both NaN
-function same (a, b) {
-  return a === b || a !== a && b !== b
-}
-
-function Entry (k, v, i) {
-  this.key = k
-  this.value = v
-  this._index = i
-}
-
-function find (data, k) {
-  for (var i = 0, s = '_' + k, key = s;
-       hasOwnProperty.call(data, key);
-       key = s + i++) {
-    if (same(data[key].key, k))
-      return data[key]
-  }
-}
-
-function set (data, k, v) {
-  for (var i = 0, s = '_' + k, key = s;
-       hasOwnProperty.call(data, key);
-       key = s + i++) {
-    if (same(data[key].key, k)) {
-      data[key].value = v
-      return
-    }
-  }
-  data.size++
-  data[key] = new Entry(k, v, key)
-}
-
-
-/***/ }),
-/* 796 */
-/***/ (function(module, exports, __webpack_require__) {
-
 "use strict";
 
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = rtrim;
+module.exports = function(res, fn){
+  res.text = '';
+  res.setEncoding('utf8');
+  res.on('data', chunk => {
+    res.text += chunk;
+  });
+  res.on('end', fn);
+};
 
-var _assertString = _interopRequireDefault(__webpack_require__(567));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function rtrim(str, chars) {
-  (0, _assertString.default)(str);
-  var pattern = chars ? new RegExp("[".concat(chars, "]")) : /\s/;
-  var idx = str.length - 1;
-
-  for (; idx >= 0 && pattern.test(str[idx]); idx--) {
-    ;
-  }
-
-  return idx < str.length ? str.substr(0, idx + 1) : str;
-}
-
-module.exports = exports.default;
-module.exports.default = exports.default;
 
 /***/ }),
+/* 796 */,
 /* 797 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -72617,26 +72466,7 @@ function state(list, sortMethod)
 
 /***/ }),
 /* 802 */,
-/* 803 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-var cache_manager_1 = __importDefault(__webpack_require__(992));
-function createDefaultCache() {
-    return cache_manager_1.default.caching({
-        store: 'memory',
-        ttl: 60 * 60 // 1 hour
-    });
-}
-exports.createDefaultCache = createDefaultCache;
-//# sourceMappingURL=cache.js.map
-
-/***/ }),
+/* 803 */,
 /* 804 */,
 /* 805 */
 /***/ (function(module) {
@@ -72753,19 +72583,7 @@ module.exports = new Type('tag:yaml.org,2002:pairs', {
 
 
 /***/ }),
-/* 810 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-module.exports = hasLastPage
-
-const getPageLinks = __webpack_require__(931)
-
-function hasLastPage (link) {
-  return getPageLinks(link).last
-}
-
-
-/***/ }),
+/* 810 */,
 /* 811 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -73746,7 +73564,65 @@ module.exports.default = exports.default;
 
 /***/ }),
 /* 831 */,
-/* 832 */,
+/* 832 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+module.exports = getRequestAgent
+
+const urlParse = __webpack_require__(835).parse
+
+const HttpAgent = __webpack_require__(605).Agent
+const HttpsAgent = __webpack_require__(583).Agent
+const HttpProxyAgent = __webpack_require__(499)
+const HttpsProxyAgent = __webpack_require__(171)
+const merge = __webpack_require__(9)
+const omit = __webpack_require__(416)
+const pick = __webpack_require__(449)
+
+const deprecate = __webpack_require__(730)
+
+function getRequestAgent (baseUrl, options) {
+  if (options.agent) {
+    return options.agent
+  }
+
+  const agentOptionNames = ['ca', 'proxy', 'rejectUnauthorized', 'family'].filter(key => key in options)
+
+  if (agentOptionNames.length === 0) {
+    return
+  }
+  agentOptionNames.forEach(option => {
+    deprecate(`options.${option} (use "options.agent" instead)`)
+  })
+
+  const agentOptions = pick(options, agentOptionNames)
+
+  const protocol = urlParse(baseUrl).protocol.replace(':', '')
+
+  /* istanbul ignore if */
+  if ('proxy' in options) {
+    const proxyAgentOptions = merge(
+      urlParse(agentOptions.proxy),
+      omit(agentOptions, 'proxy')
+    )
+
+    if (protocol === 'http') {
+      return new HttpProxyAgent(proxyAgentOptions)
+    }
+
+    return new HttpsProxyAgent(proxyAgentOptions)
+  }
+
+  /* istanbul ignore if */
+  if (protocol === 'http') {
+    return new HttpAgent(agentOptions)
+  }
+
+  return new HttpsAgent(agentOptions)
+}
+
+
+/***/ }),
 /* 833 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -73977,19 +73853,681 @@ module.exports = getRawTag;
 
 /***/ }),
 /* 837 */
-/***/ (function(module) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
 "use strict";
 
 
-module.exports = function(res, fn){
-  res.text = '';
-  res.setEncoding('utf8');
-  res.on('data', chunk => {
-    res.text += chunk;
-  });
-  res.on('end', fn);
-};
+var stringify = __webpack_require__(266);
+var parsers = __webpack_require__(30);
+var zlib = __webpack_require__(761);
+var utils = __webpack_require__(270);
+var uuid = __webpack_require__(196);
+var transports = __webpack_require__(411);
+var nodeUtil = __webpack_require__(669); // nodeUtil to avoid confusion with "utils"
+var events = __webpack_require__(614);
+var domain = __webpack_require__(333);
+var md5 = __webpack_require__(254);
+
+var instrumentor = __webpack_require__(203);
+
+var extend = utils.extend;
+
+function Raven() {
+  this.breadcrumbs = {
+    record: this.captureBreadcrumb.bind(this)
+  };
+}
+
+nodeUtil.inherits(Raven, events.EventEmitter);
+
+extend(Raven.prototype, {
+  config: function config(dsn, options) {
+    // We get lots of users using raven-node when they want raven-js, hence this warning if it seems like a browser
+    if (
+      typeof window !== 'undefined' &&
+      typeof document !== 'undefined' &&
+      typeof navigator !== 'undefined'
+    ) {
+      utils.consoleAlertOnce(
+        "This looks like a browser environment; are you sure you don't want Raven.js for browser JavaScript? https://sentry.io/for/javascript"
+      );
+    }
+
+    if (arguments.length === 0) {
+      // no arguments, use default from environment
+      dsn = global.process.env.SENTRY_DSN;
+      options = {};
+    }
+    if (typeof dsn === 'object') {
+      // They must only be passing through options
+      options = dsn;
+      dsn = global.process.env.SENTRY_DSN;
+    }
+    options = options || {};
+
+    this.raw_dsn = dsn;
+    this.dsn = utils.parseDSN(dsn);
+    this.name =
+      options.name || global.process.env.SENTRY_NAME || __webpack_require__(87).hostname();
+    this.root = options.root || global.process.cwd();
+    this.transport = options.transport || transports[this.dsn.protocol];
+    this.sendTimeout = options.sendTimeout || 1;
+    this.release = options.release || global.process.env.SENTRY_RELEASE;
+    this.environment =
+      options.environment ||
+      global.process.env.SENTRY_ENVIRONMENT ||
+      global.process.env.NODE_ENV;
+
+    // autoBreadcrumbs: true enables all, autoBreadcrumbs: false disables all
+    // autoBreadcrumbs: { http: true } enables a single type
+    this.autoBreadcrumbs = options.autoBreadcrumbs || false;
+    // default to 30, don't allow higher than 100
+    this.maxBreadcrumbs = Math.max(0, Math.min(options.maxBreadcrumbs || 30, 100));
+
+    this.captureUnhandledRejections = options.captureUnhandledRejections;
+    this.loggerName = options.logger;
+    this.dataCallback = options.dataCallback;
+    this.shouldSendCallback = options.shouldSendCallback;
+    this.sampleRate = typeof options.sampleRate === 'undefined' ? 1 : options.sampleRate;
+    this.maxReqQueueCount = options.maxReqQueueCount || 100;
+    this.parseUser = options.parseUser;
+    this.stacktrace = options.stacktrace || false;
+
+    if (!this.dsn) {
+      utils.consoleAlert('no DSN provided, error reporting disabled');
+    }
+
+    if (this.dsn.protocol === 'https') {
+      // In case we want to provide our own SSL certificates / keys
+      this.ca = options.ca || null;
+    }
+
+    // enabled if a dsn is set
+    this._enabled = !!this.dsn;
+
+    var globalContext = (this._globalContext = {});
+    if (options.tags) {
+      globalContext.tags = options.tags;
+    }
+    if (options.extra) {
+      globalContext.extra = options.extra;
+    }
+
+    this.onFatalError = this.defaultOnFatalError = function(err, sendErr, eventId) {
+      console.error(err && err.stack ? err.stack : err);
+      global.process.exit(1);
+    };
+    this.uncaughtErrorHandler = this.makeErrorHandler();
+
+    this.on('error', function(err) {
+      utils.consoleAlert('failed to send exception to sentry: ' + err.message);
+    });
+
+    return this;
+  },
+
+  install: function install(cb) {
+    if (this.installed) return this;
+
+    if (typeof cb === 'function') {
+      this.onFatalError = cb;
+    }
+
+    global.process.on('uncaughtException', this.uncaughtErrorHandler);
+
+    if (this.captureUnhandledRejections) {
+      var self = this;
+      global.process.on('unhandledRejection', function(reason, promise) {
+        var context = (promise.domain && promise.domain.sentryContext) || {};
+        context.extra = context.extra || {};
+        context.extra.unhandledPromiseRejection = true;
+        self.captureException(reason, context, function(sendErr, eventId) {
+          if (!sendErr) {
+            var reasonMessage = (reason && reason.message) || reason;
+            utils.consoleAlert(
+              'unhandledRejection captured\n' +
+                'Event ID: ' +
+                eventId +
+                '\n' +
+                'Reason: ' +
+                reasonMessage
+            );
+          }
+        });
+      });
+    }
+
+    instrumentor.instrument(this, this.autoBreadcrumbs);
+
+    this.installed = true;
+
+    return this;
+  },
+
+  uninstall: function uninstall() {
+    if (!this.installed) return this;
+
+    instrumentor.deinstrument(this);
+
+    // todo: this works for tests for now, but isn't what we ultimately want to be doing
+    global.process.removeAllListeners('uncaughtException');
+    global.process.removeAllListeners('unhandledRejection');
+
+    this.installed = false;
+
+    return this;
+  },
+
+  makeErrorHandler: function() {
+    var self = this;
+    var caughtFirstError = false;
+    var caughtSecondError = false;
+    var calledFatalError = false;
+    var firstError;
+    return function(err) {
+      if (!caughtFirstError) {
+        // this is the first uncaught error and the ultimate reason for shutting down
+        // we want to do absolutely everything possible to ensure it gets captured
+        // also we want to make sure we don't go recursion crazy if more errors happen after this one
+        firstError = err;
+        caughtFirstError = true;
+        self.captureException(err, {level: 'fatal'}, function(sendErr, eventId) {
+          if (!calledFatalError) {
+            calledFatalError = true;
+            self.onFatalError(err, sendErr, eventId);
+          }
+        });
+      } else if (calledFatalError) {
+        // we hit an error *after* calling onFatalError - pretty boned at this point, just shut it down
+        utils.consoleAlert(
+          'uncaught exception after calling fatal error shutdown callback - this is bad! forcing shutdown'
+        );
+        self.defaultOnFatalError(err);
+      } else if (!caughtSecondError) {
+        // two cases for how we can hit this branch:
+        //   - capturing of first error blew up and we just caught the exception from that
+        //     - quit trying to capture, proceed with shutdown
+        //   - a second independent error happened while waiting for first error to capture
+        //     - want to avoid causing premature shutdown before first error capture finishes
+        // it's hard to immediately tell case 1 from case 2 without doing some fancy/questionable domain stuff
+        // so let's instead just delay a bit before we proceed with our action here
+        // in case 1, we just wait a bit unnecessarily but ultimately do the same thing
+        // in case 2, the delay hopefully made us wait long enough for the capture to finish
+        // two potential nonideal outcomes:
+        //   nonideal case 1: capturing fails fast, we sit around for a few seconds unnecessarily before proceeding correctly by calling onFatalError
+        //   nonideal case 2: case 2 happens, 1st error is captured but slowly, timeout completes before capture and we treat second error as the sendErr of (nonexistent) failure from trying to capture first error
+        // note that after hitting this branch, we might catch more errors where (caughtSecondError && !calledFatalError)
+        //   we ignore them - they don't matter to us, we're just waiting for the second error timeout to finish
+        caughtSecondError = true;
+        setTimeout(function() {
+          if (!calledFatalError) {
+            // it was probably case 1, let's treat err as the sendErr and call onFatalError
+            calledFatalError = true;
+            self.onFatalError(firstError, err);
+          } else {
+            // it was probably case 2, our first error finished capturing while we waited, cool, do nothing
+          }
+        }, (self.sendTimeout + 1) * 1000); // capturing could take at least sendTimeout to fail, plus an arbitrary second for how long it takes to collect surrounding source etc
+      }
+    };
+  },
+
+  generateEventId: function generateEventId() {
+    return uuid().replace(/-/g, '');
+  },
+
+  process: function process(eventId, kwargs, cb) {
+    // prod codepaths shouldn't hit this branch, for testing
+    if (typeof eventId === 'object') {
+      cb = kwargs;
+      kwargs = eventId;
+      eventId = this.generateEventId();
+    }
+
+    var domainContext = (domain.active && domain.active.sentryContext) || {};
+    var globalContext = this._globalContext || {};
+    kwargs.user = extend({}, globalContext.user, domainContext.user, kwargs.user);
+    kwargs.tags = extend({}, globalContext.tags, domainContext.tags, kwargs.tags);
+    kwargs.extra = extend({}, globalContext.extra, domainContext.extra, kwargs.extra);
+    // Perform a shallow copy of breadcrums to not send one that we'll capture below through as well
+    kwargs.breadcrumbs = {
+      values:
+        (domainContext.breadcrumbs && domainContext.breadcrumbs.slice()) ||
+        (globalContext.breadcrumbs && globalContext.breadcrumbs.slice()) ||
+        []
+    };
+
+    /*
+      `request` is our specified property name for the http interface: https://docs.sentry.io/clientdev/interfaces/http/
+      `req` is the conventional name for a request object in node/express/etc
+      we want to enable someone to pass a `request` property to kwargs according to http interface
+      but also want to provide convenience for passing a req object and having us parse it out
+      so we only parse a `req` property if the `request` property is absent/empty (and hence we won't clobber)
+      parseUser returns a partial kwargs object with a `request` property and possibly a `user` property
+      */
+    var request = this._createRequestObject(
+      globalContext.request,
+      domainContext.request,
+      kwargs.request
+    );
+    delete kwargs.request;
+
+    if (Object.keys(request).length === 0) {
+      request = this._createRequestObject(
+        globalContext.req,
+        domainContext.req,
+        kwargs.req
+      );
+      delete kwargs.req;
+    }
+
+    if (Object.keys(request).length > 0) {
+      var parseUser = Object.keys(kwargs.user).length === 0 ? this.parseUser : false;
+      extend(kwargs, parsers.parseRequest(request, parseUser));
+    } else {
+      kwargs.request = {};
+    }
+
+    kwargs.modules = utils.getModules();
+    kwargs.server_name = kwargs.server_name || this.name;
+
+    if (typeof global.process.version !== 'undefined') {
+      kwargs.extra.node = global.process.version;
+    }
+
+    kwargs.environment = kwargs.environment || this.environment;
+    kwargs.logger = kwargs.logger || this.loggerName;
+    kwargs.event_id = eventId;
+    kwargs.timestamp = new Date().toISOString().split('.')[0];
+    kwargs.project = this.dsn && this.dsn.project_id;
+    kwargs.platform = 'node';
+    kwargs.release = this.release;
+
+    // Cleanup empty properties before sending them to the server
+    Object.keys(kwargs).forEach(function(key) {
+      if (kwargs[key] == null || kwargs[key] === '') {
+        delete kwargs[key];
+      }
+    });
+
+    if (this.dataCallback) {
+      kwargs = this.dataCallback(kwargs);
+    }
+
+    // Capture breadcrumb before sending it, as we also want to have it even when
+    // it was dropped due to sampleRate or shouldSendCallback
+    this.captureBreadcrumb({
+      category: 'sentry',
+      message: kwargs.message,
+      event_id: kwargs.event_id,
+      level: kwargs.level || 'error' // presume error unless specified
+    });
+
+    var shouldSend = true;
+    if (!this._enabled) shouldSend = false;
+    if (this.shouldSendCallback && !this.shouldSendCallback(kwargs)) shouldSend = false;
+    if (Math.random() >= this.sampleRate) shouldSend = false;
+
+    if (shouldSend) {
+      this.send(kwargs, cb);
+    } else {
+      // wish there was a good way to communicate to cb why we didn't send; worth considering cb api change?
+      // could be shouldSendCallback, could be disabled, could be sample rate
+      // avoiding setImmediate here because node 0.8
+      cb &&
+        setTimeout(function() {
+          cb(null, eventId);
+        }, 0);
+    }
+  },
+
+  send: function send(kwargs, cb) {
+    var self = this;
+    var skwargs = stringify(kwargs);
+    var eventId = kwargs.event_id;
+
+    zlib.deflate(skwargs, function(err, buff) {
+      var message = buff.toString('base64'),
+        timestamp = new Date().getTime(),
+        headers = {
+          'X-Sentry-Auth': utils.getAuthHeader(
+            timestamp,
+            self.dsn.public_key,
+            self.dsn.private_key
+          ),
+          'Content-Type': 'application/octet-stream',
+          'Content-Length': message.length
+        };
+
+      self.transport.send(self, message, headers, eventId, cb);
+    });
+  },
+
+  captureMessage: function captureMessage(message, kwargs, cb) {
+    if (!cb && typeof kwargs === 'function') {
+      cb = kwargs;
+      kwargs = {};
+    } else {
+      kwargs = utils.isPlainObject(kwargs) ? extend({}, kwargs) : {};
+    }
+
+    var eventId = this.generateEventId();
+
+    if (this.stacktrace) {
+      var ex = new Error(message);
+
+      console.log(ex);
+
+      utils.parseStack(
+        ex,
+        function(frames) {
+          // We trim last frame, as it's our `new Error(message)` statement itself, which is redundant
+          kwargs.stacktrace = {
+            frames: frames.slice(0, -1)
+          };
+          this.process(eventId, parsers.parseText(message, kwargs), cb);
+        }.bind(this)
+      );
+    } else {
+      this.process(eventId, parsers.parseText(message, kwargs), cb);
+    }
+
+    return eventId;
+  },
+
+  captureException: function captureException(err, kwargs, cb) {
+    if (!cb && typeof kwargs === 'function') {
+      cb = kwargs;
+      kwargs = {};
+    } else {
+      kwargs = utils.isPlainObject(kwargs) ? extend({}, kwargs) : {};
+    }
+
+    if (!utils.isError(err)) {
+      if (utils.isPlainObject(err)) {
+        // This will allow us to group events based on top-level keys
+        // which is much better than creating new group when any key/value change
+        var keys = Object.keys(err).sort();
+        var message =
+          'Non-Error exception captured with keys: ' +
+          utils.serializeKeysForMessage(keys);
+        kwargs = extend(kwargs, {
+          message: message,
+          fingerprint: [md5(keys)],
+          extra: kwargs.extra || {}
+        });
+        kwargs.extra.__serialized__ = utils.serializeException(err);
+
+        err = new Error(message);
+      } else {
+        // This handles when someone does:
+        //   throw "something awesome";
+        // We synthesize an Error here so we can extract a (rough) stack trace.
+        err = new Error(err);
+      }
+    }
+
+    var self = this;
+    var eventId = this.generateEventId();
+    parsers.parseError(err, kwargs, function(kw) {
+      self.process(eventId, kw, cb);
+    });
+
+    return eventId;
+  },
+
+  context: function(ctx, func) {
+    if (!func && typeof ctx === 'function') {
+      func = ctx;
+      ctx = {};
+    }
+
+    // todo/note: raven-js takes an args param to do apply(this, args)
+    // i don't think it's correct/necessary to bind this to the wrap call
+    // and i don't know if we need to support the args param; it's undocumented
+    return this.wrap(ctx, func).apply(null);
+  },
+
+  wrap: function(options, func) {
+    if (!this.installed) {
+      utils.consoleAlertOnce(
+        'Raven has not been installed, therefore no breadcrumbs will be captured. Call `Raven.config(...).install()` to fix this.'
+      );
+    }
+    if (!func && typeof options === 'function') {
+      func = options;
+      options = {};
+    }
+
+    var wrapDomain = domain.create();
+    // todo: better property name than sentryContext, maybe __raven__ or sth?
+    wrapDomain.sentryContext = options;
+
+    wrapDomain.on('error', this.uncaughtErrorHandler);
+    var wrapped = wrapDomain.bind(func);
+
+    for (var property in func) {
+      if ({}.hasOwnProperty.call(func, property)) {
+        wrapped[property] = func[property];
+      }
+    }
+    wrapped.prototype = func.prototype;
+    wrapped.__raven__ = true;
+    wrapped.__inner__ = func;
+    // note: domain.bind sets wrapped.domain, but it's not documented, unsure if we should rely on that
+    wrapped.__domain__ = wrapDomain;
+
+    return wrapped;
+  },
+
+  interceptErr: function(options, func) {
+    if (!func && typeof options === 'function') {
+      func = options;
+      options = {};
+    }
+    var self = this;
+    var wrapped = function() {
+      var err = arguments[0];
+      if (utils.isError(err)) {
+        self.captureException(err, options);
+      } else {
+        func.apply(null, arguments);
+      }
+    };
+
+    // repetitive with wrap
+    for (var property in func) {
+      if ({}.hasOwnProperty.call(func, property)) {
+        wrapped[property] = func[property];
+      }
+    }
+    wrapped.prototype = func.prototype;
+    wrapped.__raven__ = true;
+    wrapped.__inner__ = func;
+
+    return wrapped;
+  },
+
+  setContext: function setContext(ctx) {
+    if (domain.active) {
+      domain.active.sentryContext = ctx;
+    } else {
+      this._globalContext = ctx;
+    }
+    return this;
+  },
+
+  mergeContext: function mergeContext(ctx) {
+    extend(this.getContext(), ctx);
+    return this;
+  },
+
+  getContext: function getContext() {
+    if (domain.active) {
+      if (!domain.active.sentryContext) {
+        domain.active.sentryContext = {};
+        utils.consoleAlert('sentry context not found on active domain');
+      }
+      return domain.active.sentryContext;
+    }
+    return this._globalContext;
+  },
+
+  setCallbackHelper: function(propertyName, callback) {
+    var original = this[propertyName];
+    if (typeof callback === 'function') {
+      this[propertyName] = function(data) {
+        return callback(data, original);
+      };
+    } else {
+      this[propertyName] = callback;
+    }
+
+    return this;
+  },
+
+  /*
+   * Set the dataCallback option
+   *
+   * @param {function} callback The callback to run which allows the
+   *                            data blob to be mutated before sending
+   * @return {Raven}
+   */
+  setDataCallback: function(callback) {
+    return this.setCallbackHelper('dataCallback', callback);
+  },
+
+  /*
+   * Set the shouldSendCallback option
+   *
+   * @param {function} callback The callback to run which allows
+   *                            introspecting the blob before sending
+   * @return {Raven}
+   */
+  setShouldSendCallback: function(callback) {
+    return this.setCallbackHelper('shouldSendCallback', callback);
+  },
+
+  requestHandler: function() {
+    var self = this;
+    return function ravenRequestMiddleware(req, res, next) {
+      self.context({req: req}, function() {
+        domain.active.add(req);
+        domain.active.add(res);
+        next();
+      });
+    };
+  },
+
+  errorHandler: function() {
+    var self = this;
+    return function ravenErrorMiddleware(err, req, res, next) {
+      var status =
+        err.status ||
+        err.statusCode ||
+        err.status_code ||
+        (err.output && err.output.statusCode) ||
+        500;
+
+      // skip anything not marked as an internal server error
+      if (status < 500) return next(err);
+
+      var eventId = self.captureException(err, {req: req});
+      res.sentry = eventId;
+      return next(err);
+    };
+  },
+
+  captureBreadcrumb: function(breadcrumb) {
+    // Avoid capturing global-scoped breadcrumbs before instrumentation finishes
+    if (!this.installed) return;
+
+    breadcrumb = extend(
+      {
+        timestamp: +new Date() / 1000
+      },
+      breadcrumb
+    );
+    var currCtx = this.getContext();
+    if (!currCtx.breadcrumbs) currCtx.breadcrumbs = [];
+    currCtx.breadcrumbs.push(breadcrumb);
+    if (currCtx.breadcrumbs.length > this.maxBreadcrumbs) {
+      currCtx.breadcrumbs.shift();
+    }
+    this.setContext(currCtx);
+  },
+
+  _createRequestObject: function() {
+    /**
+     * When using proxy, some of the attributes of req/request objects are non-enumerable.
+     * To make sure, that they are still available to us after we consolidate our sources
+     * (eg. globalContext.request + domainContext.request + kwargs.request),
+     * we manually pull them out from original objects.
+     *
+     * Same scenario happens when some frameworks (eg. Koa) decide to use request within
+     * request. eg `this.request.req`, which adds aliases to the main `request` object.
+     * By manually reassigning them here, we don't need to add additional checks
+     * like `req.method || (req.req && req.req.method)`
+     *
+     * We don't use Object.assign/extend as it's only merging over objects own properties,
+     * and we don't want to go through all of the properties as well, as we simply don't
+     * need all of them.
+     **/
+    var sources = Array.from(arguments).filter(function(source) {
+      return Object.prototype.toString.call(source) === '[object Object]';
+    });
+    sources = [{}].concat(sources);
+    var request = extend.apply(null, sources);
+    var nonEnumerables = [
+      'headers',
+      'hostname',
+      'ip',
+      'method',
+      'protocol',
+      'query',
+      'secure',
+      'url'
+    ];
+
+    nonEnumerables.forEach(function(key) {
+      sources.forEach(function(source) {
+        if (source[key]) request[key] = source[key];
+      });
+    });
+
+    /**
+     * Check for 'host' *only* after we checked for 'hostname' first.
+     * This way we can avoid the noise coming from Express deprecation warning
+     * https://github.com/expressjs/express/blob/b97faff6e2aa4d34d79485fe4331cb0eec13ad57/lib/request.js#L450-L452
+     * REF: https://github.com/getsentry/raven-node/issues/96#issuecomment-354748884
+     **/
+    if (!request.hasOwnProperty('hostname')) {
+      sources.forEach(function(source) {
+        if (source.host) request.host = source.host;
+      });
+    }
+
+    return request;
+  }
+});
+
+// Maintain old API compat, need to make sure arguments length is preserved
+function Client(dsn, options) {
+  if (dsn instanceof Client) return dsn;
+  var ravenInstance = new Raven();
+  return ravenInstance.config.apply(ravenInstance, arguments);
+}
+nodeUtil.inherits(Client, Raven);
+
+// Singleton-by-default but not strictly enforced
+// todo these extra export props are sort of an adhoc mess, better way to manage?
+var defaultInstance = new Raven();
+defaultInstance.Client = Client;
+defaultInstance.version = __webpack_require__(670).version;
+defaultInstance.disableConsoleAlerts = utils.disableConsoleAlerts;
+
+module.exports = defaultInstance;
 
 
 /***/ }),
@@ -74024,34 +74562,7 @@ module.exports = exports.default;
 module.exports.default = exports.default;
 
 /***/ }),
-/* 839 */
-/***/ (function(module) {
-
-module.exports = addQueryParameters
-
-function addQueryParameters (url, parameters) {
-  const separator = /\?/.test(url) ? '&' : '?'
-  const names = Object.keys(parameters)
-
-  if (names.length === 0) {
-    return url
-  }
-
-  return url + separator + names
-    .map(name => {
-      if (name === 'q') {
-        return 'q=' + parameters.q.split('+')
-          .map(encodeURIComponent)
-          .join('+')
-      }
-
-      return `${name}=${encodeURIComponent(parameters[name])}`
-    })
-    .join('&')
-}
-
-
-/***/ }),
+/* 839 */,
 /* 840 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -74353,32 +74864,7 @@ module.exports = getSymbolsIn;
 
 
 /***/ }),
-/* 844 */
-/***/ (function(module) {
-
-function Agent() {
-  this._defaults = [];
-}
-
-["use", "on", "once", "set", "query", "type", "accept", "auth", "withCredentials", "sortQuery", "retry", "ok", "redirects",
- "timeout", "buffer", "serialize", "parse", "ca", "key", "pfx", "cert"].forEach(function(fn) {
-  /** Default setting for all requests from this agent */
-  Agent.prototype[fn] = function(/*varargs*/) {
-    this._defaults.push({fn:fn, arguments:arguments});
-    return this;
-  }
-});
-
-Agent.prototype._setDefaults = function(req) {
-    this._defaults.forEach(function(def) {
-      req[def.fn].apply(req, def.arguments);
-    });
-};
-
-module.exports = Agent;
-
-
-/***/ }),
+/* 844 */,
 /* 845 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -74670,26 +75156,14 @@ module.exports.default = exports.default;
 /* 849 */
 /***/ (function(module) {
 
-/**
- * Copies the values of `source` to `array`.
- *
- * @private
- * @param {Array} source The array to copy values from.
- * @param {Array} [array=[]] The array to copy values to.
- * @returns {Array} Returns `array`.
- */
-function copyArray(source, array) {
-  var index = -1,
-      length = source.length;
-
-  array || (array = Array(length));
-  while (++index < length) {
-    array[index] = source[index];
-  }
-  return array;
+module.exports = {
+  agent: undefined, // https://nodejs.org/api/https.html#https_class_https_agent
+  headers: {
+    accept: 'application/vnd.github.v3+json'
+  },
+  timeout: 0,
+  baseUrl: 'https://api.github.com'
 }
-
-module.exports = copyArray;
 
 
 /***/ }),
@@ -74903,144 +75377,66 @@ module.exports = copySymbols;
 
 /***/ }),
 /* 858 */
-/***/ (function(__unusedmodule, exports) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-exports.get = function(belowFn) {
-  var oldLimit = Error.stackTraceLimit;
-  Error.stackTraceLimit = Infinity;
+var register = __webpack_require__(257)
+var addHook = __webpack_require__(546)
+var removeHook = __webpack_require__(51)
 
-  var dummyObject = {};
+// bind with array of arguments: https://stackoverflow.com/a/21792913
+var bind = Function.bind
+var bindable = bind.bind(bind)
 
-  var v8Handler = Error.prepareStackTrace;
-  Error.prepareStackTrace = function(dummyObject, v8StackTrace) {
-    return v8StackTrace;
-  };
-  Error.captureStackTrace(dummyObject, belowFn || exports.get);
+function bindApi (hook, state, name) {
+  var removeHookRef = bindable(removeHook, null).apply(null, name ? [state, null, name] : [state, null])
+  hook.api = { remove: removeHookRef }
+  hook.remove = removeHookRef
 
-  var v8StackTrace = dummyObject.stack;
-  Error.prepareStackTrace = v8Handler;
-  Error.stackTraceLimit = oldLimit;
-
-  return v8StackTrace;
-};
-
-exports.parse = function(err) {
-  if (!err.stack) {
-    return [];
-  }
-
-  var self = this;
-  var lines = err.stack.split('\n').slice(1);
-
-  return lines
-    .map(function(line) {
-      if (line.match(/^\s*[-]{4,}$/)) {
-        return self._createParsedCallSite({
-          fileName: line,
-          lineNumber: null,
-          functionName: null,
-          typeName: null,
-          methodName: null,
-          columnNumber: null,
-          'native': null,
-        });
-      }
-
-      var lineMatch = line.match(/at (?:(.+)\s+\()?(?:(.+?):(\d+)(?::(\d+))?|([^)]+))\)?/);
-      if (!lineMatch) {
-        return;
-      }
-
-      var object = null;
-      var method = null;
-      var functionName = null;
-      var typeName = null;
-      var methodName = null;
-      var isNative = (lineMatch[5] === 'native');
-
-      if (lineMatch[1]) {
-        functionName = lineMatch[1];
-        var methodStart = functionName.lastIndexOf('.');
-        if (functionName[methodStart-1] == '.')
-          methodStart--;
-        if (methodStart > 0) {
-          object = functionName.substr(0, methodStart);
-          method = functionName.substr(methodStart + 1);
-          var objectEnd = object.indexOf('.Module');
-          if (objectEnd > 0) {
-            functionName = functionName.substr(objectEnd + 1);
-            object = object.substr(0, objectEnd);
-          }
-        }
-        typeName = null;
-      }
-
-      if (method) {
-        typeName = object;
-        methodName = method;
-      }
-
-      if (method === '<anonymous>') {
-        methodName = null;
-        functionName = null;
-      }
-
-      var properties = {
-        fileName: lineMatch[2] || null,
-        lineNumber: parseInt(lineMatch[3], 10) || null,
-        functionName: functionName,
-        typeName: typeName,
-        methodName: methodName,
-        columnNumber: parseInt(lineMatch[4], 10) || null,
-        'native': isNative,
-      };
-
-      return self._createParsedCallSite(properties);
-    })
-    .filter(function(callSite) {
-      return !!callSite;
-    });
-};
-
-function CallSite(properties) {
-  for (var property in properties) {
-    this[property] = properties[property];
-  }
+  ;['before', 'error', 'after', 'wrap'].forEach(function (kind) {
+    var args = name ? [state, kind, name] : [state, kind]
+    hook[kind] = hook.api[kind] = bindable(addHook, null).apply(null, args)
+    hook.remove[kind] = hook.api.remove[kind] = bindable(removeHook, null).apply(null, args)
+  })
 }
 
-var strProperties = [
-  'this',
-  'typeName',
-  'functionName',
-  'methodName',
-  'fileName',
-  'lineNumber',
-  'columnNumber',
-  'function',
-  'evalOrigin'
-];
-var boolProperties = [
-  'topLevel',
-  'eval',
-  'native',
-  'constructor'
-];
-strProperties.forEach(function (property) {
-  CallSite.prototype[property] = null;
-  CallSite.prototype['get' + property[0].toUpperCase() + property.substr(1)] = function () {
-    return this[property];
+function HookSingular () {
+  var singularHookName = 'h'
+  var singularHookState = {
+    registry: {}
   }
-});
-boolProperties.forEach(function (property) {
-  CallSite.prototype[property] = false;
-  CallSite.prototype['is' + property[0].toUpperCase() + property.substr(1)] = function () {
-    return this[property];
-  }
-});
+  var singularHook = register.bind(null, singularHookState, singularHookName)
+  bindApi(singularHook, singularHookState, singularHookName)
+  return singularHook
+}
 
-exports._createParsedCallSite = function(properties) {
-  return new CallSite(properties);
-};
+function HookCollection () {
+  var state = {
+    registry: {}
+  }
+
+  var hook = register.bind(null, state)
+  bindApi(hook, state)
+
+  return hook
+}
+
+var collectionHookDeprecationMessageDisplayed = false
+function Hook () {
+  if (!collectionHookDeprecationMessageDisplayed) {
+    console.warn('[before-after-hook]: "Hook()" repurposing warning, use "Hook.Collection()". Read more: https://git.io/upgrade-before-after-hook-to-1.4')
+    collectionHookDeprecationMessageDisplayed = true
+  }
+  return HookCollection()
+}
+
+Hook.Singular = HookSingular.bind()
+Hook.Collection = HookCollection.bind()
+
+module.exports = Hook
+// expose constructors as a named property for TypeScript
+module.exports.Hook = Hook
+module.exports.Singular = Hook.Singular
+module.exports.Collection = Hook.Collection
 
 
 /***/ }),
@@ -75430,7 +75826,41 @@ function receiverOn (state, webhookNameOrNames, handler) {
 
 
 /***/ }),
-/* 869 */,
+/* 869 */
+/***/ (function(module) {
+
+// API
+module.exports = abort;
+
+/**
+ * Aborts leftover active jobs
+ *
+ * @param {object} state - current state object
+ */
+function abort(state)
+{
+  Object.keys(state.jobs).forEach(clean.bind(state));
+
+  // reset leftover jobs
+  state.jobs = {};
+}
+
+/**
+ * Cleans up leftover job by invoking abort function for the provided job id
+ *
+ * @this  state
+ * @param {string|number} key - job id to abort
+ */
+function clean(key)
+{
+  if (typeof this.jobs[key] == 'function')
+  {
+    this.jobs[key]();
+  }
+}
+
+
+/***/ }),
 /* 870 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -75525,7 +75955,7 @@ var crypto = __webpack_require__(373);
 var fs = __webpack_require__(747);
 var util = __webpack_require__(669),
     path = __webpack_require__(622),
-    File = __webpack_require__(895),
+    File = __webpack_require__(156),
     MultipartParser = __webpack_require__(256).MultipartParser,
     QuerystringParser = __webpack_require__(227).QuerystringParser,
     OctetParser       = __webpack_require__(492).OctetParser,
@@ -76915,30 +77345,17 @@ function sync (path, options) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = isRFC3339;
+exports.default = isMagnetURI;
 
 var _assertString = _interopRequireDefault(__webpack_require__(567));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-/* Based on https://tools.ietf.org/html/rfc3339#section-5.6 */
-var dateFullYear = /[0-9]{4}/;
-var dateMonth = /(0[1-9]|1[0-2])/;
-var dateMDay = /([12]\d|0[1-9]|3[01])/;
-var timeHour = /([01][0-9]|2[0-3])/;
-var timeMinute = /[0-5][0-9]/;
-var timeSecond = /([0-5][0-9]|60)/;
-var timeSecFrac = /(\.[0-9]+)?/;
-var timeNumOffset = new RegExp("[-+]".concat(timeHour.source, ":").concat(timeMinute.source));
-var timeOffset = new RegExp("([zZ]|".concat(timeNumOffset.source, ")"));
-var partialTime = new RegExp("".concat(timeHour.source, ":").concat(timeMinute.source, ":").concat(timeSecond.source).concat(timeSecFrac.source));
-var fullDate = new RegExp("".concat(dateFullYear.source, "-").concat(dateMonth.source, "-").concat(dateMDay.source));
-var fullTime = new RegExp("".concat(partialTime.source).concat(timeOffset.source));
-var rfc3339 = new RegExp("".concat(fullDate.source, "[ tT]").concat(fullTime.source));
+var magnetURI = /^magnet:\?xt=urn:[a-z0-9]+:[a-z0-9]{32,40}&dn=.+&tr=.+$/i;
 
-function isRFC3339(str) {
-  (0, _assertString.default)(str);
-  return rfc3339.test(str);
+function isMagnetURI(url) {
+  (0, _assertString.default)(url);
+  return magnetURI.test(url.trim());
 }
 
 module.exports = exports.default;
@@ -76947,89 +77364,13 @@ module.exports.default = exports.default;
 /***/ }),
 /* 894 */,
 /* 895 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module) {
 
-if (global.GENTLY) __webpack_require__(451) = GENTLY.hijack(require);
+module.exports = getBufferResponse
 
-var util = __webpack_require__(669),
-    fs = __webpack_require__(747),
-    EventEmitter = __webpack_require__(614).EventEmitter,
-    crypto = __webpack_require__(373);
-
-function File(properties) {
-  EventEmitter.call(this);
-
-  this.size = 0;
-  this.path = null;
-  this.name = null;
-  this.type = null;
-  this.hash = null;
-  this.lastModifiedDate = null;
-
-  this._writeStream = null;
-  
-  for (var key in properties) {
-    this[key] = properties[key];
-  }
-
-  if(typeof this.hash === 'string') {
-    this.hash = crypto.createHash(properties.hash);
-  } else {
-    this.hash = null;
-  }
+function getBufferResponse (response) {
+  return response.buffer()
 }
-module.exports = File;
-util.inherits(File, EventEmitter);
-
-File.prototype.open = function() {
-  this._writeStream = new fs.WriteStream(this.path);
-};
-
-File.prototype.toJSON = function() {
-  var json = {
-    size: this.size,
-    path: this.path,
-    name: this.name,
-    type: this.type,
-    mtime: this.lastModifiedDate,
-    length: this.length,
-    filename: this.filename,
-    mime: this.mime
-  };
-  if (this.hash && this.hash != "") {
-    json.hash = this.hash;
-  }
-  return json;
-};
-
-File.prototype.write = function(buffer, cb) {
-  var self = this;
-  if (self.hash) {
-    self.hash.update(buffer);
-  }
-
-  if (this._writeStream.closed) {
-    return cb();
-  }
-
-  this._writeStream.write(buffer, function() {
-    self.lastModifiedDate = new Date();
-    self.size += buffer.length;
-    self.emit('progress', self.size);
-    cb();
-  });
-};
-
-File.prototype.end = function(cb) {
-  var self = this;
-  if (self.hash) {
-    self.hash = self.hash.digest('hex');
-  }
-  this._writeStream.end(function() {
-    self.emit('end');
-    cb();
-  });
-};
 
 
 /***/ }),
@@ -79844,48 +80185,147 @@ module.exports = Url;
 
 /***/ }),
 /* 910 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
+/**
+ * lodash (Custom Build) <https://lodash.com/>
+ * Build: `lodash modularize exports="npm" -o ./`
+ * Copyright jQuery Foundation and other contributors <https://jquery.org/>
+ * Released under MIT license <https://lodash.com/license>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ */
 
+/** `Object#toString` result references. */
+var objectTag = '[object Object]';
 
-const deprecate = __webpack_require__(501)
-
-const STATUS_CODES = {
-  304: 'Not Modified', // See PR #673 (https://github.com/octokit/rest.js/pull/673)
-  400: 'Bad Request',
-  404: 'Not Found',
-  500: 'Internal Server Error',
-  504: 'Gateway Timeout'
+/**
+ * Checks if `value` is a host object in IE < 9.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a host object, else `false`.
+ */
+function isHostObject(value) {
+  // Many host objects are `Object` objects that can coerce to strings
+  // despite having improperly defined `toString` methods.
+  var result = false;
+  if (value != null && typeof value.toString != 'function') {
+    try {
+      result = !!(value + '');
+    } catch (e) {}
+  }
+  return result;
 }
 
-module.exports = class HttpError extends Error {
-  constructor (message, code, headers) {
-    super(message)
-    // Maintains proper stack trace for where our error was thrown (only available on V8)
-    /* istanbul ignore else */
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor)
-    }
-    this.name = 'HttpError'
-    this.code = code
-    this.status = STATUS_CODES[code]
-    this.headers = headers
-  }
-
-  toString () {
-    return this.message
-  }
-
-  toJSON () {
-    deprecate('error.toJSON() – use `error.code`, `error.status`, `error.message` instead')
-    return {
-      code: this.code,
-      status: this.status,
-      message: this.message
-    }
-  }
+/**
+ * Creates a unary function that invokes `func` with its argument transformed.
+ *
+ * @private
+ * @param {Function} func The function to wrap.
+ * @param {Function} transform The argument transform.
+ * @returns {Function} Returns the new function.
+ */
+function overArg(func, transform) {
+  return function(arg) {
+    return func(transform(arg));
+  };
 }
+
+/** Used for built-in method references. */
+var funcProto = Function.prototype,
+    objectProto = Object.prototype;
+
+/** Used to resolve the decompiled source of functions. */
+var funcToString = funcProto.toString;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/** Used to infer the `Object` constructor. */
+var objectCtorString = funcToString.call(Object);
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objectToString = objectProto.toString;
+
+/** Built-in value references. */
+var getPrototype = overArg(Object.getPrototypeOf, Object);
+
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return !!value && typeof value == 'object';
+}
+
+/**
+ * Checks if `value` is a plain object, that is, an object created by the
+ * `Object` constructor or one with a `[[Prototype]]` of `null`.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.8.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a plain object, else `false`.
+ * @example
+ *
+ * function Foo() {
+ *   this.a = 1;
+ * }
+ *
+ * _.isPlainObject(new Foo);
+ * // => false
+ *
+ * _.isPlainObject([1, 2, 3]);
+ * // => false
+ *
+ * _.isPlainObject({ 'x': 0, 'y': 0 });
+ * // => true
+ *
+ * _.isPlainObject(Object.create(null));
+ * // => true
+ */
+function isPlainObject(value) {
+  if (!isObjectLike(value) ||
+      objectToString.call(value) != objectTag || isHostObject(value)) {
+    return false;
+  }
+  var proto = getPrototype(value);
+  if (proto === null) {
+    return true;
+  }
+  var Ctor = hasOwnProperty.call(proto, 'constructor') && proto.constructor;
+  return (typeof Ctor == 'function' &&
+    Ctor instanceof Ctor && funcToString.call(Ctor) == objectCtorString);
+}
+
+module.exports = isPlainObject;
 
 
 /***/ }),
@@ -80549,32 +80989,18 @@ module.exports = function () {
 
 /***/ }),
 /* 915 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-"use strict";
+module.exports = restRequest
 
+const restEndpoint = __webpack_require__(100)
+const request = __webpack_require__(959)
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = isISO31661Alpha2;
-
-var _assertString = _interopRequireDefault(__webpack_require__(567));
-
-var _includes = _interopRequireDefault(__webpack_require__(872));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// from https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
-var validISO31661Alpha2CountriesCodes = ['AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AO', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AW', 'AX', 'AZ', 'BA', 'BB', 'BD', 'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BL', 'BM', 'BN', 'BO', 'BQ', 'BR', 'BS', 'BT', 'BV', 'BW', 'BY', 'BZ', 'CA', 'CC', 'CD', 'CF', 'CG', 'CH', 'CI', 'CK', 'CL', 'CM', 'CN', 'CO', 'CR', 'CU', 'CV', 'CW', 'CX', 'CY', 'CZ', 'DE', 'DJ', 'DK', 'DM', 'DO', 'DZ', 'EC', 'EE', 'EG', 'EH', 'ER', 'ES', 'ET', 'FI', 'FJ', 'FK', 'FM', 'FO', 'FR', 'GA', 'GB', 'GD', 'GE', 'GF', 'GG', 'GH', 'GI', 'GL', 'GM', 'GN', 'GP', 'GQ', 'GR', 'GS', 'GT', 'GU', 'GW', 'GY', 'HK', 'HM', 'HN', 'HR', 'HT', 'HU', 'ID', 'IE', 'IL', 'IM', 'IN', 'IO', 'IQ', 'IR', 'IS', 'IT', 'JE', 'JM', 'JO', 'JP', 'KE', 'KG', 'KH', 'KI', 'KM', 'KN', 'KP', 'KR', 'KW', 'KY', 'KZ', 'LA', 'LB', 'LC', 'LI', 'LK', 'LR', 'LS', 'LT', 'LU', 'LV', 'LY', 'MA', 'MC', 'MD', 'ME', 'MF', 'MG', 'MH', 'MK', 'ML', 'MM', 'MN', 'MO', 'MP', 'MQ', 'MR', 'MS', 'MT', 'MU', 'MV', 'MW', 'MX', 'MY', 'MZ', 'NA', 'NC', 'NE', 'NF', 'NG', 'NI', 'NL', 'NO', 'NP', 'NR', 'NU', 'NZ', 'OM', 'PA', 'PE', 'PF', 'PG', 'PH', 'PK', 'PL', 'PM', 'PN', 'PR', 'PS', 'PT', 'PW', 'PY', 'QA', 'RE', 'RO', 'RS', 'RU', 'RW', 'SA', 'SB', 'SC', 'SD', 'SE', 'SG', 'SH', 'SI', 'SJ', 'SK', 'SL', 'SM', 'SN', 'SO', 'SR', 'SS', 'ST', 'SV', 'SX', 'SY', 'SZ', 'TC', 'TD', 'TF', 'TG', 'TH', 'TJ', 'TK', 'TL', 'TM', 'TN', 'TO', 'TR', 'TT', 'TV', 'TW', 'TZ', 'UA', 'UG', 'UM', 'US', 'UY', 'UZ', 'VA', 'VC', 'VE', 'VG', 'VI', 'VN', 'VU', 'WF', 'WS', 'YE', 'YT', 'ZA', 'ZM', 'ZW'];
-
-function isISO31661Alpha2(str) {
-  (0, _assertString.default)(str);
-  return (0, _includes.default)(validISO31661Alpha2CountriesCodes, str.toUpperCase());
+function restRequest (endpointOptions) {
+  const requestOptions = restEndpoint(endpointOptions)
+  return request(requestOptions)
 }
 
-module.exports = exports.default;
-module.exports.default = exports.default;
 
 /***/ }),
 /* 916 */
@@ -81729,24 +82155,27 @@ module.exports = equalByTag;
 
 /***/ }),
 /* 931 */
-/***/ (function(module) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
-module.exports = getPageLinks
+"use strict";
 
-function getPageLinks (link) {
-  link = link.link || link.headers.link || ''
-
-  const links = {}
-
-  // link format:
-  // '<https://api.github.com/users/aseemk/followers?page=2>; rel="next", <https://api.github.com/users/aseemk/followers?page=2>; rel="last"'
-  link.replace(/<([^>]*)>;\s*rel="([\w]*)"/g, (m, uri, type) => {
-    links[type] = uri
-  })
-
-  return links
-}
-
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createWebhookProxy = function (opts) {
+    try {
+        // tslint:disable-next-line
+        var SmeeClient = __webpack_require__(691);
+        var smee = new SmeeClient({
+            logger: opts.logger,
+            source: opts.url,
+            target: "http://localhost:" + opts.port + opts.path
+        });
+        return smee.start();
+    }
+    catch (err) {
+        opts.logger.warn('Run `npm install --save-dev smee-client` to proxy webhooks to localhost.');
+    }
+};
+//# sourceMappingURL=webhook-proxy.js.map
 
 /***/ }),
 /* 932 */
@@ -81938,7 +82367,7 @@ var isCore = __webpack_require__(561);
 var fs = __webpack_require__(747);
 var path = __webpack_require__(622);
 var caller = __webpack_require__(981);
-var nodeModulesPaths = __webpack_require__(306);
+var nodeModulesPaths = __webpack_require__(635);
 var normalizeOptions = __webpack_require__(733);
 
 var defaultIsFile = function isFile(file) {
@@ -82421,24 +82850,7 @@ function splitParameters(str) {
 
 
 /***/ }),
-/* 940 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-"use strict";
-
-
-var stringify = __webpack_require__(44);
-var parse = __webpack_require__(971);
-var formats = __webpack_require__(382);
-
-module.exports = {
-    formats: formats,
-    parse: parse,
-    stringify: stringify
-};
-
-
-/***/ }),
+/* 940 */,
 /* 941 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -82579,631 +82991,60 @@ module.exports = {
 /* 944 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-/** @module cacheManager/multiCaching */
-var async = __webpack_require__(67);
-var CallbackFiller = __webpack_require__(610);
-var utils = __webpack_require__(166);
-var isObject = utils.isObject;
-var parseWrapArguments = utils.parseWrapArguments;
+module.exports = getPage
 
-/**
- * Module that lets you specify a hierarchy of caches.
- *
- * @param {array} caches - Array of caching objects.
- * @param {object} [options]
- * @param {function} [options.isCacheableValue] - A callback function which is called
- *   with every value returned from cache or from a wrapped function. This lets you specify
- *   which values should and should not be cached. If the function returns true, it will be
- *   stored in cache. By default it caches everything except undefined.
- *
- *   If an underlying cache specifies its own isCacheableValue function, that function will
- *   be used instead of the multiCaching's _isCacheableValue function.
- */
-var multiCaching = function(caches, options) {
-    var self = {};
-    options = options || {};
+const HttpError = __webpack_require__(362)
+const getPageLinks = __webpack_require__(560)
+const deprecate = __webpack_require__(730)
 
-    var Promise = options.promiseDependency || global.Promise;
+function getPage (octokit, link, which, headers, callback) {
+  if (typeof headers === 'function') {
+    callback = headers
+    headers = null
+  }
 
-    if (!Array.isArray(caches)) {
-        throw new Error('multiCaching requires an array of caches');
+  if (callback) {
+    deprecate('callbacks will be removed in v16. Use async/await or Promises instead.')
+  }
+
+  const url = getPageLinks(link)[which]
+
+  if (!url) {
+    const urlError = new HttpError(`No ${which} page found`, 404)
+    if (callback) {
+      return callback(urlError)
     }
-
-    var callbackFiller = new CallbackFiller();
-
-    if (typeof options.isCacheableValue === 'function') {
-        self._isCacheableValue = options.isCacheableValue;
-    } else {
-        self._isCacheableValue = function(value) {
-            return value !== undefined;
-        };
-    }
-
-    /**
-     * If the underlying cache specifies its own isCacheableValue function (such
-     * as how node-cache-manager-redis does), use that function, otherwise use
-     * self._isCacheableValue function.
-     */
-    function getIsCacheableValueFunction(cache) {
-        if (cache.store && typeof cache.store.isCacheableValue === 'function') {
-            return cache.store.isCacheableValue.bind(cache.store);
-        } else {
-            return self._isCacheableValue;
-        }
-    }
-
-    function getFromHighestPriorityCachePromise() {
-        var args = Array.prototype.slice.apply(arguments).filter(function(v) {
-            return typeof v !== 'undefined';
-        });
-
-        return new Promise(function(resolve, reject) {
-            var cb = function(err, result) {
-                if (err) {
-                    return reject(err);
-                }
-                resolve(result);
-            };
-            args.push(cb);
-            getFromHighestPriorityCache.apply(null, args);
-        });
-    }
-
-    function getFromHighestPriorityCache() {
-        var args = Array.prototype.slice.apply(arguments).filter(function(v) {
-            return typeof v !== 'undefined';
-        });
-        var cb;
-        var options = {};
-
-        if (typeof args[args.length - 1] === 'function') {
-            cb = args.pop();
-        }
-
-        if (!cb) {
-            return getFromHighestPriorityCachePromise.apply(this, args);
-        }
-
-        if (isObject(args[args.length - 1])) {
-            options = args.pop();
-        }
-
-        /**
-         * Keep a copy of the keys to retrieve
-         */
-        var keys = Array.prototype.slice.apply(args);
-        var multi = keys.length > 1;
-
-        /**
-         * Then put back the options in the args Array
-         */
-        args.push(options);
-
-        if (multi) {
-            /**
-             * Keep track of the keys left to fetch accross the caches
-             */
-            var keysToFetch = Array.prototype.slice.apply(keys);
-
-            /**
-             * Hash to save our multi keys result
-             */
-            var mapResult = {};
-        }
-
-        var i = 0;
-        async.eachSeries(caches, function(cache, next) {
-            var callback = function(err, result) {
-                if (err) {
-                    return next(err);
-                }
-
-                var _isCacheableValue = getIsCacheableValueFunction(cache);
-
-                if (multi) {
-                    addResultToMap(result, _isCacheableValue);
-
-                    if (keysToFetch.length === 0 || i === caches.length - 1) {
-                        // Return an Array with the values merged from all the caches
-                        return cb(null, keys.map(function(k) {
-                            return mapResult[k] || undefined;
-                        }), i);
-                    }
-                } else if (_isCacheableValue(result)) {
-                    // break out of async loop.
-                    return cb(err, result, i);
-                }
-
-                i += 1;
-                next();
-            };
-
-            if (multi) {
-                if (typeof cache.store.mget !== 'function') {
-                    /**
-                     * Silently fail for store that don't support mget()
-                     */
-                    return callback(null, []);
-                }
-                var _args = Array.prototype.slice.apply(keysToFetch);
-                _args.push(options);
-                _args.push(callback);
-                cache.store.mget.apply(cache.store, _args);
-            } else {
-                cache.store.get(args[0], options, callback);
-            }
-        }, function(err, result) {
-            return cb(err, result);
-        });
-
-        function addResultToMap(result, isCacheable) {
-            var key;
-            var diff = 0;
-
-            /**
-             * We loop through the result and if the value
-             * is cacheable we add it to the mapResult hash
-             * and remove the key to fetch from the "keysToFetch" array
-             */
-            result.forEach(function(res, i) {
-                if (isCacheable(res)) {
-                    key = keysToFetch[i - diff];
-
-                    // Add the result to our map
-                    mapResult[key] = res;
-
-                    // delete key from our keysToFetch array
-                    keysToFetch.splice(i - diff, 1);
-                    diff += 1;
-                }
-            });
-        }
-    }
-
-    function setInMultipleCachesPromise() {
-        var args = Array.prototype.slice.apply(arguments);
-
-        return new Promise(function(resolve, reject) {
-            var cb = function(err, result) {
-                if (err) {
-                    return reject(err);
-                }
-                resolve(result);
-            };
-            args.push(cb);
-            setInMultipleCaches.apply(null, args);
-        });
-    }
-
-    function setInMultipleCaches() {
-        var args = Array.prototype.slice.apply(arguments);
-        var _caches = Array.isArray(args[0]) ? args.shift() : caches;
-
-        var cb;
-        var options = {};
-
-        if (typeof args[args.length - 1] === 'function') {
-            cb = args.pop();
-        }
-
-        if (!cb) {
-            return setInMultipleCachesPromise.apply(this, args);
-        }
-
-        if (args.length % 2 > 0 && isObject(args[args.length - 1])) {
-            options = args.pop();
-        }
-
-        var length = args.length;
-        var multi = length > 2;
-        var i;
-
-        async.each(_caches, function(cache, next) {
-            var _isCacheableValue = getIsCacheableValueFunction(cache);
-            var keysValues = Array.prototype.slice.apply(args);
-
-            /**
-             * We filter out the keys *not* cacheable
-             */
-            for (i = 0; i < length; i += 2) {
-                if (!_isCacheableValue(keysValues[i + 1])) {
-                    keysValues.splice(i, 2);
-                }
-            }
-
-            if (keysValues.length === 0) {
-                return next();
-            }
-
-            var cacheOptions = options;
-            if (typeof options.ttl === 'function') {
-                /**
-                 * Dynamically set the ttl by context depending of the store
-                 */
-                cacheOptions = {};
-                cacheOptions.ttl = options.ttl(keysValues, cache.store.name);
-            }
-
-            if (multi) {
-                if (typeof cache.store.mset !== 'function') {
-                    /**
-                     * Silently fail for store that don't support mset()
-                     */
-                    return next();
-                }
-                keysValues.push(cacheOptions);
-                keysValues.push(next);
-
-                cache.store.mset.apply(cache.store, keysValues);
-            } else {
-                cache.store.set(keysValues[0], keysValues[1], cacheOptions, next);
-            }
-        }, function(err, result) {
-            cb(err, result);
-        });
-    }
-
-    function getAndPassUpPromise(key) {
-        return new Promise(function(resolve, reject) {
-            self.getAndPassUp(key, function(err, result) {
-                if (err) {
-                    return reject(err);
-                }
-                resolve(result);
-            });
-        });
-    }
-
-    /**
-     * Looks for an item in cache tiers.
-     * When a key is found in a lower cache, all higher levels are updated.
-     *
-     * @param {string} key
-     * @param {function} cb
-     */
-    self.getAndPassUp = function(key, cb) {
-        if (!cb) {
-            return getAndPassUpPromise(key);
-        }
-
-        getFromHighestPriorityCache(key, function(err, result, index) {
-            if (err) {
-                return cb(err);
-            }
-
-            if (index) {
-                var cachesToUpdate = caches.slice(0, index);
-                async.each(cachesToUpdate, function(cache, next) {
-                    var _isCacheableValue = getIsCacheableValueFunction(cache);
-                    if (_isCacheableValue(result)) {
-                        // We rely on the cache module's default TTL
-                        cache.set(key, result, next);
-                    }
-                });
-            }
-
-            return cb(err, result);
-        });
-    };
-
-    function wrapPromise(key, promise, options) {
-        return new Promise(function(resolve, reject) {
-            self.wrap(key, function(cb) {
-                Promise.resolve()
-                    .then(promise)
-                    .then(function(result) {
-                        cb(null, result);
-                    })
-                    .catch(cb);
-            }, options, function(err, result) {
-                if (err) {
-                    return reject(err);
-                }
-                resolve(result);
-            });
-        });
-    }
-
-    /**
-     * Wraps a function in one or more caches.
-     * Has same API as regular caching module.
-     *
-     * If a key doesn't exist in any cache, it gets set in all caches.
-     * If a key exists in a high-priority (e.g., first) cache, it gets returned immediately
-     * without getting set in other lower-priority caches.
-     * If a key doesn't exist in a higher-priority cache but exists in a lower-priority
-     * cache, it gets set in all higher-priority caches.
-     * You can pass any number of keys as long as the wrapped function returns
-     * an array with the same number of values and in the same order.
-     *
-     * @function
-     * @name wrap
-     *
-     * @param {string} key - The cache key to use in cache operations. Can be one or many.
-     * @param {function} work - The function to wrap
-     * @param {object} [options] - options passed to `set` function
-     * @param {function} cb
-     */
-    self.wrap = function() {
-        var parsedArgs = parseWrapArguments(Array.prototype.slice.apply(arguments));
-        var keys = parsedArgs.keys;
-        var work = parsedArgs.work;
-        var options = parsedArgs.options;
-        var cb = parsedArgs.cb;
-
-        if (!cb) {
-            keys.push(work);
-            keys.push(options);
-            return wrapPromise.apply(this, keys);
-        }
-
-        if (keys.length > 1) {
-            /**
-             * Handle more than 1 key
-             */
-            return wrapMultiple(keys, work, options, cb);
-        }
-
-        var key = keys[0];
-
-        var hasKey = callbackFiller.has(key);
-        callbackFiller.add(key, {cb: cb});
-        if (hasKey) { return; }
-
-        getFromHighestPriorityCache(key, function(err, result, index) {
-            if (err) {
-                return callbackFiller.fill(key, err);
-            } else if (self._isCacheableValue(result)) {
-                var cachesToUpdate = caches.slice(0, index);
-                var args = [cachesToUpdate, key, result, options, function(err) {
-                    callbackFiller.fill(key, err, result);
-                }];
-
-                setInMultipleCaches.apply(null, args);
-            } else {
-                work(function(err, data) {
-                    if (err) {
-                        return callbackFiller.fill(key, err);
-                    }
-
-                    if (!self._isCacheableValue(data)) {
-                        return callbackFiller.fill(key, err, data);
-                    }
-
-                    var args = [caches, key, data, options, function(err) {
-                        callbackFiller.fill(key, err, data);
-                    }];
-
-                    setInMultipleCaches.apply(null, args);
-                });
-            }
-        });
-    };
-
-    function wrapMultiple(keys, work, options, cb) {
-        /**
-         * We create a unique key for the multiple keys
-         * by concatenating them
-         */
-        var combinedKey = keys.reduce(function(acc, k) {
-            return acc + k;
-        }, '');
-
-        var hasKey = callbackFiller.has(combinedKey);
-        callbackFiller.add(combinedKey, {cb: cb});
-        if (hasKey) { return; }
-
-        keys.push(options);
-        keys.push(onResult);
-
-        /**
-         * Get from all the caches. If multiple keys have been passed,
-         * we'll go through all the caches and merge the result
-         */
-        getFromHighestPriorityCache.apply(this, keys);
-
-        function onResult(err, result, index) {
-            if (err) {
-                return done(err);
-            }
-
-            /**
-             * If all the values returned are cacheable we don't need
-             * to call our "work" method and the values returned by the cache
-             * are valid. If one or more of the values is not cacheable
-             * the cache result is not valid.
-             */
-            var cacheOK = result.filter(function(_result) {
-                return self._isCacheableValue(_result);
-            }).length === result.length;
-
-            if (!cacheOK) {
-                /**
-                 * We need to fetch the data first
-                 */
-                return work(workCallback);
-            }
-
-            var cachesToUpdate = caches.slice(0, index);
-
-            /**
-             * Prepare arguments to set the values in
-             * higher priority caches
-             */
-            var _args = [cachesToUpdate];
-
-            /**
-             * Add the {key, value} pair
-             */
-            result.forEach(function(value, i) {
-                _args.push(keys[i]);
-                _args.push(value);
-            });
-
-            /**
-             * Add options and final callback
-             */
-            _args.push(options);
-            _args.push(function(err) {
-                done(err, result);
-            });
-
-            return setInMultipleCaches.apply(null, _args);
-
-            /**
-             * Wrapped function callback
-             */
-            function workCallback(err, data) {
-                if (err) {
-                    return done(err);
-                }
-
-                /**
-                 * Prepare arguments for "setInMultipleCaches"
-                 */
-                var _args;
-
-                _args = [];
-                data.forEach(function(value, i) {
-                    /**
-                     * Add the {key, value} pair to the args
-                     * array that we will send to mset()
-                     */
-                    if (self._isCacheableValue(value)) {
-                        _args.push(keys[i]);
-                        _args.push(value);
-                    }
-                });
-                // If no key,value --> exit
-                if (_args.length === 0) {
-                    return done(null);
-                }
-
-                /**
-                 * Add options and final callback
-                 */
-                _args.push(options);
-                _args.push(function(err) {
-                    done(err, data);
-                });
-
-                setInMultipleCaches.apply(null, _args);
-            }
-
-            /**
-             * Final callback
-             */
-            function done(err, data) {
-                callbackFiller.fill(combinedKey, err, data);
-            }
-        }
-    }
-
-    /**
-     * Set value in all caches
-     *
-     * @function
-     * @name set
-     *
-     * @param {string} key
-     * @param {*} value
-     * @param {object} [options] to pass to underlying set function.
-     * @param {function} [cb]
-     */
-    self.set = setInMultipleCaches;
-
-    /**
-     * Set multiple values in all caches
-     * Accepts an unlimited pair of {key, value}
-     *
-     * @function
-     * @name mset
-     *
-     * @param {string} key
-     * @param {*} value
-     * @param {string} [key2]
-     * @param {*} [value2]
-     * @param {object} [options] to pass to underlying set function.
-     * @param {function} [cb]
-     */
-    self.mset = setInMultipleCaches;
-
-    /**
-     * Get value from highest level cache that has stored it.
-     *
-     * @function
-     * @name get
-     *
-     * @param {string} key
-     * @param {object} [options] to pass to underlying get function.
-     * @param {function} cb
-     */
-    self.get = getFromHighestPriorityCache;
-
-    /**
-     * Get multiple value from highest level cache that has stored it.
-     * If some values are not found, the next highest cache is used
-     * until either all keys are found or all caches have been fetched.
-     * Accepts an unlimited number of keys.
-     *
-     * @function
-     * @name mget
-     *
-     * @param {string} key key to get (any number)
-     * @param {object} [options] to pass to underlying get function.
-     * @param {function} cb optional callback
-     */
-    self.mget = getFromHighestPriorityCache;
-
-    /**
-     * Delete value from all caches.
-     *
-     * @function
-     * @name del
-     *
-     * @param {string} key
-     * @param {object} [options] to pass to underlying del function.
-     * @param {function} cb
-     */
-    self.del = function() {
-        var args = Array.prototype.slice.apply(arguments);
-        var cb;
-        var options = {};
-
-        if (typeof args[args.length - 1] === 'function') {
-            cb = args.pop();
-        }
-
-        if (isObject(args[args.length - 1])) {
-            options = args.pop();
-        }
-
-        args.push(options);
-        async.each(caches, function(cache, next) {
-            var _args = Array.prototype.slice.apply(args);
-            _args.push(next);
-            cache.store.del.apply(cache.store, _args);
-        }, cb);
-    };
-
-    /**
-     * Reset all caches.
-     *
-     * @function
-     * @name reset
-     *
-     * @param {function} cb
-     */
-    self.reset = function(cb) {
-        async.each(caches, function(cache, next) {
-            cache.store.reset(next);
-        }, cb);
-    };
-
-    return self;
-};
-
-module.exports = multiCaching;
+    return Promise.reject(urlError)
+  }
+
+  const requestOptions = {
+    url,
+    headers: applyAcceptHeader(link, headers)
+  }
+
+  const promise = octokit.request(requestOptions)
+
+  if (callback) {
+    promise.then(callback.bind(null, null), callback)
+    return
+  }
+
+  return promise
+}
+
+function applyAcceptHeader (res, headers) {
+  const previous = res.headers && res.headers['x-github-media-type']
+
+  if (!previous || (headers && headers.accept)) {
+    return headers
+  }
+  headers = headers || {}
+  headers.accept = 'application/vnd.' + previous
+    .replace('; param=', '.')
+    .replace('; format=', '+')
+
+  return headers
+}
 
 
 /***/ }),
@@ -83300,45 +83141,141 @@ module.exports = function required(port, protocol) {
 /* 951 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-module.exports = apiMethod
-
-const clone = __webpack_require__(490)
-const defaultsDeep = __webpack_require__(318)
-const mapKeys = __webpack_require__(882)
-
-const deprecate = __webpack_require__(501)
-const validate = __webpack_require__(292)
-
-function apiMethod (octokit, endpointDefaults, endpointParams, options, callback) {
-  // Do not alter passed options (#786)
-  options = clone(options) || {}
-
-  // lowercase header names (#760)
-  options.headers = mapKeys(options.headers, (value, key) => key.toLowerCase())
-
-  if (endpointDefaults.deprecated) {
-    deprecate(endpointDefaults.deprecated)
-    delete endpointDefaults.deprecated
-  }
-
-  const endpointOptions = defaultsDeep(options, endpointDefaults)
-
-  const promise = Promise.resolve(endpointOptions)
-    .then(validate.bind(null, endpointParams))
-    .then(octokit.request)
-
-  if (callback) {
-    deprecate('callbacks will be removed in v16. Use async/await or Promises instead.')
-    promise.then(callback.bind(null, null), callback)
-    return
-  }
-
-  return promise
-}
+module.exports = {
+  decode: __webpack_require__(854),
+  verify: __webpack_require__(369),
+  sign: __webpack_require__(96),
+  JsonWebTokenError: __webpack_require__(986),
+  NotBeforeError: __webpack_require__(629),
+  TokenExpiredError: __webpack_require__(637),
+};
 
 
 /***/ }),
-/* 952 */,
+/* 952 */
+/***/ (function(module) {
+
+"use strict";
+
+
+var hasOwn = Object.prototype.hasOwnProperty;
+var toStr = Object.prototype.toString;
+var defineProperty = Object.defineProperty;
+var gOPD = Object.getOwnPropertyDescriptor;
+
+var isArray = function isArray(arr) {
+	if (typeof Array.isArray === 'function') {
+		return Array.isArray(arr);
+	}
+
+	return toStr.call(arr) === '[object Array]';
+};
+
+var isPlainObject = function isPlainObject(obj) {
+	if (!obj || toStr.call(obj) !== '[object Object]') {
+		return false;
+	}
+
+	var hasOwnConstructor = hasOwn.call(obj, 'constructor');
+	var hasIsPrototypeOf = obj.constructor && obj.constructor.prototype && hasOwn.call(obj.constructor.prototype, 'isPrototypeOf');
+	// Not own constructor property must be Object
+	if (obj.constructor && !hasOwnConstructor && !hasIsPrototypeOf) {
+		return false;
+	}
+
+	// Own properties are enumerated firstly, so to speed up,
+	// if last one is own, then all properties are own.
+	var key;
+	for (key in obj) { /**/ }
+
+	return typeof key === 'undefined' || hasOwn.call(obj, key);
+};
+
+// If name is '__proto__', and Object.defineProperty is available, define __proto__ as an own property on target
+var setProperty = function setProperty(target, options) {
+	if (defineProperty && options.name === '__proto__') {
+		defineProperty(target, options.name, {
+			enumerable: true,
+			configurable: true,
+			value: options.newValue,
+			writable: true
+		});
+	} else {
+		target[options.name] = options.newValue;
+	}
+};
+
+// Return undefined instead of __proto__ if '__proto__' is not an own property
+var getProperty = function getProperty(obj, name) {
+	if (name === '__proto__') {
+		if (!hasOwn.call(obj, name)) {
+			return void 0;
+		} else if (gOPD) {
+			// In early versions of node, obj['__proto__'] is buggy when obj has
+			// __proto__ as an own property. Object.getOwnPropertyDescriptor() works.
+			return gOPD(obj, name).value;
+		}
+	}
+
+	return obj[name];
+};
+
+module.exports = function extend() {
+	var options, name, src, copy, copyIsArray, clone;
+	var target = arguments[0];
+	var i = 1;
+	var length = arguments.length;
+	var deep = false;
+
+	// Handle a deep copy situation
+	if (typeof target === 'boolean') {
+		deep = target;
+		target = arguments[1] || {};
+		// skip the boolean and the target
+		i = 2;
+	}
+	if (target == null || (typeof target !== 'object' && typeof target !== 'function')) {
+		target = {};
+	}
+
+	for (; i < length; ++i) {
+		options = arguments[i];
+		// Only deal with non-null/undefined values
+		if (options != null) {
+			// Extend the base object
+			for (name in options) {
+				src = getProperty(target, name);
+				copy = getProperty(options, name);
+
+				// Prevent never-ending loop
+				if (target !== copy) {
+					// Recurse if we're merging plain objects or arrays
+					if (deep && copy && (isPlainObject(copy) || (copyIsArray = isArray(copy)))) {
+						if (copyIsArray) {
+							copyIsArray = false;
+							clone = src && isArray(src) ? src : [];
+						} else {
+							clone = src && isPlainObject(src) ? src : {};
+						}
+
+						// Never move original objects, clone them
+						setProperty(target, { name: name, newValue: extend(deep, clone, copy) });
+
+					// Don't bring in undefined values
+					} else if (typeof copy !== 'undefined') {
+						setProperty(target, { name: name, newValue: copy });
+					}
+				}
+			}
+		}
+	}
+
+	// Return the modified object
+	return target;
+};
+
+
+/***/ }),
 /* 953 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -83418,43 +83355,44 @@ module.exports = {"assert":true,"async_hooks":">= 8","buffer_ieee754":"< 0.9.7",
 
 /***/ }),
 /* 955 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
+module.exports = authenticate
 
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0)
-            t[p[i]] = s[p[i]];
-    return t;
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-var bunyan_1 = __importDefault(__webpack_require__(225));
-exports.Logger = bunyan_1.default;
-function addLogging(client, logger) {
-    if (!logger) {
-        return;
-    }
-    client.hook.error('request', function (error, options) {
-        var method = options.method, url = options.url, headers = options.headers, params = __rest(options, ["method", "url", "headers"]);
-        var msg = "GitHub request: " + method + " " + url + " - " + error.code + " " + error.status;
-        logger.debug({ params: params }, msg);
-        throw error;
-    });
-    client.hook.after('request', function (result, options) {
-        var method = options.method, url = options.url, headers = options.headers, params = __rest(options, ["method", "url", "headers"]);
-        var msg = "GitHub request: " + method + " " + url + " - " + result.headers.status;
-        logger.debug({ params: params }, msg);
-    });
+function authenticate (state, options) {
+  if (!options) {
+    state.auth = false
+    return
+  }
+
+  switch (options.type) {
+    case 'basic':
+      if (!options.username || !options.password) {
+        throw new Error('Basic authentication requires both a username and password to be set')
+      }
+      break
+
+    case 'oauth':
+      if (!options.token && !(options.key && options.secret)) {
+        throw new Error('OAuth2 authentication requires a token or key & secret to be set')
+      }
+      break
+
+    case 'token':
+    case 'integration':
+    case 'app':
+      if (!options.token) {
+        throw new Error('Token authentication requires a token to be set')
+      }
+      break
+
+    default:
+      throw new Error("Invalid authentication type, must be 'basic', 'integration', or 'oauth'")
+  }
+
+  state.auth = options
 }
-exports.addLogging = addLogging;
-//# sourceMappingURL=logging.js.map
+
 
 /***/ }),
 /* 956 */
@@ -83583,12 +83521,113 @@ module.exports.default = exports.default;
 /* 959 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
-module.exports = getLastPage
+"use strict";
 
-const getPage = __webpack_require__(360)
 
-function getLastPage (octokit, link, headers, callback) {
-  return getPage(octokit, link, 'last', headers, callback)
+module.exports = request
+
+const fetch = __webpack_require__(53).default
+const debug = __webpack_require__(155)('octokit:rest')
+const defaults = __webpack_require__(438)
+const isPlainObject = __webpack_require__(768)
+const pick = __webpack_require__(449)
+
+const deprecate = __webpack_require__(730)
+const getBuffer = __webpack_require__(895)
+const HttpError = __webpack_require__(362)
+
+function request (requestOptions) {
+  debug('REQUEST:', requestOptions)
+
+  // calculate content length unless body is a stream, in which case the
+  // content length is already set per option
+  if (requestOptions.body) {
+    defaults(requestOptions.headers, {
+      'content-type': 'application/json; charset=utf-8'
+    })
+  }
+
+  // https://fetch.spec.whatwg.org/#methods
+  requestOptions.method = requestOptions.method.toUpperCase()
+
+  // GitHub expects "content-length: 0" header for PUT/PATCH requests without body
+  // fetch does not allow to set `content-length` header, but we can set body to an empty string
+  if (['PATCH', 'PUT'].indexOf(requestOptions.method) >= 0 && !requestOptions.body) {
+    requestOptions.body = ''
+  }
+
+  if (isPlainObject(requestOptions.body) || Array.isArray(requestOptions.body)) {
+    requestOptions.body = JSON.stringify(requestOptions.body)
+  }
+
+  let headers = {}
+  let status
+
+  return fetch(requestOptions.url, pick(requestOptions, 'method', 'body', 'headers', 'timeout', 'agent'))
+
+    .then(response => {
+      status = response.status
+      for (const keyAndValue of response.headers.entries()) {
+        headers[keyAndValue[0]] = keyAndValue[1]
+      }
+
+      if (status === 204 || status === 205) {
+        return
+      }
+
+      // GitHub API returns 200 for HEAD requsets
+      if (requestOptions.method === 'HEAD') {
+        if (status < 400) {
+          return
+        }
+
+        throw new HttpError(response.statusText, status, headers)
+      }
+
+      if (status === 304) {
+        requestOptions.url = response.headers.location
+        throw new HttpError('Not modified', status, headers)
+      }
+
+      if (status >= 400) {
+        return response.text()
+
+          .then(message => {
+            throw new HttpError(message, status, headers)
+          })
+      }
+
+      const contentType = response.headers.get('content-type')
+      if (/application\/json/.test(contentType)) {
+        return response.json()
+      }
+
+      if (!contentType || /^text\/|charset=utf-8$/.test(contentType)) {
+        return response.text()
+      }
+
+      return getBuffer(response)
+    })
+
+    .then(data => {
+      return {
+        data,
+        status,
+        headers,
+        get meta () {
+          deprecate('response.meta – use response.headers instead (#896)')
+          return headers
+        }
+      }
+    })
+
+    .catch(error => {
+      if (error instanceof HttpError) {
+        throw error
+      }
+
+      throw new HttpError(error.message, 500, headers)
+    })
 }
 
 
@@ -83927,35 +83966,7 @@ exports.locales = locales;
 
 /***/ }),
 /* 964 */,
-/* 965 */
-/***/ (function(module) {
-
-module.exports = removeHook
-
-function removeHook (state, kind, name, method) {
-  if (kind) {
-    console.warn(
-      'hook.remove.%s(name, method) is deprecated, use hook.remove(name, method)',
-      kind
-    )
-  }
-  if (!state.registry[name]) {
-    return
-  }
-
-  var index = state.registry[name]
-    .map(function (registered) { return registered.orig })
-    .indexOf(method)
-
-  if (index === -1) {
-    return
-  }
-
-  state.registry[name].splice(index, 1)
-}
-
-
-/***/ }),
+/* 965 */,
 /* 966 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -84437,7 +84448,7 @@ module.exports = function (str, opts) {
 
 module.exports =
 {
-  parallel      : __webpack_require__(27),
+  parallel      : __webpack_require__(435),
   serial        : __webpack_require__(106),
   serialOrdered : __webpack_require__(675)
 };
@@ -84930,20 +84941,22 @@ module.exports = getSymbols;
 /***/ }),
 /* 985 */,
 /* 986 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module) {
 
-module.exports = paginationPlugin
+var JsonWebTokenError = function (message, error) {
+  Error.call(this, message);
+  if(Error.captureStackTrace) {
+    Error.captureStackTrace(this, this.constructor);
+  }
+  this.name = 'JsonWebTokenError';
+  this.message = message;
+  if (error) this.inner = error;
+};
 
-function paginationPlugin (octokit) {
-  octokit.getFirstPage = __webpack_require__(609).bind(null, octokit)
-  octokit.getLastPage = __webpack_require__(959).bind(null, octokit)
-  octokit.getNextPage = __webpack_require__(674).bind(null, octokit)
-  octokit.getPreviousPage = __webpack_require__(731).bind(null, octokit)
-  octokit.hasFirstPage = __webpack_require__(32)
-  octokit.hasLastPage = __webpack_require__(810)
-  octokit.hasNextPage = __webpack_require__(559)
-  octokit.hasPreviousPage = __webpack_require__(94)
-}
+JsonWebTokenError.prototype = Object.create(Error.prototype);
+JsonWebTokenError.prototype.constructor = JsonWebTokenError;
+
+module.exports = JsonWebTokenError;
 
 
 /***/ }),
