@@ -10,7 +10,7 @@ A [Probot](https://github.com/probot/probot) app triggering deployment events on
 
 - Install the app from [its public page](https://github.com/apps/deploy)
 
-- Commit a `.github/deploy.yml` file in your repository with the description of your environments. Spaces must be escaped. You can use whichever [environment parameter](https://developer.github.com/v3/repos/deployments/#parameters) used by GitHub's deployment API
+- Commit a `.github/deploy.yml` file in your repository with the description of your environments. Spaces must be escaped. You can use whichever [environment parameter](https://developer.github.com/v3/repos/deployments/#parameters) used by GitHub's deployment APIasd
 
 
 ```
