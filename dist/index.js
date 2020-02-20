@@ -31713,7 +31713,7 @@ const { createProbot } = __webpack_require__(552);
 // Setup Probot app
 const githubToken = process.env.GITHUB_TOKEN;
 const probot = createProbot({ githubToken });
-probot.setup(handler);
+probot.setup([handler]);
 
 // Process the event
 const event = process.env.GITHUB_EVENT_NAME;
@@ -62625,7 +62625,6 @@ module.exports = function jwa(algorithm) {
  * This is the entry point for your Probot App.
  * @param {import('probot').Application} app - Probot's Application class.
  */
-
 module.exports = app => {
   // Get an express router to expose new HTTP endpoints
   const getConfig = __webpack_require__(692)
@@ -62644,7 +62643,7 @@ module.exports = app => {
 
   app.on('pull_request.labeled', async context => {
     const config = await getConfig(context, 'deploy.yml')
-    
+
     let labelName = context.payload.label.name
     let encodedLabelName = encodeURI(labelName)
 
@@ -62657,30 +62656,30 @@ module.exports = app => {
         accept: 'application/vnd.github.ant-man-preview+json'
       }
 
-      try {
-        await context.github.repos.createDeployment(deployment)
-      } catch (apiError) {
-        let body = `:rotating_light: Failed to trigger deployment. :rotating_light:\n${apiError.message}`
-        if (apiError.documentation_url) {
-          body = body + ` See [the documentation](${apiError.documentation_url}) for more details`
+      context.github.repos.createDeployment(deployment).then(function (deploymentResult) {
+        return deploymentResult
+      }, function (apiError) {
+        let errorMessage = JSON.parse(apiError.message)
+        let body = `:rotating_light: Failed to trigger deployment. :rotating_light:\n${errorMessage.message}`
+        if (errorMessage.documentation_url) {
+          body = body + ` See [the documentation](${errorMessage.documentation_url}) for more details`
         }
 
         let errorComment = {
           'owner': context.payload.pull_request.head.repo.owner.login,
           'repo': context.payload.pull_request.head.repo.name,
-          'issue_number': context.payload.pull_request.number,
+          'number': context.payload.pull_request.number,
           'body': body
         }
         context.github.issues.createComment(errorComment)
-      }
+      })
 
       let labelCleanup = {
         'owner': context.payload.pull_request.head.repo.owner.login,
         'repo': context.payload.pull_request.head.repo.name,
-        'issue_number': context.payload.pull_request.number,
+        'number': context.payload.pull_request.number,
         'name': labelName
       }
-
       context.github.issues.removeLabel(labelCleanup)
     }
   })

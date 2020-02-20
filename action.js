@@ -9,7 +9,7 @@ const { createProbot } = require('probot');
 // Setup Probot app
 const githubToken = process.env.GITHUB_TOKEN;
 const probot = createProbot({ githubToken });
-probot.setup(handler);
+probot.setup([handler]);
 
 // Process the event
 const event = process.env.GITHUB_EVENT_NAME;
