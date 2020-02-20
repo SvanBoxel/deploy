@@ -6,7 +6,7 @@ A [Probot](https://github.com/probot/probot) app triggering deployment events on
 
 :warning: This app doesn't deploy anything. :warning:  It just triggers a deployment request which will be forwarded to any webhook listening to the deploy event on your repo or on your organization. Check GitHub's [deployment API](https://developer.github.com/v3/repos/deployments/) for more information.
 
-## Setup
+## Setupds
 
 - Install the app from [its public page](https://github.com/apps/deploy)
 
