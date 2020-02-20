@@ -26,7 +26,7 @@ labels:
       - continuous-integration/travis-ci/push
     payload:
       port: 8080
-      https: true
+      https: truedsa
 ```
 
 - Create matching labels in your repository
