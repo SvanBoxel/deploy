@@ -31720,7 +31720,8 @@ const event = process.env.GITHUB_EVENT_NAME;
 const payloadPath = process.env.GITHUB_EVENT_PATH;
 const payload = require(path.resolve(payloadPath));
 core.debug(`Receiving event ${JSON.stringify(event)}`);
-probot.receive({ name: event, payload }).catch(err => core.setFailed(`Action failed with error: ${err.message}`))
+probot.receive({ name: event, payload, id: '0cbe0a47-ecb5-44fe-8968-42f57094c709' }).catch(err => core.setFailed(`Action failed with error: ${err.message}`))
+  
 
 /***/ }),
 /* 310 */
@@ -54862,6 +54863,7 @@ var Probot = /** @class */ (function () {
     };
     Probot.prototype.receive = function (event) {
         this.logger.debug({ event: event }, 'Webhook received');
+        console.log('apps', this.apps.length, this.apps)
         return Promise.all(this.apps.map(function (app) { return app.receive(event); }));
     };
     Probot.prototype.load = function (appFn) {
