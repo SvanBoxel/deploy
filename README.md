@@ -45,9 +45,9 @@ In case you haven't waited for your Continuous Integration or other integrations
 ![image](https://user-images.githubusercontent.com/2787414/44785471-4cafd700-ab91-11e8-9b91-d95dec43cef3.png)
 
 If your branch is conflicting with master, your deployment will fail (see below). If you do want to deploy a conflicting branch, then set `auto_merge` to `false` in your label configuration.
-
+ds
 ![image](https://user-images.githubusercontent.com/2787414/44785703-22aae480-ab92-11e8-95f3-617455932a41.png)
-
+adsds
 This app works for both github.com and GitHub Enterprise. In the later case, you will need to run your own instance of this app as described in [the Pobot documentation](https://probot.github.io/docs/deployment/). Do not forgot to set the `GHE_HOST` environment variable as described [here](https://probot.github.io/docs/github-api/#github-enterprise).
 
 ## Contributing
