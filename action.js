@@ -1,9 +1,8 @@
+process.env.DISABLE_STATS = 'true';
+
 const handler = require('./index')
-
 const path = require('path');
-
 const core = require('@actions/core');
-
 const { createProbot } = require('probot');
 
 // Setup Probot app
@@ -17,3 +16,4 @@ const payloadPath = process.env.GITHUB_EVENT_PATH;
 const payload = require(path.resolve(payloadPath));
 core.debug(`Receiving event ${JSON.stringify(event)}`);
 probot.receive({ name: event, payload }).catch(err => core.setFailed(`Action failed with error: ${err.message}`))
+  
