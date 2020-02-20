@@ -31720,7 +31720,9 @@ const event = process.env.GITHUB_EVENT_NAME;
 const payloadPath = process.env.GITHUB_EVENT_PATH;
 const payload = require(path.resolve(payloadPath));
 core.debug(`Receiving event ${JSON.stringify(event)}`);
-probot.receive({ name: event, payload }).catch(err => core.setFailed(`Action failed with error: ${err.message}`))
+probot.receive({ name: event, payload })
+  .then(process.exit(0))
+  .catch(err => core.setFailed(`Action failed with error: ${err.message}`))
 
 /***/ }),
 /* 310 */
