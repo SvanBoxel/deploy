@@ -14,11 +14,10 @@ probot.setup([handler]);
 async function run() {
   console.log(process.env.GITHUB_EVENT_NAME);
   const event = process.env.GITHUB_EVENT_NAME;
-  if (event === 'pull_request') {
+  if (event === 'pull_request.labeled') {
     return;
   }
 
-  const event = process.env.GITHUB_EVENT_NAME;
   const payloadPath = process.env.GITHUB_EVENT_PATH;
   const payload = require(path.resolve(payloadPath));
   core.debug(`Receiving event ${JSON.stringify(event)}`);

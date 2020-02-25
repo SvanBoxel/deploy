@@ -30977,14 +30977,18 @@ const { createProbot } = __webpack_require__(552);
 const core = __webpack_require__(242);
 
 const token = process.env.GITHUB_TOKEN;
-
 // Setup Probot app
 const probot = createProbot({ token });
 probot.setup([handler]);
 
 // Process the event
 async function run() {
+  console.log(process.env.GITHUB_EVENT_NAME);
   const event = process.env.GITHUB_EVENT_NAME;
+  if (event === 'pull_request.labeled') {
+    return;
+  }
+
   const payloadPath = process.env.GITHUB_EVENT_PATH;
   const payload = require(path.resolve(payloadPath));
   core.debug(`Receiving event ${JSON.stringify(event)}`);
@@ -61591,15 +61595,6 @@ module.exports = app => {
       deployment.ref = context.payload.pull_request.head.ref
       deployment.headers = {
         accept: 'application/vnd.github.ant-man-preview+json'
-      }
-
-      if (process.env.GITHUB_RUN_ID) {
-        context.github.checks.update({
-          owner: context.payload.repository.owner.login,
-          repo: context.payload.repository.name,
-          check_run_id: process.env.GITHUB_RUN_ID,
-          conclusion: 'success'
-        })      
       }
 
       context.github.repos.createDeployment(deployment).then(function (deploymentResult) {
