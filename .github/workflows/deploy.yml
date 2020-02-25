@@ -3,6 +3,8 @@ name: Create deployment
 on: 
   pull_request:
     types: [labeled]
+  checks: 
+    types: [complete]
 
 jobs:
   deploy:

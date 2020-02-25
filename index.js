@@ -33,15 +33,6 @@ module.exports = app => {
         accept: 'application/vnd.github.ant-man-preview+json'
       }
 
-      if (process.env.GITHUB_RUN_ID) {
-        context.github.checks.update({
-          owner: context.payload.repository.owner.login,
-          repo: context.payload.repository.name,
-          check_run_id: process.env.GITHUB_RUN_ID,
-          conclusion: 'success'
-        })      
-      }
-
       context.github.repos.createDeployment(deployment).then(function (deploymentResult) {
         return deploymentResult
       }, function (apiError) {

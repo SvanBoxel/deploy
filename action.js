@@ -6,13 +6,17 @@ const { createProbot } = require('probot');
 const core = require('@actions/core');
 
 const token = process.env.GITHUB_TOKEN;
-
+const event = process.env.GITHUB_EVENT_NAME;
 // Setup Probot app
 const probot = createProbot({ token });
 probot.setup([handler]);
 
 // Process the event
 async function run() {
+  if (event === 'pull_request') {
+    return;
+  }
+
   const event = process.env.GITHUB_EVENT_NAME;
   const payloadPath = process.env.GITHUB_EVENT_PATH;
   const payload = require(path.resolve(payloadPath));
